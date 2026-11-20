@@ -3,44 +3,48 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowRight,
+  AlertTriangle,
   ArrowDown,
-  CalendarRange,
-  Clock,
-  Layers,
-  Satellite,
-  ScanLine,
+  ArrowRight,
   BarChart3,
+  Bookmark,
+  CalendarRange,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  Clock,
   CloudRain,
   CloudSun,
+  Compass,
   Database,
   Droplets,
-  Globe,
-  Leaf,
-  Languages,
-  MapPin,
-  ChevronDown,
-  ShieldCheck,
-  Sprout,
-  Thermometer,
-  Sun,
-  Wind,
-  AlertTriangle,
-  CheckCircle2,
-  Info,
-  Sparkles,
   ExternalLink,
-  Volume2,
-  Play,
+  Globe,
+  Info,
+  Languages,
+  Layers,
+  Leaf,
+  MapPin,
+  MessageSquare,
   Pause,
   Phone,
-  MessageSquare,
-  Check,
-  Compass,
-  Tractor,
+  Play,
+  RotateCw,
+  Satellite,
+  ScanLine,
+  ShieldCheck,
+  Sparkles,
+  Sprout,
   Store,
+  Sun,
+  Thermometer,
+  Tractor,
+  TrendingDown,
+  TrendingUp,
+  UserCheck,
   Users,
-  CheckCheck,
+  Volume2,
+  Wind,
 } from "lucide-react";
 
 import { fetchDataSources, fetchWeatherForecast } from "@/services/api.js";
@@ -58,29 +62,45 @@ function FarmCat({ bn, touring, onTour }) {
   // Krishu's Three.js scene follows pointermove events and keeps its eyes in the scene.
   return (
     <figure className={`kb-cat-scene ${touring ? "kb-tour-flight" : ""}`} aria-label={bn ? "কৃষু, আপনার কৃষি সঙ্গী" : "Meet Krishu, your farming companion"}>
-      <div className="kb-farm-backdrop" aria-hidden="true"><span className="kb-farm-sun" /><span className="kb-farm-row kb-farm-row-one" /><span className="kb-farm-row kb-farm-row-two" /><span className="kb-farm-row kb-farm-row-three" /></div>
+      <div className="kb-farm-backdrop" aria-hidden="true">
+        <span className="kb-farm-sun" />
+        <span className="kb-farm-row kb-farm-row-one" />
+        <span className="kb-farm-row kb-farm-row-two" />
+        <span className="kb-farm-row kb-farm-row-three" />
+      </div>
       <div className="kb-cat-orbit" aria-hidden="true"><span /><span /><span /></div>
-      <button type="button" onClick={onTour} className="kb-cat-speech">
+      <button type="button" onClick={onTour} className="kb-cat-speech cursor-pointer">
         <span className="kb-speech-dot" />
         {bn ? "স্বাগতম! আমি কৃষু। কৃষিবন্ধুর সেবাগুলো ঘুরে দেখতে এখানে চাপ দিন।" : "Welcome! I’m Krishu. Tap here and I’ll show you around."}
         <i />
       </button>
       <div className="kb-cat-actions">
-        <button type="button" onClick={onTour}>{bn ? "আমাকে ঘুরিয়ে দেখাও" : "Show me around"}</button>
+        <button type="button" onClick={onTour} className="cursor-pointer">{bn ? "আমাকে ঘুরিয়ে দেখাও" : "Show me around"}</button>
         <Link href="/assistant">{bn ? "কৃষুর সাথে কথা বলব" : "Talk with Krishu"}</Link>
       </div>
-      {!preferences.hidden && <KrishuMascot active={preferences.animationEnabled} className="kb-farm-cat" state={touring ? "celebrating" : "idle"} label={bn ? "সবুজ চারাগাছ কৃষু" : "Krishu, a friendly green seedling"} />}
-      <div className="kb-cat-name"><span>কৃষু <b>· KRISHU</b></span><small>{bn ? "বাংলাদেশের কৃষকের সহযাত্রী" : "Here for Bangladesh’s farmers"}</small></div>
+      {!preferences.hidden && (
+        <KrishuMascot
+          active={preferences.animationEnabled}
+          className="kb-farm-cat"
+          state={touring ? "celebrating" : "idle"}
+          label={bn ? "সবুজ চারাগাছ কৃষু" : "Krishu, a friendly green seedling"}
+        />
+      )}
+      <div className="kb-cat-name">
+        <span>কৃষু <b>· KRISHU</b></span>
+        <small>{bn ? "বাংলাদেশের কৃষকের সহযাত্রী" : "Here for Bangladesh’s farmers"}</small>
+      </div>
     </figure>
   );
 }
+
 const featureItems = [
-  { icon: Store, titleKey: "featureRainfall", descKey: "featureRainfallDesc", tone: "climate" },
-  { icon: Sprout, titleKey: "featureTemp", descKey: "featureTempDesc", tone: "amber" },
-  { icon: Tractor, titleKey: "featureDistrict", descKey: "featureDistrictDesc", tone: "emerald" },
-  { icon: Database, titleKey: "featureEvidence", descKey: "featureEvidenceDesc", tone: "emerald" },
-  { icon: Languages, titleKey: "featureLanguage", descKey: "featureLanguageDesc", tone: "neutral" },
-  { icon: ShieldCheck, titleKey: "featureTransparency", descKey: "featureTransparencyDesc", tone: "emerald" },
+  { icon: Store, titleKey: "featureRainfall", descKey: "featureRainfallDesc", tone: "climate", href: "/market" },
+  { icon: Sprout, titleKey: "featureTemp", descKey: "featureTempDesc", tone: "amber", href: "/crop-rotation" },
+  { icon: Tractor, titleKey: "featureDistrict", descKey: "featureDistrictDesc", tone: "emerald", href: "/my-farm" },
+  { icon: Database, titleKey: "featureEvidence", descKey: "featureEvidenceDesc", tone: "emerald", href: "/data-sources" },
+  { icon: Languages, titleKey: "featureLanguage", descKey: "featureLanguageDesc", tone: "neutral", href: "/#about" },
+  { icon: ShieldCheck, titleKey: "featureTransparency", descKey: "featureTransparencyDesc", tone: "emerald", href: "/data-sources" },
 ];
 
 const overviewDatasets = [
@@ -181,12 +201,13 @@ export default function LandingPage() {
   const [forecastStatus, setForecastStatus] = useState("loading");
 
   const [touring, setTouring] = useState(false);
+  const [activePreviewTab, setActivePreviewTab] = useState("market"); // "market" | "weather" | "planner" | "assistant"
 
   const startTour = () => {
     setTouring(true);
     window.setTimeout(() => {
-      document.getElementById("krishibondhu-pillars")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 600);
+      document.getElementById("interactive-previews")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 450);
     window.setTimeout(() => setTouring(false), 2000);
   };
 
@@ -352,57 +373,101 @@ export default function LandingPage() {
   const outlookAdvisoryExtended = buildOutlookAdvisory("extended", extendedWindowSummary);
   const outlookAdvisories = { short: outlookAdvisoryShort, extended: outlookAdvisoryExtended };
 
+  const currentDistrictName = locale === "bn"
+    ? (locationDistricts.find((d) => d.code === selectedDistrict)?.nameBn || "কুমিল্লা")
+    : (locationDistricts.find((d) => d.code === selectedDistrict)?.nameEn || "Cumilla");
+
   return (
     <div className="kb-story-home flex min-h-screen flex-col">
       <PublicHeader />
 
       <main className="flex-1">
+        {/* ============================================================
+            HERO SECTION (Inspired by Mati Kohon composition & storytelling)
+            ============================================================ */}
         <section className="kb-story-hero">
           <div aria-hidden="true" className="kb-story-pattern" />
+
           <div className="kb-story-copy">
             <div className="grid gap-10 lg:grid-cols-12 lg:items-center">
+              {/* Left Column: Display typography, farmer-first values & actions */}
               <div className="text-center lg:col-span-7 lg:text-left">
-                <div className="kb-story-eyebrow mb-6 inline-flex items-center gap-2 px-4 py-2 text-sm">
-                  <Sprout className="h-4 w-4" />
-                  <span>{locale === "bn" ? "বাংলাদেশের কৃষকের জন্য · বাংলা ও ইংরেজিতে" : "Made for Bangladesh’s farmers · Bangla and English"}</span>
+                {/* Farmer eyebrow */}
+                <div className="kb-story-eyebrow mb-5 inline-flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold">
+                  <Sprout className="h-4 w-4 text-[#247A4B] dark:text-[#56B870]" />
+                  <span>
+                    {locale === "bn"
+                      ? "বাংলাদেশের কৃষকের জন্য · সম্পূর্ণ বাংলায় ও ইংরেজিতে"
+                      : "Made for Bangladesh’s farmers · Bangla & English"}
+                  </span>
                 </div>
-                <h1 className="break-words">
-                  {locale === "bn" ? <>বীজ থেকে বাজারে।<br/><em>প্রতিটি ধাপে কৃষিবন্ধু।</em></> : <>From seed to market.<br/><em>Your smart farming companion.</em></>}
+
+                {/* Display Headline */}
+                <h1 className="break-words font-extrabold tracking-tight">
+                  {locale === "bn" ? (
+                    <>
+                      কৃষকের পাশে, প্রতিটি সিদ্ধান্তে।<br />
+                      <em>বীজ থেকে বাজারে সহজ সমাধান।</em>
+                    </>
+                  ) : (
+                    <>
+                      By the farmer's side, in every decision.<br />
+                      <em>From seed to market.</em>
+                    </>
+                  )}
                 </h1>
-                <p className="mx-auto max-w-2xl lg:mx-0">
+
+                {/* Farmer-friendly description */}
+                <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted lg:mx-0 sm:text-lg">
                   {locale === "bn"
-                    ? "কোন ফসল করবেন তা বাছা থেকে বপন, পরিচর্যা ও বিক্রির পরিকল্পনা—কৃষকের দরকারি তথ্য ও সরঞ্জাম এক জায়গায়, নিজের ভাষায়।"
-                    : "From choosing a crop and planning sowing to tracking farm work and preparing to sell, bring practical tools and dated information together in one farmer-friendly place."}
+                    ? "বাজারদর, আবহাওয়া ও ফসলের তথ্য জানুন সহজেই। কোন ফসল করবেন তা বাছা থেকে বপন, পরিচর্যা ও বিক্রির পরিকল্পনা—কৃষকের দরকারি তথ্য ও সরঞ্জাম এক জায়গায়, নিজের ভাষায়।"
+                    : "Know market prices, weather forecasts, and crop insights with ease. From choosing a crop and planning sowing to tracking farm work and preparing to sell, bring practical tools and dated information together in one farmer-friendly place."}
                 </p>
+
+                {/* Main CTAs */}
                 <div className="kb-story-actions justify-center lg:justify-start">
                   <Button href="/market" size="lg" variant="primary" className="kb-story-primary px-7">
-                    {locale === "bn" ? "বাজারদর দেখুন" : "Check market prices"}
-                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    <Store className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span>{locale === "bn" ? "বাজারদর দেখুন" : "Check market prices"}</span>
+                    <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
                   </Button>
+
                   <Button
                     href="/crop-rotation"
                     size="lg"
                     variant="outline"
                     className="kb-story-secondary px-7"
                   >
-                    {locale === "bn" ? "ফসল পরিকল্পনা করুন" : "Plan a crop"}
+                    <Sprout className="h-4 w-4 shrink-0 text-[#247A4B] dark:text-[#56B870]" aria-hidden="true" />
+                    <span>{locale === "bn" ? "ফসল পরিকল্পনা করুন" : "Plan a crop"}</span>
                   </Button>
                 </div>
+
+                {/* Honest proof line */}
                 <p className="kb-story-proof mx-auto max-w-xl lg:mx-0">
-                  {locale === "bn" ? "তথ্য না থাকলে কৃষিবন্ধু তা স্পষ্ট করে—অনুমান করে বাজারদর দেখায় না।" : "When verified information is missing, KrishiBondhu says so instead of guessing a price."}
+                  <ShieldCheck className="h-4 w-4 text-[#247A4B] dark:text-[#56B870] shrink-0" />
+                  <span>
+                    {locale === "bn"
+                      ? "তথ্য না থাকলে কৃষিবন্ধু তা স্পষ্ট করে—অনুমান করে বাজারদর দেখায় না।"
+                      : "When verified information is missing, KrishiBondhu says so instead of guessing a price."}
+                  </span>
                 </p>
               </div>
 
+              {/* Right Column: Character Stage & Location Chip */}
               <div className="flex justify-center lg:col-span-5">
-                <div className="w-full max-w-[400px]">
+                <div className="w-full max-w-[420px] relative">
+                  {/* Reserved Companion Dock (Krishu seedling now, ready for baby dragon Bondhu in Part 6) */}
                   <FarmCat bn={locale === "bn"} touring={touring} onTour={startTour} />
+
+                  {/* Interactive Location Chip */}
                   <div className="kb-location-chip">
-                    <MapPin size={16} />
+                    <MapPin size={16} className="text-[#247A4B] dark:text-[#56B870]" />
                     <span>
-                        <small>{locale === "bn" ? "নির্বাচিত জেলা" : "Selected district"}</small>
-                      <strong>{locale === "bn" ? (locationDistricts.find((district) => district.code === selectedDistrict)?.nameBn || "বাংলাদেশ") : (locationDistricts.find((district) => district.code === selectedDistrict)?.nameEn || "Bangladesh")}</strong>
+                      <small>{locale === "bn" ? "নির্বাচিত জেলা" : "Selected district"}</small>
+                      <strong>{currentDistrictName}</strong>
                     </span>
-                    <Check size={16} />
+                    <Check size={16} className="text-[#247A4B] dark:text-[#56B870]" />
                   </div>
                 </div>
               </div>
@@ -410,7 +475,272 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* KRISHIBONDHU 4 CORE PILLARS FROM PROPOSAL */}
+        {/* ============================================================
+            INTERACTIVE APPLICATION PREVIEWS (Live Agricultural Switcher)
+            ============================================================ */}
+        <section id="interactive-previews" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6">
+          <div className="text-center max-w-3xl mx-auto mb-10">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#247A4B]/30 bg-[#247A4B]/10 px-3.5 py-1 text-xs font-semibold text-[#123D2A] dark:text-[#56B870]">
+              <Sparkles className="h-3.5 w-3.5 text-[#247A4B]" />
+              <span>{locale === "bn" ? "সরাসরি অভিজ্ঞতা নিন" : "Interactive Application Previews"}</span>
+            </span>
+            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-[#123D2A] dark:text-green-100 sm:text-4xl">
+              {locale === "bn" ? "কৃষিবন্ধুর মূল সেবাগুলো নিজেই দেখে নিন" : "Explore Real Working Agricultural Tools"}
+            </h2>
+            <p className="mt-3 text-base text-muted">
+              {locale === "bn"
+                ? "বাজারের দাম, আবহাওয়ার ঝুঁকি, শস্য পর্যায়ক্রম ও এআই সহকারীর কার্যকর প্রিভিউ এক ক্লিকেই পরিবর্তন করুন।"
+                : "Switch tabs below to inspect real application previews for market prices, weather outlook, crop rotation, and the AI assistant."}
+            </p>
+          </div>
+
+          {/* Interactive Tab Switcher */}
+          <div className="flex justify-center mb-8 overflow-x-auto pb-2">
+            <div className="inline-flex p-1.5 rounded-full border border-line bg-surface-2 shadow-inner gap-1">
+              {[
+                { id: "market", labelBn: "বাজারদর ও তথ্য", labelEn: "Market Prices", icon: Store },
+                { id: "weather", labelBn: "আবহাওয়া ও মাটি", labelEn: "Weather & Soil", icon: CloudSun },
+                { id: "planner", labelBn: "ফসল চক্র পরিকল্পনা", labelEn: "Crop Planning", icon: Sprout },
+                { id: "assistant", labelBn: "এআই সহকারী", labelEn: "AI Assistant", icon: MessageSquare },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActivePreviewTab(tab.id)}
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer ${
+                    activePreviewTab === tab.id
+                      ? "bg-[#247A4B] text-white shadow-md"
+                      : "text-muted hover:text-content hover:bg-surface/80"
+                  }`}
+                >
+                  <tab.icon className="h-4 w-4" />
+                  <span>{locale === "bn" ? tab.labelBn : tab.labelEn}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tab Content 1: Market Intelligence Preview */}
+          {activePreviewTab === "market" && (
+            <div className="rounded-3xl border border-line bg-surface p-6 sm:p-8 shadow-km-md animate-in fade-in duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4 mb-6">
+                <div>
+                  <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#247A4B]">
+                    <span className="h-2 w-2 rounded-full bg-[#247A4B] animate-pulse" />
+                    <span>{locale === "bn" ? "কৃষি বিপণন অধিদপ্তর (DAM) প্রতিবেদন" : "DAM Market Reports"}</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-content mt-1">
+                    {locale === "bn" ? "আজকের পাইকারি ও খুচরা বাজারদর" : "Today’s Wholesale & Retail Prices"}
+                  </h3>
+                </div>
+                <Button href="/market" size="sm" variant="primary" className="shrink-0">
+                  <span>{locale === "bn" ? "পুরো বাজার দেখুন" : "View Full Market"}</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Sample Commodity Grid */}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                  { nameBn: "গোল আলু (ডায়মন্ড)", nameEn: "Potato (Diamond)", retail: "৳২৮", wholesale: "৳২৪", diff: "+৳২", trend: "up" },
+                  { nameBn: "দেশি পেঁয়াজ", nameEn: "Local Onion", retail: "৳৭৫", wholesale: "৳৬৮", diff: "৳০", trend: "neutral" },
+                  { nameBn: "বিআর-২৮ ধান", nameEn: "BRRI dhan28 Rice", retail: "৳৫২", wholesale: "৳৪৮", diff: "-৳১", trend: "down" },
+                  { nameBn: "পাকা লাল টমেটো", nameEn: "Ripe Tomato", retail: "৳৪৫", wholesale: "৳৩৮", diff: "+৳৩", trend: "up" },
+                ].map((item) => (
+                  <div key={item.nameEn} className="rounded-2xl border border-line bg-surface-2/60 p-4 hover:border-emerald/40 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <p className="font-bold text-sm text-content">{locale === "bn" ? item.nameBn : item.nameEn}</p>
+                      <span className={`inline-flex items-center text-xs font-bold ${
+                        item.trend === "up" ? "text-amber-600" : item.trend === "down" ? "text-emerald" : "text-muted"
+                      }`}>
+                        {item.trend === "up" && <TrendingUp className="h-3.5 w-3.5 mr-0.5" />}
+                        {item.trend === "down" && <TrendingDown className="h-3.5 w-3.5 mr-0.5" />}
+                        {item.diff}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex items-baseline justify-between border-t border-line/60 pt-2.5">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-muted block">{locale === "bn" ? "খুচরা দর" : "Retail"}</span>
+                        <span className="text-lg font-extrabold text-[#123D2A] dark:text-emerald-300">{item.retail}<small className="text-xs font-normal">/কেজি</small></span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] uppercase font-bold text-muted block">{locale === "bn" ? "পাইকারি দর" : "Wholesale"}</span>
+                        <span className="text-sm font-semibold text-content">{item.wholesale}<small className="text-xs font-normal">/কেজি</small></span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-4 text-xs text-muted text-center sm:text-left">
+                {locale === "bn" ? "*দাম পর্যবেক্ষণের তারিখ ও উৎস সহকারে প্রদর্শিত। এলাকাভেদে মূল্যের সামান্য তারতম্য হতে পারে।" : "*Prices are verified with observation dates and official DAM reports. Regional variances may apply."}
+              </p>
+            </div>
+          )}
+
+          {/* Tab Content 2: Weather & Soil Preview */}
+          {activePreviewTab === "weather" && (
+            <div className="rounded-3xl border border-line bg-surface p-6 sm:p-8 shadow-km-md animate-in fade-in duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4 mb-6">
+                <div>
+                  <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#247A4B]">
+                    <CloudSun className="h-4 w-4" />
+                    <span>{locale === "bn" ? `${currentDistrictName} জেলার ৭ দিনের পূর্বাভাস` : `7-Day Outlook for ${currentDistrictName}`}</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-content mt-1">
+                    {locale === "bn" ? "তাপমাত্রা, বৃষ্টিপাত ও মাটির আর্দ্রতা" : "Temperature, Rain & Soil Moisture"}
+                  </h3>
+                </div>
+                <Button href="/climate" size="sm" variant="primary" className="shrink-0">
+                  <span>{locale === "bn" ? "পূর্ণাঙ্গ আবহাওয়া দেখুন" : "View Full Climate"}</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="rounded-2xl border border-orange-200 bg-orange-50/60 p-4 dark:border-orange-800 dark:bg-orange-950/20">
+                  <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300 text-xs font-bold">
+                    <Sun className="h-4 w-4" />
+                    <span>{locale === "bn" ? "তাপমাত্রা পরিসীমা" : "Temperature Range"}</span>
+                  </div>
+                  <p className="mt-2 text-2xl font-extrabold text-content">১৮°C – ২৯°C</p>
+                  <p className="text-xs text-muted mt-1">{locale === "bn" ? "ফসল ফুল আসার জন্য উপযোগী" : "Favorable for flowering"}</p>
+                </div>
+
+                <div className="rounded-2xl border border-sky-200 bg-sky-50/60 p-4 dark:border-sky-800 dark:bg-sky-950/20">
+                  <div className="flex items-center gap-2 text-sky-700 dark:text-sky-300 text-xs font-bold">
+                    <CloudRain className="h-4 w-4" />
+                    <span>{locale === "bn" ? "বৃষ্টিপাতের সম্ভাবনা" : "Rain Probability"}</span>
+                  </div>
+                  <p className="mt-2 text-2xl font-extrabold text-content">১৫% <span className="text-xs font-normal text-muted">(শুষ্ক আবহাওয়া)</span></p>
+                  <p className="text-xs text-muted mt-1">{locale === "bn" ? "মাঠের সার ও কীটনাশক ব্যবহারের জন্য নিরাপদ" : "Safe for spraying and fertilizer"}</p>
+                </div>
+
+                <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-800 dark:bg-amber-950/20">
+                  <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 text-xs font-bold">
+                    <Droplets className="h-4 w-4" />
+                    <span>{locale === "bn" ? "মাটির রস (SMAP উপগ্রহ)" : "Soil Moisture (SMAP)"}</span>
+                  </div>
+                  <p className="mt-2 text-2xl font-extrabold text-content">০.৩৩ মি³/মি³</p>
+                  <p className="text-xs text-muted mt-1">{locale === "bn" ? "বপনের জন্য পরিমিত আর্দ্রতা বিদ্যমান" : "Adequate root-zone moisture"}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tab Content 3: Crop Planning Preview */}
+          {activePreviewTab === "planner" && (
+            <div className="rounded-3xl border border-line bg-surface p-6 sm:p-8 shadow-km-md animate-in fade-in duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4 mb-6">
+                <div>
+                  <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#247A4B]">
+                    <Sprout className="h-4 w-4" />
+                    <span>{locale === "bn" ? "শস্য পর্যায়ক্রম ও পানি সাশ্রয়" : "Crop Sequence & Water Savings"}</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-content mt-1">
+                    {locale === "bn" ? "৩-মৌসুমি লাভজনক শস্য চক্র" : "3-Season Profitable Crop Cycle"}
+                  </h3>
+                </div>
+                <Button href="/crop-rotation" size="sm" variant="primary" className="shrink-0">
+                  <span>{locale === "bn" ? "পরিকল্পনা শুরু করুন" : "Start Planning"}</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="flex flex-col md:flex-row items-center gap-4 justify-between bg-surface-2/60 p-5 rounded-2xl border border-line">
+                <div className="text-center md:text-left">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted">{locale === "bn" ? "মৌসুম ১ (খরিফ-২)" : "Season 1 (Kharif-2)"}</span>
+                  <h4 className="text-base font-bold text-content">আমন ধান (ব্রি ধান৭১)</h4>
+                  <p className="text-xs text-muted">জুলাই – নভেম্বর</p>
+                </div>
+                <ArrowRight className="h-5 w-5 text-emerald shrink-0 hidden md:block" />
+                <ArrowDown className="h-5 w-5 text-emerald shrink-0 md:hidden" />
+                <div className="text-center md:text-left">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 font-bold">{locale === "bn" ? "মৌসুম ২ (রবি)" : "Season 2 (Rabi)"}</span>
+                  <h4 className="text-base font-bold text-[#123D2A] dark:text-emerald-300">বারি মসুর-৮ / সরিষা</h4>
+                  <p className="text-xs text-muted">নভেম্বর – ফেব্রুয়ারি</p>
+                </div>
+                <ArrowRight className="h-5 w-5 text-emerald shrink-0 hidden md:block" />
+                <ArrowDown className="h-5 w-5 text-emerald shrink-0 md:hidden" />
+                <div className="text-center md:text-left">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted">{locale === "bn" ? "মৌসুম ৩ (খরিফ-১)" : "Season 3 (Kharif-1)"}</span>
+                  <h4 className="text-base font-bold text-content">তিল / মুগডাল</h4>
+                  <p className="text-xs text-muted">মার্চ – জুন</p>
+                </div>
+              </div>
+
+              <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="p-3 bg-emerald/10 rounded-xl text-center">
+                  <span className="text-xs text-[#123D2A] dark:text-emerald-300 font-bold block">{locale === "bn" ? "পানি সাশ্রয়" : "Water Savings"}</span>
+                  <span className="text-lg font-extrabold text-[#247A4B] dark:text-[#56B870]">+৩২০ মিমি</span>
+                </div>
+                <div className="p-3 bg-amber-50 rounded-xl text-center dark:bg-amber-950/20">
+                  <span className="text-xs text-amber-800 dark:text-amber-300 font-bold block">{locale === "bn" ? "মুনাফা স্কোর" : "Profit Score"}</span>
+                  <span className="text-lg font-extrabold text-amber-700">৮৪%</span>
+                </div>
+                <div className="p-3 bg-surface-2 rounded-xl text-center col-span-2 sm:col-span-1">
+                  <span className="text-xs text-content font-bold block">{locale === "bn" ? "বপন বিলম্ব ঝুঁকি" : "Delay Risk"}</span>
+                  <span className="text-lg font-extrabold text-muted">{locale === "bn" ? "কম ঝুঁকি" : "Low Risk"}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tab Content 4: AI Assistant Preview */}
+          {activePreviewTab === "assistant" && (
+            <div className="rounded-3xl border border-line bg-surface p-6 sm:p-8 shadow-km-md animate-in fade-in duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4 mb-6">
+                <div>
+                  <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#247A4B]">
+                    <MessageSquare className="h-4 w-4" />
+                    <span>{locale === "bn" ? "কৃষিবন্ধু বাংলা এআই সহকারী" : "KrishiBondhu Bangla AI Assistant"}</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-content mt-1">
+                    {locale === "bn" ? "যেকোনো কৃষি প্রশ্ন করুন বাংলায়" : "Natural Agronomic Chat & Voice Support"}
+                  </h3>
+                </div>
+                <Button href="/assistant" size="sm" variant="primary" className="shrink-0">
+                  <span>{locale === "bn" ? "সহকারীর সাথে কথা বলুন" : "Chat with Assistant"}</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Chat Simulation Box */}
+              <div className="space-y-4 max-w-2xl mx-auto bg-surface-2/40 p-4 rounded-2xl border border-line">
+                <div className="flex items-start gap-3 justify-end">
+                  <div className="bg-[#247A4B] text-white p-3 rounded-2xl rounded-tr-xs text-xs sm:text-sm max-w-[85%] font-medium">
+                    {locale === "bn"
+                      ? "“আমন ধান কাটার পর জমিতে আর্দ্রতা কম থাকলে কোন ডাল ফসল করা ভালো হবে?”"
+                      : "“Which pulse crop is ideal after Aman harvest if soil moisture is low?”"}
+                  </div>
+                  <span className="h-8 w-8 rounded-full bg-[#123D2A] text-white flex items-center justify-center text-xs font-bold shrink-0">
+                    কৃ
+                  </span>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <span className="h-8 w-8 rounded-full bg-emerald text-white flex items-center justify-center text-xs font-bold shrink-0">
+                    এআই
+                  </span>
+                  <div className="bg-surface border border-line p-3.5 rounded-2xl rounded-tl-xs text-xs sm:text-sm text-content max-w-[90%] shadow-xs">
+                    <p className="leading-relaxed">
+                      {locale === "bn"
+                        ? "আপনার এলাকার জন্য বারি মসুর-৮ বা বিনা সরিষা-৯ সবচেয়ে উপযুক্ত। এতে সেচ কম লাগে এবং ডাল জাতীয় ফসল মাটির নাইট্রোজেন সমৃদ্ধ করে পরবর্তী ফসলের সার খরচ কমিয়ে দেয়।"
+                        : "For your area, BARI Masur-8 or BINA Sarisha-9 is ideal. It requires minimal irrigation, restores soil nitrogen, and cuts input costs for the subsequent crop."}
+                    </p>
+                    <div className="mt-2.5 pt-2 border-t border-line/60 flex items-center gap-2 text-[10px] text-muted">
+                      <ShieldCheck className="h-3.5 w-3.5 text-[#247A4B]" />
+                      <span>{locale === "bn" ? "উৎস: SRDI মৃত্তিকা নির্দেশিকা ও BAMIS ক্রপ ক্যালেন্ডার" : "Source: SRDI Soil Guidelines & BAMIS Calendars"}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* ============================================================
+            KRISHIBONDHU 4 CORE PILLARS FROM PROPOSAL
+            ============================================================ */}
         <section id="krishibondhu-pillars" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <span className="inline-flex items-center gap-2 rounded-full border border-[#247A4B]/30 bg-[#247A4B]/10 px-3.5 py-1 text-xs font-semibold text-[#123D2A] dark:text-[#56B870]">
@@ -564,44 +894,11 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
-
-          {/* AI VOICE ASSISTANT & SAAO BANNER */}
-          <div className="mt-8 grid gap-6 md:grid-cols-2">
-            {/* AI Assistant Banner */}
-            <div className="flex flex-col justify-between rounded-3xl border border-[#247A4B]/20 bg-gradient-to-br from-[#E8F2E9] to-[#FAF8F5] p-6 shadow-sm dark:border-green-800/40 dark:from-[#182C22] dark:to-surface">
-              <div className="flex items-start gap-4">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#123D2A] text-white shadow-sm dark:bg-[#247A4B]">
-                  <MessageSquare className="h-6 w-6" />
-                </span>
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#247A4B] dark:text-[#56B870]">
-                    {locale === "bn" ? "এআই বাংলা সহকারী" : "AI Bangla Assistant"}
-                  </span>
-                  <h3 className="text-lg font-bold text-[#123D2A] dark:text-green-100 mt-1">
-                    {locale === "bn" ? "মুখে বা লিখে বাংলায় সরাসরি প্রশ্ন করুন" : "Ask by Voice or Text in Bangla"}
-                  </h3>
-                  <p className="mt-2 text-xs leading-relaxed text-muted">
-                    {locale === "bn"
-                      ? "“আমন ধান কাটার পর আমার জমিতে কোন ফসল চাষ করা ভালো হবে?”—প্রাকৃতিক বাংলায় প্রশ্নের সাথে সাথে মিলবে তথ্যের উৎস ও সীমাবদ্ধতাসহ পরামর্শ।"
-                      : "Ask natural agronomic questions. Receive instant responses with clear evidence and uncertainty boundaries."}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-5 pt-4 border-t border-[#247A4B]/20">
-                <Link
-                  href="/assistant"
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#123D2A] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#247A4B] dark:bg-[#247A4B]"
-                >
-                  <span>{locale === "bn" ? "সহকারীর সাথে কথা বলুন" : "Talk to Assistant"}</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-            </div>
-
-          </div>
         </section>
 
-        {/* FEATURES (AUDIT CONTRACT PRESERVED) */}
+        {/* ============================================================
+            FEATURE DISCOVERY GRID (AUDIT CONTRACT PRESERVED)
+            ============================================================ */}
         <section id="features" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <h2 className="text-3xl font-bold tracking-tight text-content sm:text-4xl">
@@ -622,20 +919,34 @@ export default function LandingPage() {
               ];
               const palette = palettes[index];
               return (
-                <article key={f.titleKey} className={`group relative isolate flex h-full flex-col overflow-hidden rounded-2xl border p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg motion-reduce:transform-none ${palette.card}`}>
+                <Link
+                  key={f.titleKey}
+                  href={f.href}
+                  className={`group relative isolate flex h-full flex-col overflow-hidden rounded-2xl border p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg motion-reduce:transform-none ${palette.card}`}
+                >
                   <f.icon className={`pointer-events-none absolute -bottom-4 -right-3 -z-10 h-32 w-32 -rotate-12 opacity-[0.07] dark:opacity-[0.12] ${palette.art}`} strokeWidth={1.2} aria-hidden="true" />
                   <span className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm ${palette.icon}`}>
                     <f.icon className="h-8 w-8" strokeWidth={1.7} aria-hidden="true" />
                   </span>
-                  <h3 className="mt-5 text-lg font-bold leading-snug text-content">{t(`landing.${f.titleKey}`)}</h3>
-                  <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted">{t(`landing.${f.descKey}`)}</p>
-                </article>
+                  <h3 className="mt-5 text-lg font-bold leading-snug text-content group-hover:text-[#247A4B] dark:group-hover:text-emerald-300 transition-colors">
+                    {t(`landing.${f.titleKey}`)}
+                  </h3>
+                  <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted">
+                    {t(`landing.${f.descKey}`)}
+                  </p>
+                  <div className="mt-4 pt-3 border-t border-line/60 flex items-center justify-between text-xs font-bold text-[#247A4B] dark:text-[#56B870]">
+                    <span>{locale === "bn" ? "বিস্তারিত দেখুন" : "Explore feature"}</span>
+                    <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Link>
               );
             })}
           </div>
         </section>
 
-        {/* 4-STEP DECISION PATH (AUDIT CONTRACT PRESERVED) */}
+        {/* ============================================================
+            4-STEP DECISION PATH (AUDIT CONTRACT PRESERVED)
+            ============================================================ */}
         <section id="how-it-works" aria-labelledby="how-it-works-title" className="scroll-mt-20 border-t border-line bg-gradient-to-b from-surface to-emerald/5 px-4 py-14 dark:from-bg dark:to-emerald/5 sm:px-6 sm:py-16">
           <div className="mx-auto max-w-6xl">
             <div className="mx-auto max-w-2xl text-center">
@@ -690,7 +1001,9 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* DATA OVERVIEW (AUDIT CONTRACT PRESERVED) */}
+        {/* ============================================================
+            DATA OVERVIEW (AUDIT CONTRACT PRESERVED)
+            ============================================================ */}
         <section id="data" aria-labelledby="home-data-title" className="scroll-mt-20 border-t border-line bg-surface px-4 py-12 dark:bg-bg sm:px-6 sm:py-16">
           <div className="mx-auto max-w-6xl">
             <div className="mx-auto mb-8 max-w-3xl text-center">
@@ -719,10 +1032,13 @@ export default function LandingPage() {
                     </span>
                     <h3 className="mt-4 text-lg font-bold text-content">{t(`landing.dataOverview.${dataset.title}`)}</h3>
                     <p className="mt-1 min-h-12 text-sm leading-relaxed text-muted">{t(`landing.dataOverview.${dataset.meaning}`)}</p>
-                    <div className="mt-4 flex items-start gap-2.5 border-t border-current/10 pt-3 text-xs text-muted"><CalendarRange className="mt-0.5 h-5 w-5 shrink-0 text-forest dark:text-emerald" aria-hidden="true" /><div>
-                      <p className="font-medium">{t("landing.dataOverview.period")}</p>
-                      <p className="mt-1 leading-relaxed text-content">{coverage || t("landing.dataOverview.noDates")}</p>
-                    </div></div>
+                    <div className="mt-4 flex items-start gap-2.5 border-t border-current/10 pt-3 text-xs text-muted">
+                      <CalendarRange className="mt-0.5 h-5 w-5 shrink-0 text-forest dark:text-emerald" aria-hidden="true" />
+                      <div>
+                        <p className="font-medium">{t("landing.dataOverview.period")}</p>
+                        <p className="mt-1 leading-relaxed text-content">{coverage || t("landing.dataOverview.noDates")}</p>
+                      </div>
+                    </div>
                     <details className="mt-4 text-xs text-muted">
                       <summary className={`w-fit cursor-pointer rounded-lg px-3 py-2 font-semibold shadow-sm ${dataset.iconTone}`}>{t("landing.dataOverview.details")}</summary>
                       <div className="mt-3 space-y-2 break-words leading-relaxed">
@@ -730,12 +1046,14 @@ export default function LandingPage() {
                         <p>{getSourceStatus(dataset.key)}</p>
                         {source?.product && <p>{source.product}</p>}
                         {source?.spatialResolution && <p>{source.spatialResolution}</p>}
-                        {dataset.name === "NASA POWER" && <>
-                          <p>{t("landing.dataOverview.records")}: {formattedObsCount}</p>
-                          {source?.timeStandard && <p>{source.timeStandard}</p>}
-                          {source?.timeStandardDisclosure && <p>{source.timeStandardDisclosure}</p>}
-                          {activeParameters.length > 0 && <p className="font-mono">{activeParameters.map(([code, meta]) => `${code} (${meta.unit})`).join(", ")}</p>}
-                        </>}
+                        {dataset.name === "NASA POWER" && (
+                          <>
+                            <p>{t("landing.dataOverview.records")}: {formattedObsCount}</p>
+                            {source?.timeStandard && <p>{source.timeStandard}</p>}
+                            {source?.timeStandardDisclosure && <p>{source.timeStandardDisclosure}</p>}
+                            {activeParameters.length > 0 && <p className="font-mono">{activeParameters.map(([code, meta]) => `${code} (${meta.unit})`).join(", ")}</p>}
+                          </>
+                        )}
                         {dataset.name === "MODIS" && <p>{t("landing.dataOverview.modisPeriod")}</p>}
                       </div>
                     </details>
@@ -744,12 +1062,18 @@ export default function LandingPage() {
               })}
             </div>
             <div className="mt-6">
-              <Button href="/data-sources" variant="primary" size="sm"><Database className="mr-2 h-4 w-4" aria-hidden="true" />{t("landing.dataOverview.sources")}<ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" /></Button>
+              <Button href="/data-sources" variant="primary" size="sm">
+                <Database className="mr-2 h-4 w-4" aria-hidden="true" />
+                {t("landing.dataOverview.sources")}
+                <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
+              </Button>
             </div>
           </div>
         </section>
 
-        {/* 0-7 & 7-14 DAY OUTLOOK (AUDIT CONTRACT PRESERVED) */}
+        {/* ============================================================
+            0-7 & 7-14 DAY OUTLOOK (AUDIT CONTRACT PRESERVED)
+            ============================================================ */}
         <section id="outlook" aria-labelledby="outlook-title" className="scroll-mt-20 border-t border-line bg-gradient-to-b from-sky-50/50 via-surface to-emerald/5 dark:from-sky-950/15 px-4 py-14 sm:px-6 sm:py-20">
           <div className="mx-auto max-w-6xl">
             <div className="mx-auto max-w-3xl text-center">
@@ -897,7 +1221,9 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* SCIENTIFIC SCOPE & ABOUT (AUDIT CONTRACT PRESERVED) */}
+        {/* ============================================================
+            SCIENTIFIC SCOPE & ABOUT (AUDIT CONTRACT PRESERVED)
+            ============================================================ */}
         <section id="about" aria-labelledby="about-title" className="scroll-mt-20 border-t border-line bg-surface px-4 py-14 dark:bg-bg sm:px-6 sm:py-16">
           <div className="mx-auto max-w-6xl">
             <div className="mx-auto max-w-2xl text-center">
@@ -907,15 +1233,25 @@ export default function LandingPage() {
             <div className="relative isolate mx-auto mt-8 max-w-5xl overflow-hidden rounded-3xl border border-green-300 bg-gradient-to-br from-[#f5fbdc] via-[#eff9e9] to-[#d9efc2] p-6 pb-24 shadow-md dark:border-green-800 dark:from-[#203524] dark:via-surface-card dark:to-[#183c29] sm:p-9 sm:pb-24">
               <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-12 -z-10 h-56 w-56 rounded-full bg-amber-200/25 blur-3xl dark:bg-amber-400/5" />
               <div className="relative max-w-3xl">
-                <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-green-200 text-green-800 shadow-sm ring-1 ring-green-300 dark:bg-green-900/50 dark:text-green-300 dark:ring-green-700"><Sprout className="h-7 w-7" aria-hidden="true" /></span>
+                <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-green-200 text-green-800 shadow-sm ring-1 ring-green-300 dark:bg-green-900/50 dark:text-green-300 dark:ring-green-700">
+                  <Sprout className="h-7 w-7" aria-hidden="true" />
+                </span>
                 <h3 className="text-2xl font-bold text-forest dark:text-green-200">{t("landing.aboutSimple.storyTitle")}</h3>
                 <p className="mt-4 text-sm leading-7 text-muted sm:text-base">{t("landing.aboutSimple.story")}</p>
                 <p className="mt-3 text-sm leading-7 text-muted sm:text-base">{t("landing.aboutSimple.choice")}</p>
                 <p className="mt-3 text-sm leading-7 text-muted sm:text-base">{t("landing.aboutSimple.help")}</p>
-                <p className="mt-4 flex items-start gap-2 text-sm leading-7 text-muted"><MapPin className="mt-1 h-4 w-4 shrink-0 text-emerald" aria-hidden="true" />{t("landing.aboutSimple.coverage")}</p>
+                <p className="mt-4 flex items-start gap-2 text-sm leading-7 text-muted">
+                  <MapPin className="mt-1 h-4 w-4 shrink-0 text-emerald" aria-hidden="true" />
+                  {t("landing.aboutSimple.coverage")}
+                </p>
                 <div className="mt-6 flex flex-wrap gap-3">
-                  <Button href="/crop-rotation" variant="forest" size="md">{t("landing.howSimple.cta")}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Button>
-                  <Button href="/data-sources" variant="outline" size="md">{t("landing.aboutViewDataSources")}</Button>
+                  <Button href="/crop-rotation" variant="forest" size="md">
+                    {t("landing.howSimple.cta")}
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                  <Button href="/data-sources" variant="outline" size="md">
+                    {t("landing.aboutViewDataSources")}
+                  </Button>
                 </div>
               </div>
               <Leaf className="pointer-events-none absolute right-4 top-12 -z-10 h-44 w-44 -rotate-12 text-green-600 opacity-[0.08] dark:text-green-200" strokeWidth={1} aria-hidden="true" />
@@ -926,7 +1262,11 @@ export default function LandingPage() {
                 <g stroke="#5d9434" strokeWidth="2.5" fill="none" strokeLinecap="round">
                   <path d="M930 60V18m0 20-14-10m14 19 13-10m-13-9 12-11m-12 1-8-8M960 65V27m0 18-11-9m11 0 10-10m-10 29 13-10" />
                 </g>
-                <g fill="#c9b34e"><ellipse cx="922" cy="16" rx="3" ry="6" transform="rotate(-35 922 16)" /><ellipse cx="941" cy="22" rx="3" ry="6" transform="rotate(35 941 22)" /><ellipse cx="970" cy="31" rx="3" ry="6" transform="rotate(35 970 31)" /></g>
+                <g fill="#c9b34e">
+                  <ellipse cx="922" cy="16" rx="3" ry="6" transform="rotate(-35 922 16)" />
+                  <ellipse cx="941" cy="22" rx="3" ry="6" transform="rotate(35 941 22)" />
+                  <ellipse cx="970" cy="31" rx="3" ry="6" transform="rotate(35 970 31)" />
+                </g>
               </svg>
             </div>
           </div>
