@@ -57,7 +57,7 @@ function createSensorIcon(type, quality = "good") {
         <path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/>
       </svg>`;
   } else if (type === "smap") {
-    bgColor = quality === "recommended" ? "#0f6c49" : "#e6a23c"; // Dark Green or Amber
+    bgColor = quality === "recommended" ? "#0f6c49" : "#D99631"; // Dark Green or Amber
     iconSvg = `
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/>
@@ -65,7 +65,7 @@ function createSensorIcon(type, quality = "good") {
         <path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/>
       </svg>`;
   } else if (type === "modis") {
-    bgColor = quality === "good_data" ? "#16865a" : "#b45309"; // Emerald or Amber
+    bgColor = quality === "good_data" ? "#16865a" : "#9A6210"; // Emerald or Amber
     iconSvg = `
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>

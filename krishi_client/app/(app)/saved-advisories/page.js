@@ -39,7 +39,7 @@ function SavedAdvisoriesContent() {
   };
 
   return <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-    <header className="mb-7 rounded-3xl border border-[#e3d9c7] bg-[#eee7d8] p-6 text-[#173f3d] sm:p-9">
+    <header className="mb-7 rounded-3xl border border-[#e3d9c7] bg-[#eee7d8] p-6 text-[#173B2A] sm:p-9">
       <p className="flex items-center gap-2 text-sm font-bold text-[#9a6226]"><Bookmark size={17}/>{bn ? "আপনার সংগ্রহ" : "Your collection"}</p>
       <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">{bn ? "সংরক্ষিত পরামর্শ" : "Saved advisories"}</h1>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-[#526761]">{bn ? "ফসল পরিকল্পনার তথ্যসূত্রসহ সংরক্ষিত পরামর্শ এখানে ফিরে দেখুন।" : "Keep crop guidance and its source notes together so you can return to them later."}</p>

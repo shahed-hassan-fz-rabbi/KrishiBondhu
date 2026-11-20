@@ -316,26 +316,24 @@ export function PublicFooter() {
               {t("footer.description")}
             </p>
 
-            {/* Stay Updated / Newsletter Subscription */}
-            <form onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-2 w-full pt-1">
+            {/* Grounded-in-data note (no fake subscription form) */}
+            <div className="flex flex-col gap-1.5 w-full pt-1">
               <p className="text-xs font-bold uppercase tracking-wider text-emerald-300/90">
-                {locale === "bn" ? "কৃষি আপডেট পেতে যুক্ত থাকুন" : "Stay Updated"}
+                {locale === "bn" ? "তথ্যের স্বচ্ছতা" : "Grounded in real data"}
               </p>
-              <div className="relative flex items-center w-full">
-                <input
-                  type="text"
-                  placeholder={locale === "bn" ? "ইমেইল বা মোবাইল নম্বর দিন" : "Enter email or mobile"}
-                  className="w-full h-10 px-3.5 pr-11 rounded-xl text-xs border border-emerald-500/25 bg-black/30 text-white placeholder:text-emerald-100/40 outline-none focus:border-emerald-400 transition-colors"
-                />
-                <button
-                  type="submit"
-                  className="absolute right-1 w-8 h-8 rounded-lg bg-emerald text-white flex items-center justify-center transition-transform hover:scale-105 shadow-sm"
-                  aria-label={locale === "bn" ? "সাবস্ক্রাইব" : "Subscribe"}
-                >
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </form>
+              <p className="text-sm leading-relaxed text-[#c0d2c5]">
+                {locale === "bn"
+                  ? "প্রতিটি তথ্যের উৎস ও তারিখ দেখতে পারেন।"
+                  : "Every figure shows its source, date and limits."}
+              </p>
+              <Link
+                href="/data-sources"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#c2e994] hover:underline underline-offset-4"
+              >
+                {locale === "bn" ? "ডেটাসেট দেখুন" : "See the datasets"}
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
           </div>
 
           {/* Link columns */}
