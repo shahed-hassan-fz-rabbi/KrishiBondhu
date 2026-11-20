@@ -1,0 +1,669 @@
+{
+  "modelVersion": "rtfp-monthly-reference-v1",
+  "sourceDataset": "World Bank BGD_2021_RTFP_v02_M version 2026-11-17",
+  "forecastFrequency": "monthly",
+  "horizonSupported": "1 month ahead",
+  "updatedAt": "2026-11-17",
+  "forecasts": [
+    {
+      "cropId": "lentils-masur",
+      "division": "National",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 84.86,
+      "lower90": 79.84,
+      "upper90": 89.88,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 1.4650000000000005,
+        "rmse": 2.2413295905183896,
+        "wape": 0.015434117476635928
+      },
+      "modelId": "lentils-masur-national-a2cac5ee",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "oil-palm",
+      "division": "National",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 175.24,
+      "lower90": 172.4,
+      "upper90": 178.08,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 1.3062499999999986,
+        "rmse": 1.7138224820558268,
+        "wape": 0.008012636195646333
+      },
+      "modelId": "oil-palm-national-d8d1e56a",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "rice-coarse",
+      "division": "National",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 48.22,
+      "lower90": 46.84,
+      "upper90": 49.6,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 0.6437500000000004,
+        "rmse": 0.7989550467120585,
+        "wape": 0.012171008578788578
+      },
+      "modelId": "rice-coarse-national-f26489c2",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "lentils-masur",
+      "division": "Barishal",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 84.26,
+      "lower90": 80.78,
+      "upper90": 87.74,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 1.379583333333331,
+        "rmse": 1.8791542867293591,
+        "wape": 0.014446686664848624
+      },
+      "modelId": "lentils-masur-barishal-5b2af175",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "lentils-masur",
+      "division": "Chattogram",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 85.62,
+      "lower90": 81.52,
+      "upper90": 89.73,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 1.5314583333333343,
+        "rmse": 2.079222861632043,
+        "wape": 0.01567100065446841
+      },
+      "modelId": "lentils-masur-chattogram-2bb710f5",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "lentils-masur",
+      "division": "Dhaka",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 86.91,
+      "lower90": 84.41,
+      "upper90": 89.41,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 1.098541666666667,
+        "rmse": 1.4463664963164307,
+        "wape": 0.011219172806750657
+      },
+      "modelId": "lentils-masur-dhaka-b23d1974",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "lentils-masur",
+      "division": "Khulna",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 88.78,
+      "lower90": 85.28,
+      "upper90": 92.28,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 1.355833333333333,
+        "rmse": 1.8977519595563583,
+        "wape": 0.01378918731089659
+      },
+      "modelId": "lentils-masur-khulna-27ae8b0d",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "lentils-masur",
+      "division": "Rajshahi",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 87.71,
+      "lower90": 83.52,
+      "upper90": 91.89,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 1.1966666666666637,
+        "rmse": 1.9136728429906718,
+        "wape": 0.012292678751043264
+      },
+      "modelId": "lentils-masur-rajshahi-f4e4eeba",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "lentils-masur",
+      "division": "Sylhet",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 84.11,
+      "lower90": 76.75,
+      "upper90": 91.47,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 2.8808333333333334,
+        "rmse": 3.8718619013768207,
+        "wape": 0.028126042420938725
+      },
+      "modelId": "lentils-masur-sylhet-f8fa8a7b",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "oil-palm",
+      "division": "Barishal",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 172.95,
+      "lower90": 169.15,
+      "upper90": 176.75,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 1.5447916666666661,
+        "rmse": 2.0311047383956686,
+        "wape": 0.00949732691553975
+      },
+      "modelId": "oil-palm-barishal-2f2e9ead",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "oil-palm",
+      "division": "Chattogram",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 172.86,
+      "lower90": 169.27,
+      "upper90": 176.45,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 1.5300000000000011,
+        "rmse": 2.1966257267302787,
+        "wape": 0.009510895959034775
+      },
+      "modelId": "oil-palm-chattogram-8bee6bd2",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "oil-palm",
+      "division": "Dhaka",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 173.53,
+      "lower90": 170.96,
+      "upper90": 176.1,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 1.3391666666666673,
+        "rmse": 1.6472021733837057,
+        "wape": 0.008292759703483532
+      },
+      "modelId": "oil-palm-dhaka-6f02feb8",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "oil-palm",
+      "division": "Khulna",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 173.75,
+      "lower90": 170.71,
+      "upper90": 176.78,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 1.6233333333333348,
+        "rmse": 2.2740121481645637,
+        "wape": 0.010243708769466606
+      },
+      "modelId": "oil-palm-khulna-61e5f354",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "oil-palm",
+      "division": "Mymensingh",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 176.22,
+      "lower90": 172.97,
+      "upper90": 179.47,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 1.9064583333333356,
+        "rmse": 2.6897403452749864,
+        "wape": 0.011854056882892138
+      },
+      "modelId": "oil-palm-mymensingh-22b4cd06",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "oil-palm",
+      "division": "Rajshahi",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 172.83,
+      "lower90": 169.81,
+      "upper90": 175.85,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 1.7199999999999942,
+        "rmse": 2.299657583206683,
+        "wape": 0.010862671933097692
+      },
+      "modelId": "oil-palm-rajshahi-131ad398",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "oil-palm",
+      "division": "Rangpur",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 176.44,
+      "lower90": 172.97,
+      "upper90": 179.91,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 1.8533333333333353,
+        "rmse": 2.619484682146472,
+        "wape": 0.011509808437248527
+      },
+      "modelId": "oil-palm-rangpur-65d7ca15",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "oil-palm",
+      "division": "Sylhet",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 186.74,
+      "lower90": 180.05,
+      "upper90": 193.44,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 2.3181250000000007,
+        "rmse": 3.3510273611237507,
+        "wape": 0.013731120788697222
+      },
+      "modelId": "oil-palm-sylhet-3cd81527",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "rice-coarse",
+      "division": "Barishal",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 47.75,
+      "lower90": 46.09,
+      "upper90": 49.4,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 0.7335416666666665,
+        "rmse": 0.9809482019964151,
+        "wape": 0.01385756734950902
+      },
+      "modelId": "rice-coarse-barishal-8afb7dc9",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "rice-coarse",
+      "division": "Chattogram",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 50.67,
+      "lower90": 50.03,
+      "upper90": 51.31,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 0.3033333333333334,
+        "rmse": 0.379539194286967,
+        "wape": 0.005852701648886138
+      },
+      "modelId": "rice-coarse-chattogram-96b5f4c9",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "rice-coarse",
+      "division": "Dhaka",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 47.62,
+      "lower90": 46.62,
+      "upper90": 48.62,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 0.4925000000000009,
+        "rmse": 0.6356623841841412,
+        "wape": 0.009404538366060932
+      },
+      "modelId": "rice-coarse-dhaka-f5093526",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "rice-coarse",
+      "division": "Khulna",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 46.52,
+      "lower90": 45.36,
+      "upper90": 47.67,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 0.49479166666666696,
+        "rmse": 0.6388621069265784,
+        "wape": 0.009675947428031328
+      },
+      "modelId": "rice-coarse-khulna-7b53c2d2",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "rice-coarse",
+      "division": "Mymensingh",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 48.52,
+      "lower90": 47.32,
+      "upper90": 49.71,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 0.5391666666666671,
+        "rmse": 0.7026126837264852,
+        "wape": 0.010393908238015689
+      },
+      "modelId": "rice-coarse-mymensingh-e8199660",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "rice-coarse",
+      "division": "Rajshahi",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 46.17,
+      "lower90": 45.1,
+      "upper90": 47.24,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 0.5197916666666677,
+        "rmse": 0.6684348946107861,
+        "wape": 0.010184338569049425
+      },
+      "modelId": "rice-coarse-rajshahi-06e1b0ae",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "rice-coarse",
+      "division": "Rangpur",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 43.78,
+      "lower90": 42.58,
+      "upper90": 44.98,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 0.47000000000000036,
+        "rmse": 0.6252399539376864,
+        "wape": 0.009711579853637544
+      },
+      "modelId": "rice-coarse-rangpur-ff0ab2ed",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "rice-coarse",
+      "division": "Sylhet",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 44.05,
+      "lower90": 42.25,
+      "upper90": 45.85,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 0.7849999999999993,
+        "rmse": 1.0264136593011597,
+        "wape": 0.015619688766923386
+      },
+      "modelId": "rice-coarse-sylhet-d844c77f",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "wheat-flour",
+      "division": "Barishal",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 55.51,
+      "lower90": 54.1,
+      "upper90": 56.92,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 0.6468749999999991,
+        "rmse": 0.9134749357991895,
+        "wape": 0.012129332671851728
+      },
+      "modelId": "wheat-flour-barishal-ba692608",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "wheat-flour",
+      "division": "Chattogram",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 57.05,
+      "lower90": 55.93,
+      "upper90": 58.18,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 0.4972916666666656,
+        "rmse": 0.6239916866433388,
+        "wape": 0.009140130803044903
+      },
+      "modelId": "wheat-flour-chattogram-7923439d",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "wheat-flour",
+      "division": "Dhaka",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 55.17,
+      "lower90": 54.0,
+      "upper90": 56.34,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 0.4545833333333335,
+        "rmse": 0.6699471372180543,
+        "wape": 0.008580011953820507
+      },
+      "modelId": "wheat-flour-dhaka-f9306b41",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "wheat-flour",
+      "division": "Khulna",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 53.44,
+      "lower90": 52.6,
+      "upper90": 54.28,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 0.33791666666666725,
+        "rmse": 0.5181537738290958,
+        "wape": 0.006552582250662541
+      },
+      "modelId": "wheat-flour-khulna-17b6f114",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "wheat-flour",
+      "division": "Mymensingh",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 53.75,
+      "lower90": 52.71,
+      "upper90": 54.78,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 0.4431250000000002,
+        "rmse": 0.6062306697949221,
+        "wape": 0.008524025167314556
+      },
+      "modelId": "wheat-flour-mymensingh-d62dea0d",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "wheat-flour",
+      "division": "Rajshahi",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 53.77,
+      "lower90": 52.8,
+      "upper90": 54.73,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 0.410208333333333,
+        "rmse": 0.5485558692299872,
+        "wape": 0.007935132608196272
+      },
+      "modelId": "wheat-flour-rajshahi-df807c10",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "wheat-flour",
+      "division": "Rangpur",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 52.29,
+      "lower90": 51.33,
+      "upper90": 53.25,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 0.5158333333333326,
+        "rmse": 0.7539023477878272,
+        "wape": 0.010024088581202793
+      },
+      "modelId": "wheat-flour-rangpur-d2ddb8c2",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    },
+    {
+      "cropId": "wheat-flour",
+      "division": "Sylhet",
+      "priceType": "reference_estimate",
+      "frequency": "monthly",
+      "forecastMonth": "2026-12-01",
+      "price": 59.0,
+      "lower90": 56.8,
+      "upper90": 61.2,
+      "latestObservedOn": "2026-11-01",
+      "selectedModel": "last_observation",
+      "metrics": {
+        "mae": 0.8349999999999996,
+        "rmse": 1.2182586616423727,
+        "wape": 0.014874524037498046
+      },
+      "modelId": "wheat-flour-sylhet-e58d33c0",
+      "source": "World Bank RTFP modeled monthly market estimates",
+      "uncertaintyType": "one-step chronological holdout error band"
+    }
+  ]
+}

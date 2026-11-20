@@ -1,0 +1,27 @@
+import express, { Router } from "express";
+import rateLimit from "express-rate-limit";
+import { authenticate } from "../../middleware/auth.middleware.js";
+import { compareMarketMargins, createPriceAlert, deletePriceAlert, getMarketPriceForecast, getMarketPriceHistory, listPriceAlerts, recordMarketQuote } from "../../controllers/market.controller.js";
+import { getWorldBankReferenceCatalog, getWorldBankReferenceSeries } from "../../controllers/market-reference.controller.js";
+import { commitMarketImport, getMarketDataStatus, getMarketSourceCatalog, getVerifiedMarketCatalog, previewMarketCsv, previewMarketPdf, requireMarketAdmin } from "../../controllers/market-import.controller.js";
+
+const router = Router();
+const quoteLimit = rateLimit({ windowMs: 60 * 60 * 1000, limit: 20, standardHeaders: true, legacyHeaders: false });
+const analysisLimit = rateLimit({ windowMs: 60 * 60 * 1000, limit: 12, standardHeaders: true, legacyHeaders: false });
+router.get("/prices/history", getMarketPriceHistory);
+router.get("/prices/forecast", getMarketPriceForecast);
+router.get("/prices/catalog", getVerifiedMarketCatalog);
+router.get("/prices/source-catalog", getMarketSourceCatalog);
+router.get("/prices/data-status", getMarketDataStatus);
+router.get("/reference/catalog", getWorldBankReferenceCatalog);
+router.get("/reference/series", getWorldBankReferenceSeries);
+router.post("/analysis/margins", analysisLimit, compareMarketMargins);
+router.use(authenticate);
+router.post("/admin/import/csv/preview", requireMarketAdmin, express.raw({ type: ["text/csv", "text/plain"], limit: "12mb" }), previewMarketCsv);
+router.post("/admin/import/pdf/preview", requireMarketAdmin, express.raw({ type: ["application/pdf"], limit: "12mb" }), previewMarketPdf);
+router.post("/admin/import/commit", requireMarketAdmin, commitMarketImport);
+router.get("/alerts", listPriceAlerts);
+router.post("/alerts", createPriceAlert);
+router.post("/alerts/:id/quote", quoteLimit, recordMarketQuote);
+router.delete("/alerts/:id", deletePriceAlert);
+export default router;
