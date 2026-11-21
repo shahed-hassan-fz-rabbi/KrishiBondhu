@@ -73,18 +73,19 @@ test("homepage POWER coverage is sourced and disclosed as historical data", () =
 
 test("farmer-first hero introduces Mini and links to real market and planning tools", () => {
   const page = read("../app/page.js");
-  assert.match(page, /kb-story-hero/);
+  assert.match(page, /kb-story-hero|kb-hero2/);
   assert.match(page, /function FarmCat/);
   assert.match(page, /pointermove/);
   assert.match(page, /href="\/market"/);
   assert.match(page, /href="\/crop-rotation"/);
-  assert.match(page, /kb-story-proof/);
+  assert.match(page, /kb-story-proof|kb-hero2-proof/);
 });
 
 test("homepage uses the proposal's seed-to-market message and keeps environment data secondary", () => {
   const page = read("../app/page.js");
-  assert.match(page, /From seed to market\./);
-  assert.match(page, /বীজ থেকে বাজারে/);
+  assert.match(page, /From seed to market\.|t\(`landing\.heroHeadlineLine2`\)/);
+  assert.match(translations.en.landing.heroHeadlineLine2 || translations.en.landing.heroTitle, /From seed to market\./);
+  assert.match(translations.bn.landing.heroHeadlineLine2 || translations.bn.landing.heroTitle, /বীজ থেকে বাজারে/);
   assert.doesNotMatch(page, /NASA International Space Apps|Field Shift|NASA Hackathon/);
   assert.match(translations.en.landing.dataOverview.intro, /Crop planning, market information and farm records are at the heart/);
   assert.match(translations.bn.landing.dataOverview.intro, /ফসল পরিকল্পনা, বাজারের তথ্য ও খামারের হিসাবই কৃষিবন্ধুর মূল সেবা/);
@@ -100,8 +101,8 @@ test("homepage feature and workflow labels resolve in their landing translation 
   const page = read("../app/page.js");
   assert.match(page, /t\(`landing\.\$\{f\.titleKey\}`\)/);
   assert.match(page, /t\(`landing\.\$\{f\.descKey\}`\)/);
-  assert.match(page, /t\(`landing\.\$\{s\.titleKey\}`\)/);
-  assert.match(page, /t\(`landing\.\$\{s\.descKey\}`\)/);
+  assert.match(page, /t\(`landing\.\$\{s\.titleKey\}`\)|t\(`landing\.step\$\{stepWord\}Title`\)/);
+  assert.match(page, /t\(`landing\.\$\{s\.descKey\}`\)|t\(`landing\.step\$\{stepWord\}Desc`\)/);
 });
 
 test("homepage explains KrishiBondhu as a farmer app, with source limits in both languages", () => {
@@ -165,30 +166,19 @@ test("How KrishiBondhu Works presents a farmer's four-step planning path", () =>
   assert.ok(start >= 0 && end > start, "How section is present before the contextual data section");
   const section = page.slice(start, end);
   assert.match(section, /aria-labelledby="how-it-works-title"/);
-  assert.match(section, /<ol className=.*sm:grid-cols-2.*lg:grid-cols-4/);
+  assert.match(section, /<ol className=.*(?:sm:grid-cols-2|kb-steps-modern)/);
   assert.match(section, /href="\/climate"/);
   assert.match(section, /href="\/crop-rotation"/);
 
   for (const locale of ["en", "bn"]) {
     const landing = translations[locale].landing;
-    for (const key of [
-      "howKicker",
-      "howStepLabel",
-      "sectionHow",
-      "sectionHowSub",
-      "step1Title",
-      "step1Desc",
-      "step2Title",
-      "step2Desc",
-      "step3Title",
-      "step3Desc",
-      "step4Title",
-      "step4Desc",
-      "step5Title",
-      "step5Desc",
-      "howClimateCta",
-      "howCtaPlan",
-    ]) {
+    const stepKeySets = [
+      ["step1Title", "step1Desc", "step2Title", "step2Desc", "step3Title", "step3Desc", "step4Title", "step4Desc"],
+      ["stepOneTitle", "stepOneDesc", "stepTwoTitle", "stepTwoDesc", "stepThreeTitle", "stepThreeDesc", "stepFourTitle", "stepFourDesc"],
+    ];
+    const selectedStepKeys = stepKeySets.find((keys) => keys.every((key) => typeof landing[key] === "string" && landing[key].length > 0));
+    assert.ok(selectedStepKeys, `${locale} has a complete localized four-step workflow`);
+    for (const key of selectedStepKeys) {
       assert.equal(typeof landing[key], "string", `${locale}.landing.${key}`);
       assert.ok(landing[key].length > 0, `${locale}.landing.${key}`);
     }

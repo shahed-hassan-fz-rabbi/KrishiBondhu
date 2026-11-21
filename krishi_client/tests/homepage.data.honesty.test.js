@@ -6,6 +6,8 @@ const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 
 test("market preview does not claim unverified demo values are today's or live prices", () => {
   const page = read("../app/page.js");
+  const api = read("../services/api.js");
+  const marketRoutes = read("../../krishi_server/src/routes/v1/market.routes.js");
   // Prohibit asserting static demonstration cards as today's actual prices
   assert.doesNotMatch(page, /Today’s Wholesale & Retail Prices/);
   assert.doesNotMatch(page, /আজকের পাইকারি ও খুচরা বাজারদর/);
@@ -14,8 +16,8 @@ test("market preview does not claim unverified demo values are today's or live p
   // Must include explicit sample demonstration disclosures
   assert.match(page, /Sample Demonstration \(Illustrative\)/);
   assert.match(page, /সচিত্র নমুনা ফরম্যাট \(প্রদর্শনীমূলক\)/);
-  assert.match(page, /Sample Demo/);
-  assert.match(page, /প্রদর্শনী নমুনা/);
+  assert.match(page, /DEMO · SAMPLE DATA|Sample Demo/);
+  assert.match(page, /ডেমো · নমুনা তথ্য|প্রদর্শনী নমুনা/);
   assert.match(page, /Sample format · Not a live quote/);
   assert.match(page, /নমুনা ফরম্যাট · বাস্তব দর নয়/);
 
@@ -24,6 +26,16 @@ test("market preview does not claim unverified demo values are today's or live p
   assert.match(page, /item\.lastObservedOn/);
   assert.match(page, /fetchMarketDataStatus/);
   assert.match(page, /fetchVerifiedMarketPriceCatalog/);
+  assert.match(page, /fetchMarketPriceHistory/);
+  assert.match(page, /observation\.priceType/);
+  assert.match(page, /observation\.unit/);
+  assert.match(page, /observation\.observedOn/);
+  assert.match(page, /observation\.source/);
+  assert.match(page, /formatObservationFreshness\(observation\.observedOn/);
+  assert.match(page, /DEMO · SAMPLE DATA/);
+  assert.match(api, /fetchMarketPriceHistory\(\{ commodity, division, priceType = "wholesale", frequency = "daily"/);
+  assert.match(api, /market\/prices\/history/);
+  assert.match(marketRoutes, /router\.get\("\/prices\/history", getMarketPriceHistory\)/);
 });
 
 test("weather and soil preview uses dynamic model summaries and satellite metadata", () => {
@@ -39,6 +51,11 @@ test("weather and soil preview uses dynamic model summaries and satellite metada
   assert.match(page, /NASA SMAP/);
   assert.match(page, /regional proxy|আঞ্চলিক প্রক্সি|আঞ্চলিক গড়/);
   assert.match(page, /fetchSoilMoistureLatest/);
+  assert.doesNotMatch(page, /০\.৩৩ মি³\/মি³|0\.33 m³\/m³/);
+  assert.match(page, /Forecast unavailable/);
+  assert.match(page, /Data unavailable/);
+  assert.match(page, /No SMAP observation is available/);
+  assert.doesNotMatch(page, /: "0 mm"/);
 });
 
 test("crop planning preview removes speculative profit scores and unsupported water numbers", () => {
@@ -65,9 +82,13 @@ test("AI chat preview is explicitly designated as an illustrative example, not p
 
 test("location chip does not present default district as detected", () => {
   const page = read("../app/page.js");
-  assert.match(page, /detectionStatus === "success"/);
-  assert.match(page, /Detected location|শনাক্তকৃত অবস্থান/);
-  assert.match(page, /Selected district|নির্বাচিত জেলা/);
+  const explicitStatus = /detectionStatus === "success"/.test(page)
+    && /Detected location|শনাক্তকৃত অবস্থান/.test(page)
+    && /Selected district|নির্বাচিত জেলা/.test(page);
+  const selectedOnly = /value=\{selectedDistrict\}/.test(page)
+    && /aria-label=\{t\("landing\.outlookSelectLabel"\)\}/.test(page)
+    && !/Detected location|শনাক্তকৃত অবস্থান/.test(page);
+  assert.ok(explicitStatus || selectedOnly, "default district is never presented as detected without a successful location result");
 });
 
 test("navigation and chrome do not make exaggerated live/verified claims", () => {

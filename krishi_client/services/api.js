@@ -34,6 +34,14 @@ export function fetchMarketReferenceSeries({ cropId, division }) {
   return request(`/market/reference/series?${query.toString()}`);
 }
 export function fetchVerifiedMarketPriceCatalog() { return request("/market/prices/catalog"); }
+export function fetchMarketPriceHistory({ commodity, division, priceType = "wholesale", frequency = "daily", market, unit, source } = {}) {
+  const query = new URLSearchParams({ commodity, priceType, frequency });
+  if (division) query.set("division", division);
+  if (market) query.set("market", market);
+  if (unit) query.set("unit", unit);
+  if (source) query.set("source", source);
+  return request(`/market/prices/history?${query.toString()}`);
+}
 export function fetchMarketSourceCatalog() { return request("/market/prices/source-catalog"); }
 export function fetchMarketDataStatus() { return request("/market/prices/data-status"); }
 export function fetchMarketPriceDataStatus() { return request("/market/prices/data-status"); }

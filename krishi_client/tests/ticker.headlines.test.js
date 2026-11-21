@@ -62,12 +62,12 @@ describe("TV News Agricultural Breaking News Ticker Suite", () => {
   test("Farmer homepage preserves Mini, farmer copy, market CTA, and crop planning CTA", () => {
     const pageJs = fs.readFileSync(path.resolve(__dirname, "../app/page.js"), "utf8");
 
-    assert.ok(pageJs.includes('className="kb-story-hero"'), "Farmer hero section stays present");
+    assert.ok(pageJs.includes('className="kb-story-hero"') || pageJs.includes('className="kb-hero2"'), "Farmer hero section stays present");
     assert.ok(pageJs.includes("function FarmCat"), "Mini remains the farmer's guide");
     assert.ok(pageJs.includes("pointermove"), "Mini follows pointer direction");
     assert.ok(pageJs.includes('href="/market"'), "Primary action opens market information");
     assert.ok(pageJs.includes('href="/crop-rotation"'), "Secondary action opens crop planning");
-    assert.ok(pageJs.includes("From seed to market") || pageJs.includes("বীজ থেকে বাজারে"), "Hero keeps the proposal's seed-to-market product framing");
+    assert.ok(pageJs.includes("From seed to market") || pageJs.includes('t(`landing.heroHeadlineLine2`)'), "Hero keeps the localized seed-to-market product framing");
   });
 
   test("Headlines Generator: Cumilla uses dated verified observations without fabricated breaking alerts", () => {

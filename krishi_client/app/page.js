@@ -51,6 +51,7 @@ import {
   fetchDataSources,
   fetchWeatherForecast,
   fetchMarketDataStatus,
+  fetchMarketPriceHistory,
   fetchVerifiedMarketPriceCatalog,
   fetchSoilMoistureLatest,
 } from "@/services/api.js";
@@ -207,7 +208,9 @@ export default function LandingPage() {
   const [forecastStatus, setForecastStatus] = useState("loading");
   const [marketCatalog, setMarketCatalog] = useState(null);
   const [marketDataStatus, setMarketDataStatus] = useState(null);
-  const [soilMoistureData, setSoilMoistureData] = useState(null);
+  const [marketObservations, setMarketObservations] = useState({});
+  const [marketObservationsStatus, setMarketObservationsStatus] = useState("loading");
+  const [soilMoistureResult, setSoilMoistureResult] = useState({ district: null, status: "loading", data: null });
 
   const [touring, setTouring] = useState(false);
   const [activePreviewTab, setActivePreviewTab] = useState("market"); // "market" | "weather" | "planner" | "assistant"
@@ -242,15 +245,35 @@ export default function LandingPage() {
     Promise.allSettled([
       fetchMarketDataStatus(),
       fetchVerifiedMarketPriceCatalog(),
-    ]).then(([statusRes, catalogRes]) => {
+    ]).then(async ([statusRes, catalogRes]) => {
       if (isCancelled) return;
-      if (statusRes.status === "fulfilled" && statusRes.value?.data) {
+      if (statusRes.status === "fulfilled" && statusRes.value?.success && statusRes.value?.data) {
         setMarketDataStatus(statusRes.value.data);
       }
-      if (catalogRes.status === "fulfilled" && catalogRes.value?.data) {
-        setMarketCatalog(catalogRes.value.data);
+      if (catalogRes.status === "fulfilled" && catalogRes.value?.success && catalogRes.value?.data) {
+        const catalog = catalogRes.value.data;
+        setMarketCatalog(catalog);
+        const series = (catalog.series || []).slice(0, 4);
+        const observations = await Promise.allSettled(series.map((item) => fetchMarketPriceHistory({
+          commodity: item.commodity, division: item.division, priceType: item.priceType, frequency: item.frequency, unit: item.unit,
+        })));
+        if (isCancelled) return;
+        const bySeries = {};
+        let lookupFailed = false;
+        observations.forEach((result, index) => {
+          if (result.status !== "fulfilled" || !result.value?.success) { lookupFailed = true; return; }
+          const row = result.value?.data?.observations?.at(-1);
+          if (!row) return;
+          const timestamp = new Date(`${row.observedOn}T00:00:00Z`).getTime();
+          const ageDays = Number.isFinite(timestamp) ? Math.max(0, Math.floor((Date.now() - timestamp) / 86_400_000)) : null;
+          bySeries[`${series[index].commodity}|${series[index].division}|${series[index].priceType}|${series[index].unit}`] = { ...row, ageDays };
+        });
+        setMarketObservations(bySeries);
+        setMarketObservationsStatus(lookupFailed ? "unavailable" : "ready");
+      } else {
+        setMarketObservationsStatus("unavailable");
       }
-    }).catch(() => {});
+    }).catch(() => { if (!isCancelled) setMarketObservationsStatus("unavailable"); });
     return () => {
       isCancelled = true;
     };
@@ -260,11 +283,16 @@ export default function LandingPage() {
     let isCancelled = false;
     fetchSoilMoistureLatest(selectedDistrict)
       .then((res) => {
-        if (!isCancelled && res?.data) {
-          setSoilMoistureData(res.data);
+        if (isCancelled) return;
+        if (res?.success && Number.isFinite(res?.data?.soilMoisture)) {
+          setSoilMoistureResult({ district: selectedDistrict, data: res.data, status: "ready" });
+        } else {
+          setSoilMoistureResult({ district: selectedDistrict, data: null, status: "unavailable" });
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!isCancelled) setSoilMoistureResult({ district: selectedDistrict, data: null, status: "unavailable" });
+      });
     return () => {
       isCancelled = true;
     };
@@ -330,8 +358,10 @@ export default function LandingPage() {
     if (!Array.isArray(days) || days.length === 0) return null;
     const tempsMax = days.map((d) => d.temperatureMaxC).filter(Number.isFinite);
     const tempsMin = days.map((d) => d.temperatureMinC).filter(Number.isFinite);
-    const rainTotal = days.reduce((sum, d) => sum + (Number(d.precipitationSumMm) || 0), 0);
-    const rainProbMax = Math.max(...days.map((d) => Number(d.precipitationProbabilityMax) || 0));
+    const rainValues = days.map((d) => d.precipitationSumMm == null ? NaN : Number(d.precipitationSumMm)).filter(Number.isFinite);
+    const rainTotal = rainValues.length ? rainValues.reduce((sum, value) => sum + value, 0) : null;
+    const rainProbabilities = days.map((d) => d.precipitationProbabilityMax == null ? NaN : Number(d.precipitationProbabilityMax)).filter(Number.isFinite);
+    const rainProbMax = rainProbabilities.length ? Math.max(...rainProbabilities) : null;
     const conditionCounts = new Map();
     days.forEach((d) => {
       const label = locale === "bn" ? d.conditionBn : d.conditionEn;
@@ -351,7 +381,8 @@ export default function LandingPage() {
       dateRange: `${formatDate(days[0].date)} – ${formatDate(days[days.length - 1].date)}`,
       tempMax: tempsMax.length ? Math.max(...tempsMax) : null,
       tempMin: tempsMin.length ? Math.min(...tempsMin) : null,
-      rainTotal: Math.round(rainTotal * 10) / 10,
+      rainTotal: rainTotal == null ? null : Math.round(rainTotal * 10) / 10,
+      rainDays: rainValues.length ? rainValues.filter((value) => value > 0).length : null,
       rainProbMax,
       dominant,
       dayCount: days.length,
@@ -385,12 +416,13 @@ export default function LandingPage() {
       : (forecast?.extendedForecast || []).slice(0, 7);
     if (days.length === 0) return null;
 
-    const heavyRainDays = days.filter((d) => (Number(d.precipitationSumMm) || 0) >= 10).length;
-    const dryWorkableDays = days.filter((d) => (Number(d.precipitationSumMm) || 0) < 1).length;
+    const observedRain = days.map((d) => d.precipitationSumMm == null ? NaN : Number(d.precipitationSumMm)).filter(Number.isFinite);
+    const heavyRainDays = days.filter((d) => d.precipitationSumMm != null && Number.isFinite(Number(d.precipitationSumMm)) && Number(d.precipitationSumMm) >= 10).length;
+    const dryWorkableDays = days.filter((d) => d.precipitationSumMm != null && Number.isFinite(Number(d.precipitationSumMm)) && Number(d.precipitationSumMm) < 1).length;
     const maxGust = Math.max(...days.map((d) => Number(d.windGustsMaxKmH) || 0));
 
     let category;
-    if (summary.rainTotal >= 22 || summary.rainProbMax >= 60 || heavyRainDays >= 2) {
+    if ((summary.rainTotal != null && summary.rainTotal >= 22) || (summary.rainProbMax != null && summary.rainProbMax >= 60) || heavyRainDays >= 2) {
       category = "wet";
     } else if (maxGust >= 40) {
       category = "wind";
@@ -398,7 +430,7 @@ export default function LandingPage() {
       category = "heat";
     } else if (summary.tempMin != null && summary.tempMin < 10) {
       category = "cold";
-    } else if (summary.rainTotal < 5 && summary.rainProbMax < 40 && dryWorkableDays >= 4) {
+    } else if (summary.rainTotal != null && observedRain.length === days.length && summary.rainTotal < 5 && summary.rainProbMax != null && summary.rainProbMax < 40 && dryWorkableDays >= 4) {
       category = "dryGood";
     } else {
       category = "mixed";
@@ -418,6 +450,14 @@ export default function LandingPage() {
   const currentDistrictName = locale === "bn"
     ? (locationDistricts.find((d) => d.code === selectedDistrict)?.nameBn || "কুমিল্লা")
     : (locationDistricts.find((d) => d.code === selectedDistrict)?.nameEn || "Cumilla");
+
+  const formatObservationFreshness = (date, ageDays) => {
+    if (!date) return locale === "bn" ? "তারিখ নেই" : "Date unavailable";
+    if (!Number.isFinite(ageDays)) return (locale === "bn" ? "পর্যবেক্ষণ " : "Observed on ") + date;
+    return locale === "bn" ? formatLocalizedNumber(ageDays) + " দিন আগে পর্যবেক্ষিত" : "Observed " + ageDays + " day(s) ago";
+  };
+  const currentSoilMoisture = soilMoistureResult.district === selectedDistrict ? soilMoistureResult.data : null;
+  const soilMoistureStatus = soilMoistureResult.district === selectedDistrict ? soilMoistureResult.status : "loading";
 
   return (
     <div className="kb-story-home flex min-h-screen flex-col">
@@ -573,7 +613,7 @@ export default function LandingPage() {
                 <div>
                   <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#247A4B]">
                     <span className="h-2 w-2 rounded-full bg-[#247A4B] animate-pulse" />
-                    <span>{locale === "bn" ? "কৃষি বিপণন অধিদপ্তর (DAM) উৎস নির্দেশিকা" : "DAM Source Reference"}</span>
+                    <span>{locale === "bn" ? "যাচাইকৃত বাজার পর্যবেক্ষণ" : "Verified market observations"}</span>
                   </div>
                   <h3 className="text-xl font-bold text-content mt-1">
                     {locale === "bn" ? "বাজারদর প্রতিবেদন ও মূল্যধারা" : "Market Price Reports & Directory"}
@@ -587,6 +627,14 @@ export default function LandingPage() {
 
               {/* Sample / Verified Commodity Grid */}
               {marketCatalog?.series && marketCatalog.series.length > 0 ? (
+                <>
+                  {marketDataStatus?.latestVerifiedDailyObservation && (
+                    <p className="mb-4 rounded-xl border border-line bg-surface-2/60 p-3 text-xs text-muted">
+                      {locale === "bn" ? "সর্বশেষ যাচাইকৃত দৈনিক পর্যবেক্ষণ: " : "Latest verified daily observation: "}
+                      {marketDataStatus.latestVerifiedDailyObservation.observedOn} · {marketDataStatus.latestVerifiedDailyObservation.source || "DAM"} · {formatObservationFreshness(marketDataStatus.latestVerifiedDailyObservation.observedOn, marketDataStatus.latestVerifiedDailyObservation.ageDays)}
+                      {marketDataStatus.latestVerifiedDailyObservation.stale ? (locale === "bn" ? " · পুরোনো তথ্য" : " · Stale observation") : ""}
+                    </p>
+                  )}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   {marketCatalog.series.slice(0, 4).map((item) => (
                     <div key={`${item.commodity}-${item.division}`} className="rounded-2xl border border-line bg-surface-2/60 p-4 hover:border-emerald/40 transition-colors">
@@ -596,22 +644,42 @@ export default function LandingPage() {
                           {item.division || "National"}
                         </span>
                       </div>
-                      <p className="text-xs text-muted mt-1">
-                        {locale === "bn" ? `তারিখ: ${item.lastObservedOn || "সংরক্ষিত"}` : `Date: ${item.lastObservedOn || "Archived"}`}
-                      </p>
+                      {(() => {
+                        const observation = marketObservations[`${item.commodity}|${item.division}|${item.priceType}|${item.unit}`];
+                        return observation ? (
+                          <div className="mt-2 rounded-lg border border-line bg-surface p-2.5">
+                            <p className="text-sm font-bold text-content">৳{observation.priceMin === observation.priceMax ? observation.priceMin : `${observation.priceMin}–${observation.priceMax}`} / {observation.unit}</p>
+                            <p className="mt-1 text-[11px] text-muted">{(locale === "bn" ? "ধরন: " : "Price type: ")}{observation.priceType} · {(locale === "bn" ? "তারিখ: " : "Observed: ")}{observation.observedOn}</p>
+                            <p className="text-[11px] text-muted">{(locale === "bn" ? "উৎস: " : "Source: ")}{observation.source || item.sources?.[0] || "DAM"} · {formatObservationFreshness(observation.observedOn, observation.ageDays)}</p>
+                          </div>
+                        ) : (
+                          <p className="mt-2 rounded-lg border border-dashed border-line p-2.5 text-xs text-muted">
+                            {marketObservationsStatus === "loading"
+                              ? (locale === "bn" ? "যাচাইকৃত পর্যবেক্ষণ খোঁজা হচ্ছে…" : "Looking up verified observations…")
+                              : marketObservationsStatus === "unavailable"
+                                ? (locale === "bn" ? "যাচাইকৃত দর আনা যাচ্ছে না।" : "Verified quotes could not be loaded.")
+                                : (locale === "bn" ? "এই শ্রেণির সর্বশেষ যাচাইকৃত দর পাওয়া যায়নি।" : "No verified quote was found for this series.")}
+                          </p>
+                        );
+                      })()}
                       <div className="mt-3 flex items-baseline justify-between border-t border-line/60 pt-2.5">
                         <div>
-                          <span className="text-[10px] uppercase font-bold text-muted block">{locale === "bn" ? "একক" : "Unit"}</span>
-                          <span className="text-sm font-semibold text-content">{item.unit || (locale === "bn" ? "কেজি" : "kg")}</span>
+                          <span className="text-[10px] uppercase font-bold text-muted block">{locale === "bn" ? "দরের ধরন · একক" : "Price type · Unit"}</span>
+                          <span className="text-sm font-semibold text-content">{item.priceType || "—"} · {item.unit || "—"}</span>
                         </div>
                         <div className="text-right">
-                          <span className="text-[10px] uppercase font-bold text-muted block">{locale === "bn" ? "উৎস" : "Source"}</span>
-                          <span className="text-xs font-semibold text-content">{item.sources?.[0] || "DAM"}</span>
+                          <span className="text-[10px] uppercase font-bold text-muted block">{locale === "bn" ? "সিরিজের সর্বশেষ তারিখ" : "Series last observed"}</span>
+                          <span className="text-xs font-semibold text-content">{item.lastObservedOn || (locale === "bn" ? "তারিখ নেই" : "Date unavailable")}</span>
                         </div>
+                      </div>
+                      <div className="mt-2 flex items-baseline justify-between text-[10px] text-muted">
+                        <span>{locale === "bn" ? "পর্যবেক্ষণ সংখ্যা" : "Observations"}: {formatLocalizedNumber(item.records || 0)}</span>
+                        <span>{locale === "bn" ? "উৎস" : "Source"}: {item.sources?.[0] || "—"}</span>
                       </div>
                     </div>
                   ))}
                 </div>
+                </>
               ) : (
                 <>
                   <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/20 dark:text-amber-200 flex items-start gap-2">
@@ -634,7 +702,7 @@ export default function LandingPage() {
                         <div className="flex items-center justify-between">
                           <p className="font-bold text-sm text-content">{locale === "bn" ? item.nameBn : item.nameEn}</p>
                           <span className="inline-flex items-center rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
-                            {locale === "bn" ? "প্রদর্শনী নমুনা" : "Sample Demo"}
+                            {locale === "bn" ? "ডেমো · নমুনা তথ্য" : "DEMO · SAMPLE DATA"}
                           </span>
                         </div>
                         <p className="text-[11px] text-muted mt-0.5">
@@ -643,11 +711,11 @@ export default function LandingPage() {
                         <div className="mt-3 flex items-baseline justify-between border-t border-line/60 pt-2.5">
                           <div>
                             <span className="text-[10px] uppercase font-bold text-muted block">{locale === "bn" ? "খুচরা নমুনা" : "Sample Retail"}</span>
-                            <span className="text-lg font-extrabold text-[#123D2A] dark:text-emerald-300">{item.retail}<small className="text-xs font-normal">/কেজি</small></span>
+                            <span className="text-lg font-extrabold text-[#123D2A] dark:text-emerald-300">{item.retail}<small className="text-xs font-normal">/{locale === "bn" ? "কেজি" : "kg"}</small></span>
                           </div>
                           <div className="text-right">
                             <span className="text-[10px] uppercase font-bold text-muted block">{locale === "bn" ? "পাইকারি নমুনা" : "Sample Wholesale"}</span>
-                            <span className="text-sm font-semibold text-content">{item.wholesale}<small className="text-xs font-normal">/কেজি</small></span>
+                            <span className="text-sm font-semibold text-content">{item.wholesale}<small className="text-xs font-normal">/{locale === "bn" ? "কেজি" : "kg"}</small></span>
                           </div>
                         </div>
                       </div>
@@ -694,7 +762,7 @@ export default function LandingPage() {
                       ? `${formatLocalizedNumber(Math.round(shortWindowSummary.tempMin))}°C – ${formatLocalizedNumber(Math.round(shortWindowSummary.tempMax))}°C`
                       : forecastStatus === "loading"
                         ? "..."
-                        : locale === "bn" ? "পূর্বাভাস লোড হচ্ছে..." : "Loading forecast..."}
+                        : locale === "bn" ? "পূর্বাভাস পাওয়া যায়নি" : "Forecast unavailable"}
                   </p>
                   <p className="text-xs text-muted mt-1">
                     {shortWindowSummary?.dateRange
@@ -710,14 +778,14 @@ export default function LandingPage() {
                     <span>{locale === "bn" ? "৭ দিনে মোট বৃষ্টিপাতের সম্ভাবনা" : "7-Day Rain Outlook"}</span>
                   </div>
                   <p className="mt-2 text-2xl font-extrabold text-content">
-                    {shortWindowSummary != null
+                    {shortWindowSummary?.rainTotal != null
                       ? `${formatLocalizedNumber(Math.round(shortWindowSummary.rainTotal))} mm`
                       : forecastStatus === "loading"
                         ? "..."
-                        : "0 mm"}
+                        : locale === "bn" ? "পূর্বাভাস পাওয়া যায়নি" : "Forecast unavailable"}
                   </p>
                   <p className="text-xs text-muted mt-1">
-                    {shortWindowSummary != null
+                    {shortWindowSummary?.rainTotal != null
                       ? (locale === "bn"
                           ? `৭ দিনে মোট বৃষ্টি · ${formatLocalizedNumber(shortWindowSummary.rainDays)} দিন বৃষ্টি প্রত্যাশিত`
                           : `7-day total rain · ${shortWindowSummary.rainDays} rain day(s) expected`)
@@ -732,18 +800,20 @@ export default function LandingPage() {
                     <span>{locale === "bn" ? "মাটির আর্দ্রতা (SMAP উপগ্রহ)" : "Soil Moisture (NASA SMAP L3)"}</span>
                   </div>
                   <p className="mt-2 text-2xl font-extrabold text-content">
-                    {soilMoistureData?.soilMoisture != null
-                      ? `${formatLocalizedNumber(soilMoistureData.soilMoisture)} ${soilMoistureData.unit || "m³/m³"}`
-                      : "০.৩৩ মি³/মি³"}
+                    {currentSoilMoisture?.soilMoisture != null
+                      ? `${formatLocalizedNumber(currentSoilMoisture.soilMoisture)} ${currentSoilMoisture.unit || "m³/m³"}`
+                      : soilMoistureStatus === "loading"
+                        ? "…"
+                        : locale === "bn" ? "তথ্য পাওয়া যায়নি" : "Data unavailable"}
                   </p>
                   <p className="text-xs text-muted mt-1">
-                    {soilMoistureData?.soilMoisture != null
+                    {currentSoilMoisture?.soilMoisture != null
                       ? (locale === "bn"
-                          ? `তারিখ: ${soilMoistureData.dateLabel || "সাম্প্রতিক"} · ০-৫ সেমি উপরিপৃষ্ঠের আঞ্চলিক প্রক্সি`
-                          : `Date: ${soilMoistureData.dateLabel || "Recent"} · 0–5 cm surface regional proxy`)
+                          ? `তারিখ: ${currentSoilMoisture.dateLabel || "তারিখ নেই"} · ০-৫ সেমি উপরিপৃষ্ঠের আঞ্চলিক প্রক্সি`
+                          : `Date: ${currentSoilMoisture.dateLabel || "Unavailable"} · 0–5 cm surface regional proxy`)
                       : (locale === "bn"
-                          ? "সচিত্র নমুনা উদাহরণ · ঐতিহাসিক আঞ্চলিক গড় সূচক (জমির সরাসরি পরীক্ষা নয়)"
-                          : "Illustrative demo · Historical regional baseline (Not a field sensor test)")}
+                          ? soilMoistureStatus === "loading" ? "স্যাটেলাইট তথ্য লোড হচ্ছে" : "এই এলাকার জন্য SMAP পর্যবেক্ষণ অনুপলব্ধ"
+                          : soilMoistureStatus === "loading" ? "Loading satellite observation" : "No SMAP observation is available for this area") }
                   </p>
                 </div>
               </div>
