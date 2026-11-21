@@ -144,7 +144,7 @@ export function PublicHeader() {
     {
       href: "/market",
       title: locale === "bn" ? "বাজারদর ও দামের পূর্বাভাস" : "Market Prices & Forecasts",
-      desc: locale === "bn" ? "দৈনিক যাচাইকৃত দাম ও পাইকারি-খুচরা ব্যবধান" : "Daily verified prices and wholesale margins",
+      desc: locale === "bn" ? "বাজার প্রতিবেদন ও পাইকারি-খুচরা ব্যবধান" : "Market price reports & wholesale margins",
       icon: Store,
       badge: locale === "bn" ? "দাম" : "Prices",
     },

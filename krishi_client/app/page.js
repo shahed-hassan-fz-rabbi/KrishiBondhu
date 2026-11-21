@@ -47,7 +47,13 @@ import {
   Wind,
 } from "lucide-react";
 
-import { fetchDataSources, fetchWeatherForecast } from "@/services/api.js";
+import {
+  fetchDataSources,
+  fetchWeatherForecast,
+  fetchMarketDataStatus,
+  fetchVerifiedMarketPriceCatalog,
+  fetchSoilMoistureLatest,
+} from "@/services/api.js";
 import { PublicHeader, PublicFooter } from "@/components/layout/PublicChrome.js";
 import { Badge } from "@/components/ui/Badge.js";
 import { Button } from "@/components/ui/Button.js";
@@ -194,11 +200,14 @@ const steps = [
 
 export default function LandingPage() {
   const { t, locale } = useLang();
-  const { selectedDistrict, setSelectedDistrict, districts: locationDistricts } = useLocation();
+  const { selectedDistrict, setSelectedDistrict, districts: locationDistricts, detectionStatus } = useLocation();
   const [liveDataSources, setLiveDataSources] = useState(null);
   const [hasLoadedDataSources, setHasLoadedDataSources] = useState(false);
   const [forecast, setForecast] = useState(null);
   const [forecastStatus, setForecastStatus] = useState("loading");
+  const [marketCatalog, setMarketCatalog] = useState(null);
+  const [marketDataStatus, setMarketDataStatus] = useState(null);
+  const [soilMoistureData, setSoilMoistureData] = useState(null);
 
   const [touring, setTouring] = useState(false);
   const [activePreviewTab, setActivePreviewTab] = useState("market"); // "market" | "weather" | "planner" | "assistant"
@@ -227,6 +236,39 @@ export default function LandingPage() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    let isCancelled = false;
+    Promise.allSettled([
+      fetchMarketDataStatus(),
+      fetchVerifiedMarketPriceCatalog(),
+    ]).then(([statusRes, catalogRes]) => {
+      if (isCancelled) return;
+      if (statusRes.status === "fulfilled" && statusRes.value?.data) {
+        setMarketDataStatus(statusRes.value.data);
+      }
+      if (catalogRes.status === "fulfilled" && catalogRes.value?.data) {
+        setMarketCatalog(catalogRes.value.data);
+      }
+    }).catch(() => {});
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isCancelled = false;
+    fetchSoilMoistureLatest(selectedDistrict)
+      .then((res) => {
+        if (!isCancelled && res?.data) {
+          setSoilMoistureData(res.data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedDistrict]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -464,7 +506,11 @@ export default function LandingPage() {
                   <div className="kb-location-chip">
                     <MapPin size={16} className="text-[#247A4B] dark:text-[#56B870]" />
                     <span>
-                      <small>{locale === "bn" ? "নির্বাচিত জেলা" : "Selected district"}</small>
+                      <small>
+                        {detectionStatus === "success"
+                          ? (locale === "bn" ? "শনাক্তকৃত অবস্থান" : "Detected location")
+                          : (locale === "bn" ? "নির্বাচিত জেলা" : "Selected district")}
+                      </small>
                       <strong>{currentDistrictName}</strong>
                     </span>
                     <Check size={16} className="text-[#247A4B] dark:text-[#56B870]" />
@@ -476,21 +522,21 @@ export default function LandingPage() {
         </section>
 
         {/* ============================================================
-            INTERACTIVE APPLICATION PREVIEWS (Live Agricultural Switcher)
+            INTERACTIVE APPLICATION PREVIEWS (Agricultural Tools & Workflows)
             ============================================================ */}
         <section id="interactive-previews" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6">
           <div className="text-center max-w-3xl mx-auto mb-10">
             <span className="inline-flex items-center gap-2 rounded-full border border-[#247A4B]/30 bg-[#247A4B]/10 px-3.5 py-1 text-xs font-semibold text-[#123D2A] dark:text-[#56B870]">
               <Sparkles className="h-3.5 w-3.5 text-[#247A4B]" />
-              <span>{locale === "bn" ? "সরাসরি অভিজ্ঞতা নিন" : "Interactive Application Previews"}</span>
+              <span>{locale === "bn" ? "অ্যাপ্লিকেশন প্রিভিউ ও ডেমো" : "Application Previews & Workflows"}</span>
             </span>
             <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-[#123D2A] dark:text-green-100 sm:text-4xl">
-              {locale === "bn" ? "কৃষিবন্ধুর মূল সেবাগুলো নিজেই দেখে নিন" : "Explore Real Working Agricultural Tools"}
+              {locale === "bn" ? "কৃষিবন্ধুর সেবাসমূহ ও কাজের নমুনা দেখুন" : "Explore Agricultural Tools & Sample Workflows"}
             </h2>
             <p className="mt-3 text-base text-muted">
               {locale === "bn"
-                ? "বাজারের দাম, আবহাওয়ার ঝুঁকি, শস্য পর্যায়ক্রম ও এআই সহকারীর কার্যকর প্রিভিউ এক ক্লিকেই পরিবর্তন করুন।"
-                : "Switch tabs below to inspect real application previews for market prices, weather outlook, crop rotation, and the AI assistant."}
+                ? "বাজারদর প্রতিবেদন, আবহাওয়া পূর্বাভাস, শস্য পর্যায়ক্রম ও এআই সহকারীর বাস্তব কাজের রূপরেখা ও সচিত্র নমুনা দেখতে ট্যাব পরিবর্তন করুন।"
+                : "Switch tabs below to inspect application tools, live weather forecasts, and illustrative sample demonstrations."}
             </p>
           </div>
 
@@ -498,7 +544,7 @@ export default function LandingPage() {
           <div className="flex justify-center mb-8 overflow-x-auto pb-2">
             <div className="inline-flex p-1.5 rounded-full border border-line bg-surface-2 shadow-inner gap-1">
               {[
-                { id: "market", labelBn: "বাজারদর ও তথ্য", labelEn: "Market Prices", icon: Store },
+                { id: "market", labelBn: "বাজারদর ও তথ্য", labelEn: "Market Reports", icon: Store },
                 { id: "weather", labelBn: "আবহাওয়া ও মাটি", labelEn: "Weather & Soil", icon: CloudSun },
                 { id: "planner", labelBn: "ফসল চক্র পরিকল্পনা", labelEn: "Crop Planning", icon: Sprout },
                 { id: "assistant", labelBn: "এআই সহকারী", labelEn: "AI Assistant", icon: MessageSquare },
@@ -527,10 +573,10 @@ export default function LandingPage() {
                 <div>
                   <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#247A4B]">
                     <span className="h-2 w-2 rounded-full bg-[#247A4B] animate-pulse" />
-                    <span>{locale === "bn" ? "কৃষি বিপণন অধিদপ্তর (DAM) প্রতিবেদন" : "DAM Market Reports"}</span>
+                    <span>{locale === "bn" ? "কৃষি বিপণন অধিদপ্তর (DAM) উৎস নির্দেশিকা" : "DAM Source Reference"}</span>
                   </div>
                   <h3 className="text-xl font-bold text-content mt-1">
-                    {locale === "bn" ? "আজকের পাইকারি ও খুচরা বাজারদর" : "Today’s Wholesale & Retail Prices"}
+                    {locale === "bn" ? "বাজারদর প্রতিবেদন ও মূল্যধারা" : "Market Price Reports & Directory"}
                   </h3>
                 </div>
                 <Button href="/market" size="sm" variant="primary" className="shrink-0">
@@ -539,40 +585,80 @@ export default function LandingPage() {
                 </Button>
               </div>
 
-              {/* Sample Commodity Grid */}
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {[
-                  { nameBn: "গোল আলু (ডায়মন্ড)", nameEn: "Potato (Diamond)", retail: "৳২৮", wholesale: "৳২৪", diff: "+৳২", trend: "up" },
-                  { nameBn: "দেশি পেঁয়াজ", nameEn: "Local Onion", retail: "৳৭৫", wholesale: "৳৬৮", diff: "৳০", trend: "neutral" },
-                  { nameBn: "বিআর-২৮ ধান", nameEn: "BRRI dhan28 Rice", retail: "৳৫২", wholesale: "৳৪৮", diff: "-৳১", trend: "down" },
-                  { nameBn: "পাকা লাল টমেটো", nameEn: "Ripe Tomato", retail: "৳৪৫", wholesale: "৳৩৮", diff: "+৳৩", trend: "up" },
-                ].map((item) => (
-                  <div key={item.nameEn} className="rounded-2xl border border-line bg-surface-2/60 p-4 hover:border-emerald/40 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <p className="font-bold text-sm text-content">{locale === "bn" ? item.nameBn : item.nameEn}</p>
-                      <span className={`inline-flex items-center text-xs font-bold ${
-                        item.trend === "up" ? "text-amber-600" : item.trend === "down" ? "text-emerald" : "text-muted"
-                      }`}>
-                        {item.trend === "up" && <TrendingUp className="h-3.5 w-3.5 mr-0.5" />}
-                        {item.trend === "down" && <TrendingDown className="h-3.5 w-3.5 mr-0.5" />}
-                        {item.diff}
-                      </span>
-                    </div>
-                    <div className="mt-3 flex items-baseline justify-between border-t border-line/60 pt-2.5">
-                      <div>
-                        <span className="text-[10px] uppercase font-bold text-muted block">{locale === "bn" ? "খুচরা দর" : "Retail"}</span>
-                        <span className="text-lg font-extrabold text-[#123D2A] dark:text-emerald-300">{item.retail}<small className="text-xs font-normal">/কেজি</small></span>
+              {/* Sample / Verified Commodity Grid */}
+              {marketCatalog?.series && marketCatalog.series.length > 0 ? (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {marketCatalog.series.slice(0, 4).map((item) => (
+                    <div key={`${item.commodity}-${item.division}`} className="rounded-2xl border border-line bg-surface-2/60 p-4 hover:border-emerald/40 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <p className="font-bold text-sm text-content">{item.commodity}</p>
+                        <span className="inline-flex items-center rounded-md bg-emerald/10 px-2 py-0.5 text-[10px] font-bold text-emerald">
+                          {item.division || "National"}
+                        </span>
                       </div>
-                      <div className="text-right">
-                        <span className="text-[10px] uppercase font-bold text-muted block">{locale === "bn" ? "পাইকারি দর" : "Wholesale"}</span>
-                        <span className="text-sm font-semibold text-content">{item.wholesale}<small className="text-xs font-normal">/কেজি</small></span>
+                      <p className="text-xs text-muted mt-1">
+                        {locale === "bn" ? `তারিখ: ${item.lastObservedOn || "সংরক্ষিত"}` : `Date: ${item.lastObservedOn || "Archived"}`}
+                      </p>
+                      <div className="mt-3 flex items-baseline justify-between border-t border-line/60 pt-2.5">
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-muted block">{locale === "bn" ? "একক" : "Unit"}</span>
+                          <span className="text-sm font-semibold text-content">{item.unit || (locale === "bn" ? "কেজি" : "kg")}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] uppercase font-bold text-muted block">{locale === "bn" ? "উৎস" : "Source"}</span>
+                          <span className="text-xs font-semibold text-content">{item.sources?.[0] || "DAM"}</span>
+                        </div>
                       </div>
                     </div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/20 dark:text-amber-200 flex items-start gap-2">
+                    <Info className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                    <span>
+                      {locale === "bn"
+                        ? "সচিত্র নমুনা ফরম্যাট (প্রদর্শনীমূলক) — এটি আজকের বাজারদর নয়। বাজারদরের পর্যবেক্ষণ তারিখ, মান ও সরকারি DAM রিপোর্ট দেখতে 'পুরো বাজার দেখুন' খুলুন।"
+                        : "Sample Demonstration (Illustrative) — Not live or today’s prices. For verified observation dates, market locations, and official DAM reports, tap 'View Full Market'."}
+                    </span>
                   </div>
-                ))}
-              </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {[
+                      { nameBn: "গোল আলু (ডায়মন্ড)", nameEn: "Potato (Diamond)", retail: "৳২৮", wholesale: "৳২৪", diff: "+৳২", trend: "up" },
+                      { nameBn: "দেশি পেঁয়াজ", nameEn: "Local Onion", retail: "৳৭৫", wholesale: "৳৬৮", diff: "৳০", trend: "neutral" },
+                      { nameBn: "বিআর-২৮ ধান", nameEn: "BRRI dhan28 Rice", retail: "৳৫২", wholesale: "৳৪৮", diff: "-৳১", trend: "down" },
+                      { nameBn: "পাকা লাল টমেটো", nameEn: "Ripe Tomato", retail: "৳৪৫", wholesale: "৳৩৮", diff: "+৳৩", trend: "up" },
+                    ].map((item) => (
+                      <div key={item.nameEn} className="rounded-2xl border border-line bg-surface-2/60 p-4 hover:border-emerald/40 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <p className="font-bold text-sm text-content">{locale === "bn" ? item.nameBn : item.nameEn}</p>
+                          <span className="inline-flex items-center rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+                            {locale === "bn" ? "প্রদর্শনী নমুনা" : "Sample Demo"}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-muted mt-0.5">
+                          {locale === "bn" ? "নমুনা ফরম্যাট · বাস্তব দর নয়" : "Sample format · Not a live quote"}
+                        </p>
+                        <div className="mt-3 flex items-baseline justify-between border-t border-line/60 pt-2.5">
+                          <div>
+                            <span className="text-[10px] uppercase font-bold text-muted block">{locale === "bn" ? "খুচরা নমুনা" : "Sample Retail"}</span>
+                            <span className="text-lg font-extrabold text-[#123D2A] dark:text-emerald-300">{item.retail}<small className="text-xs font-normal">/কেজি</small></span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[10px] uppercase font-bold text-muted block">{locale === "bn" ? "পাইকারি নমুনা" : "Sample Wholesale"}</span>
+                            <span className="text-sm font-semibold text-content">{item.wholesale}<small className="text-xs font-normal">/কেজি</small></span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
               <p className="mt-4 text-xs text-muted text-center sm:text-left">
-                {locale === "bn" ? "*দাম পর্যবেক্ষণের তারিখ ও উৎস সহকারে প্রদর্শিত। এলাকাভেদে মূল্যের সামান্য তারতম্য হতে পারে।" : "*Prices are verified with observation dates and official DAM reports. Regional variances may apply."}
+                {locale === "bn"
+                  ? "*দাম পর্যবেক্ষণের নির্দিষ্ট তারিখ ও সরকারি DAM রিপোর্ট ছাড়া কোনো মানকে বর্তমান বাজারদর গণ্য করবেন না। এলাকা ও বাজারভেদে দামের তারতম্য হতে পারে।"
+                  : "*Never treat unverified demonstration values as live market rates. Always verify prices against dated official DAM reports."}
               </p>
             </div>
           )}
@@ -584,10 +670,10 @@ export default function LandingPage() {
                 <div>
                   <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#247A4B]">
                     <CloudSun className="h-4 w-4" />
-                    <span>{locale === "bn" ? `${currentDistrictName} জেলার ৭ দিনের পূর্বাভাস` : `7-Day Outlook for ${currentDistrictName}`}</span>
+                    <span>{locale === "bn" ? `${currentDistrictName} অঞ্চল · ওপেন-মেটিও ও নাসা উপগ্রহ ডাটা` : `${currentDistrictName} Region · Open-Meteo & NASA Satellite Data`}</span>
                   </div>
                   <h3 className="text-xl font-bold text-content mt-1">
-                    {locale === "bn" ? "তাপমাত্রা, বৃষ্টিপাত ও মাটির আর্দ্রতা" : "Temperature, Rain & Soil Moisture"}
+                    {locale === "bn" ? "আবহাওয়ার পূর্বাভাস ও মাটির আর্দ্রতা রূপরেখা" : "Weather Forecast & Soil Moisture Context"}
                   </h3>
                 </div>
                 <Button href="/climate" size="sm" variant="primary" className="shrink-0">
@@ -597,33 +683,75 @@ export default function LandingPage() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
+                {/* Temperature Range Card */}
                 <div className="rounded-2xl border border-orange-200 bg-orange-50/60 p-4 dark:border-orange-800 dark:bg-orange-950/20">
                   <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300 text-xs font-bold">
                     <Sun className="h-4 w-4" />
-                    <span>{locale === "bn" ? "তাপমাত্রা পরিসীমা" : "Temperature Range"}</span>
+                    <span>{locale === "bn" ? "৭ দিনের তাপমাত্রা পূর্বাভাস" : "7-Day Temperature Range"}</span>
                   </div>
-                  <p className="mt-2 text-2xl font-extrabold text-content">১৮°C – ২৯°C</p>
-                  <p className="text-xs text-muted mt-1">{locale === "bn" ? "ফসল ফুল আসার জন্য উপযোগী" : "Favorable for flowering"}</p>
+                  <p className="mt-2 text-2xl font-extrabold text-content">
+                    {shortWindowSummary?.tempMin != null && shortWindowSummary?.tempMax != null
+                      ? `${formatLocalizedNumber(Math.round(shortWindowSummary.tempMin))}°C – ${formatLocalizedNumber(Math.round(shortWindowSummary.tempMax))}°C`
+                      : forecastStatus === "loading"
+                        ? "..."
+                        : locale === "bn" ? "পূর্বাভাস লোড হচ্ছে..." : "Loading forecast..."}
+                  </p>
+                  <p className="text-xs text-muted mt-1">
+                    {shortWindowSummary?.dateRange
+                      ? (locale === "bn" ? `উৎস: Open-Meteo (${shortWindowSummary.dateRange})` : `Source: Open-Meteo (${shortWindowSummary.dateRange})`)
+                      : (locale === "bn" ? "উৎস: Open-Meteo আবহাওয়া মডেল" : "Source: Open-Meteo weather model")}
+                  </p>
                 </div>
 
+                {/* Rain Outlook Card */}
                 <div className="rounded-2xl border border-sky-200 bg-sky-50/60 p-4 dark:border-sky-800 dark:bg-sky-950/20">
                   <div className="flex items-center gap-2 text-sky-700 dark:text-sky-300 text-xs font-bold">
                     <CloudRain className="h-4 w-4" />
-                    <span>{locale === "bn" ? "বৃষ্টিপাতের সম্ভাবনা" : "Rain Probability"}</span>
+                    <span>{locale === "bn" ? "৭ দিনে মোট বৃষ্টিপাতের সম্ভাবনা" : "7-Day Rain Outlook"}</span>
                   </div>
-                  <p className="mt-2 text-2xl font-extrabold text-content">১৫% <span className="text-xs font-normal text-muted">(শুষ্ক আবহাওয়া)</span></p>
-                  <p className="text-xs text-muted mt-1">{locale === "bn" ? "মাঠের সার ও কীটনাশক ব্যবহারের জন্য নিরাপদ" : "Safe for spraying and fertilizer"}</p>
+                  <p className="mt-2 text-2xl font-extrabold text-content">
+                    {shortWindowSummary != null
+                      ? `${formatLocalizedNumber(Math.round(shortWindowSummary.rainTotal))} mm`
+                      : forecastStatus === "loading"
+                        ? "..."
+                        : "0 mm"}
+                  </p>
+                  <p className="text-xs text-muted mt-1">
+                    {shortWindowSummary != null
+                      ? (locale === "bn"
+                          ? `৭ দিনে মোট বৃষ্টি · ${formatLocalizedNumber(shortWindowSummary.rainDays)} দিন বৃষ্টি প্রত্যাশিত`
+                          : `7-day total rain · ${shortWindowSummary.rainDays} rain day(s) expected`)
+                      : (locale === "bn" ? "উৎস: Open-Meteo বৃষ্টিপাত পূর্বাভাস" : "Source: Open-Meteo rainfall model")}
+                  </p>
                 </div>
 
+                {/* Soil Moisture Card */}
                 <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-800 dark:bg-amber-950/20">
                   <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 text-xs font-bold">
                     <Droplets className="h-4 w-4" />
-                    <span>{locale === "bn" ? "মাটির রস (SMAP উপগ্রহ)" : "Soil Moisture (SMAP)"}</span>
+                    <span>{locale === "bn" ? "মাটির আর্দ্রতা (SMAP উপগ্রহ)" : "Soil Moisture (NASA SMAP L3)"}</span>
                   </div>
-                  <p className="mt-2 text-2xl font-extrabold text-content">০.৩৩ মি³/মি³</p>
-                  <p className="text-xs text-muted mt-1">{locale === "bn" ? "বপনের জন্য পরিমিত আর্দ্রতা বিদ্যমান" : "Adequate root-zone moisture"}</p>
+                  <p className="mt-2 text-2xl font-extrabold text-content">
+                    {soilMoistureData?.soilMoisture != null
+                      ? `${formatLocalizedNumber(soilMoistureData.soilMoisture)} ${soilMoistureData.unit || "m³/m³"}`
+                      : "০.৩৩ মি³/মি³"}
+                  </p>
+                  <p className="text-xs text-muted mt-1">
+                    {soilMoistureData?.soilMoisture != null
+                      ? (locale === "bn"
+                          ? `তারিখ: ${soilMoistureData.dateLabel || "সাম্প্রতিক"} · ০-৫ সেমি উপরিপৃষ্ঠের আঞ্চলিক প্রক্সি`
+                          : `Date: ${soilMoistureData.dateLabel || "Recent"} · 0–5 cm surface regional proxy`)
+                      : (locale === "bn"
+                          ? "সচিত্র নমুনা উদাহরণ · ঐতিহাসিক আঞ্চলিক গড় সূচক (জমির সরাসরি পরীক্ষা নয়)"
+                          : "Illustrative demo · Historical regional baseline (Not a field sensor test)")}
+                  </p>
                 </div>
               </div>
+              <p className="mt-4 text-xs text-muted text-center sm:text-left">
+                {locale === "bn"
+                  ? "*আবহাওয়ার পূর্বাভাস ওপেন-মেটিও মডেল থেকে প্রাপ্ত এবং মাটির আর্দ্রতা নাসার উপগ্রহভিত্তিক আঞ্চলিক গড় সূচক। জমিতে সার ও সেচ প্রয়োগের আগে স্থানীয় বাস্তব অবস্থা যাচাই করুন।"
+                  : "*Weather forecast is provided by Open-Meteo models and soil moisture reflects regional satellite proxies. Field conditions should be verified before irrigation or chemical application."}
+              </p>
             </div>
           )}
 
@@ -634,10 +762,10 @@ export default function LandingPage() {
                 <div>
                   <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#247A4B]">
                     <Sprout className="h-4 w-4" />
-                    <span>{locale === "bn" ? "শস্য পর্যায়ক্রম ও পানি সাশ্রয়" : "Crop Sequence & Water Savings"}</span>
+                    <span>{locale === "bn" ? "BAMIS ও BRRI শস্য পঞ্জিকা ভিত্তিক নমুনা রূপরেখা" : "BAMIS & BRRI Agro-ecological Sequence Demo"}</span>
                   </div>
                   <h3 className="text-xl font-bold text-content mt-1">
-                    {locale === "bn" ? "৩-মৌসুমি লাভজনক শস্য চক্র" : "3-Season Profitable Crop Cycle"}
+                    {locale === "bn" ? "৩-মৌসুমি শস্য পর্যায়ক্রম ও কৃষি রূপরেখা (সচিত্র নমুনা)" : "3-Season Crop Sequence & Ecological Flow (Illustrative)"}
                   </h3>
                 </div>
                 <Button href="/crop-rotation" size="sm" variant="primary" className="shrink-0">
@@ -649,39 +777,66 @@ export default function LandingPage() {
               <div className="flex flex-col md:flex-row items-center gap-4 justify-between bg-surface-2/60 p-5 rounded-2xl border border-line">
                 <div className="text-center md:text-left">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-muted">{locale === "bn" ? "মৌসুম ১ (খরিফ-২)" : "Season 1 (Kharif-2)"}</span>
-                  <h4 className="text-base font-bold text-content">আমন ধান (ব্রি ধান৭১)</h4>
-                  <p className="text-xs text-muted">জুলাই – নভেম্বর</p>
+                  <h4 className="text-base font-bold text-content">{locale === "bn" ? "রোপা আমন ধান" : "Ropa Aman Rice"}</h4>
+                  <p className="text-xs text-muted">{locale === "bn" ? "জুলাই – নভেম্বর · বর্ষা মৌসুমে সেচ সাশ্রয়ী" : "Jul – Nov · Monsoon rainfed"}</p>
                 </div>
                 <ArrowRight className="h-5 w-5 text-emerald shrink-0 hidden md:block" />
                 <ArrowDown className="h-5 w-5 text-emerald shrink-0 md:hidden" />
                 <div className="text-center md:text-left">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 font-bold">{locale === "bn" ? "মৌসুম ২ (রবি)" : "Season 2 (Rabi)"}</span>
-                  <h4 className="text-base font-bold text-[#123D2A] dark:text-emerald-300">বারি মসুর-৮ / সরিষা</h4>
-                  <p className="text-xs text-muted">নভেম্বর – ফেব্রুয়ারি</p>
+                  <h4 className="text-base font-bold text-[#123D2A] dark:text-emerald-300">{locale === "bn" ? "বারি সরিষা-১৪ / মসুর" : "BARI Mustard-14 / Lentil"}</h4>
+                  <p className="text-xs text-muted">{locale === "bn" ? "নভেম্বর – ফেব্রুয়ারি · স্বল্প জীবনকাল, কম সেচ" : "Nov – Feb · Short duration, low water"}</p>
                 </div>
                 <ArrowRight className="h-5 w-5 text-emerald shrink-0 hidden md:block" />
                 <ArrowDown className="h-5 w-5 text-emerald shrink-0 md:hidden" />
                 <div className="text-center md:text-left">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-muted">{locale === "bn" ? "মৌসুম ৩ (খরিফ-১)" : "Season 3 (Kharif-1)"}</span>
-                  <h4 className="text-base font-bold text-content">তিল / মুগডাল</h4>
-                  <p className="text-xs text-muted">মার্চ – জুন</p>
+                  <h4 className="text-base font-bold text-content">{locale === "bn" ? "মুগডাল / তিল" : "Mungbean / Sesame"}</h4>
+                  <p className="text-xs text-muted">{locale === "bn" ? "মার্চ – জুন · মাটির পুষ্টি সমৃদ্ধকরণ" : "Mar – Jun · Soil nitrogen fixing"}</p>
                 </div>
               </div>
 
-              <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <div className="p-3 bg-emerald/10 rounded-xl text-center">
-                  <span className="text-xs text-[#123D2A] dark:text-emerald-300 font-bold block">{locale === "bn" ? "পানি সাশ্রয়" : "Water Savings"}</span>
-                  <span className="text-lg font-extrabold text-[#247A4B] dark:text-[#56B870]">+৩২০ মিমি</span>
+              {/* Validated Qualitative Indicators (No Speculative Profit / Yield Numbers) */}
+              <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3.5 bg-emerald/10 rounded-xl text-center">
+                  <span className="text-xs text-[#123D2A] dark:text-emerald-300 font-bold block">
+                    {locale === "bn" ? "সেচ ব্যবস্থাপনা" : "Irrigation Strategy"}
+                  </span>
+                  <span className="text-base font-extrabold text-[#247A4B] dark:text-[#56B870] mt-1 block">
+                    {locale === "bn" ? "ভূগর্ভস্থ পানি সাশ্রয়ী" : "Groundwater Efficient"}
+                  </span>
+                  <span className="text-[11px] text-muted mt-0.5 block">
+                    {locale === "bn" ? "বোরোর তুলনায় রবি ডাল/তেলবীজে সেচ নির্ভরতা কমে" : "Reduces dry-season pumping vs boro monoculture"}
+                  </span>
                 </div>
-                <div className="p-3 bg-amber-50 rounded-xl text-center dark:bg-amber-950/20">
-                  <span className="text-xs text-amber-800 dark:text-amber-300 font-bold block">{locale === "bn" ? "মুনাফা স্কোর" : "Profit Score"}</span>
-                  <span className="text-lg font-extrabold text-amber-700">৮৪%</span>
+                <div className="p-3.5 bg-amber-50 rounded-xl text-center dark:bg-amber-950/20">
+                  <span className="text-xs text-amber-800 dark:text-amber-300 font-bold block">
+                    {locale === "bn" ? "মাটির পুষ্টি ও উর্বরতা" : "Soil Health"}
+                  </span>
+                  <span className="text-base font-extrabold text-amber-700 mt-1 block">
+                    {locale === "bn" ? "জৈব নাইট্রোজেন সংবন্ধন" : "Nitrogen Enriched"}
+                  </span>
+                  <span className="text-[11px] text-muted mt-0.5 block">
+                    {locale === "bn" ? "ডালজাতীয় ফসলের শিকড়ে প্রাকৃতিকভাবে নাইট্রোজেন যুক্ত হয়" : "Legume nodules restore organic nitrogen naturally"}
+                  </span>
                 </div>
-                <div className="p-3 bg-surface-2 rounded-xl text-center col-span-2 sm:col-span-1">
-                  <span className="text-xs text-content font-bold block">{locale === "bn" ? "বপন বিলম্ব ঝুঁকি" : "Delay Risk"}</span>
-                  <span className="text-lg font-extrabold text-muted">{locale === "bn" ? "কম ঝুঁকি" : "Low Risk"}</span>
+                <div className="p-3.5 bg-surface-2 rounded-xl text-center">
+                  <span className="text-xs text-content font-bold block">
+                    {locale === "bn" ? "পঞ্জিকা রূপরেখা" : "Calendar Fit"}
+                  </span>
+                  <span className="text-base font-extrabold text-muted mt-1 block">
+                    {locale === "bn" ? "মৌসুমি সমন্বয় উপযোগী" : "Feasible Turnaround"}
+                  </span>
+                  <span className="text-[11px] text-muted mt-0.5 block">
+                    {locale === "bn" ? "আমন কাটার পর রবি বপনের পর্যাপ্ত সময় পাওয়া যায়" : "Turnaround window allows timely Rabi sowing"}
+                  </span>
                 </div>
               </div>
+              <p className="mt-4 text-xs text-muted text-center sm:text-left">
+                {locale === "bn"
+                  ? "*এটি একটি সচিত্র সাধারণ নমুনা। ফলন বা মুনাফার কোনো অবাস্তব সংখ্যা দাবি করা হয় না। আপনার জমির মাটির ধরন অনুযায়ী ফসল পরিকল্পনা তৈরি করতে 'পরিকল্পনা শুরু করুন' বাটনে চাপ দিন।"
+                  : "*This is an illustrative agro-ecological sequence demo. No speculative yields or profits are claimed. Tap 'Start Planning' to build a custom plan based on your field's soil and drainage."}
+              </p>
             </div>
           )}
 
@@ -692,10 +847,10 @@ export default function LandingPage() {
                 <div>
                   <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#247A4B]">
                     <MessageSquare className="h-4 w-4" />
-                    <span>{locale === "bn" ? "কৃষিবন্ধু বাংলা এআই সহকারী" : "KrishiBondhu Bangla AI Assistant"}</span>
+                    <span>{locale === "bn" ? "সচিত্র নমুনা কথোপকথন (প্রদর্শনীমূলক)" : "Illustrative Sample Conversation (Demonstration Only)"}</span>
                   </div>
                   <h3 className="text-xl font-bold text-content mt-1">
-                    {locale === "bn" ? "যেকোনো কৃষি প্রশ্ন করুন বাংলায়" : "Natural Agronomic Chat & Voice Support"}
+                    {locale === "bn" ? "কৃষিবন্ধু বাংলা এআই সহকারীর নমুনা আলাপ" : "KrishiBondhu Bangla AI Assistant Sample"}
                   </h3>
                 </div>
                 <Button href="/assistant" size="sm" variant="primary" className="shrink-0">
@@ -705,31 +860,46 @@ export default function LandingPage() {
               </div>
 
               {/* Chat Simulation Box */}
-              <div className="space-y-4 max-w-2xl mx-auto bg-surface-2/40 p-4 rounded-2xl border border-line">
-                <div className="flex items-start gap-3 justify-end">
-                  <div className="bg-[#247A4B] text-white p-3 rounded-2xl rounded-tr-xs text-xs sm:text-sm max-w-[85%] font-medium">
+              <div className="max-w-2xl mx-auto bg-surface-2/40 p-4 rounded-2xl border border-line">
+                <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-xs text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-200 mb-4 flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                  <span>
                     {locale === "bn"
-                      ? "“আমন ধান কাটার পর জমিতে আর্দ্রতা কম থাকলে কোন ডাল ফসল করা ভালো হবে?”"
-                      : "“Which pulse crop is ideal after Aman harvest if soil moisture is low?”"}
-                  </div>
-                  <span className="h-8 w-8 rounded-full bg-[#123D2A] text-white flex items-center justify-center text-xs font-bold shrink-0">
-                    কৃ
+                      ? "এটি এআই সহকারীর ইন্টারফেস প্রদর্শনের জন্য একটি সাধারণ নমুনা প্রশ্নোত্তর। এটি আপনার খামারের ব্যক্তিগত সুপারিশ বা অনুমোদন নয়।"
+                      : "This is an illustrative demonstration of the conversational interface, not a personalized agronomic recommendation for your plot."}
                   </span>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <span className="h-8 w-8 rounded-full bg-emerald text-white flex items-center justify-center text-xs font-bold shrink-0">
-                    এআই
-                  </span>
-                  <div className="bg-surface border border-line p-3.5 rounded-2xl rounded-tl-xs text-xs sm:text-sm text-content max-w-[90%] shadow-xs">
-                    <p className="leading-relaxed">
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3 justify-end">
+                    <div className="bg-[#247A4B] text-white p-3 rounded-2xl rounded-tr-xs text-xs sm:text-sm max-w-[85%] font-medium">
                       {locale === "bn"
-                        ? "আপনার এলাকার জন্য বারি মসুর-৮ বা বিনা সরিষা-৯ সবচেয়ে উপযুক্ত। এতে সেচ কম লাগে এবং ডাল জাতীয় ফসল মাটির নাইট্রোজেন সমৃদ্ধ করে পরবর্তী ফসলের সার খরচ কমিয়ে দেয়।"
-                        : "For your area, BARI Masur-8 or BINA Sarisha-9 is ideal. It requires minimal irrigation, restores soil nitrogen, and cuts input costs for the subsequent crop."}
-                    </p>
-                    <div className="mt-2.5 pt-2 border-t border-line/60 flex items-center gap-2 text-[10px] text-muted">
-                      <ShieldCheck className="h-3.5 w-3.5 text-[#247A4B]" />
-                      <span>{locale === "bn" ? "উৎস: SRDI মৃত্তিকা নির্দেশিকা ও BAMIS ক্রপ ক্যালেন্ডার" : "Source: SRDI Soil Guidelines & BAMIS Calendars"}</span>
+                        ? "“আমন ধান কাটার পর জমিতে আর্দ্রতা কম থাকলে রবি মৌসুমে কী ধরনের ফসল ভাবা যায়?”"
+                        : "“What crop options are generally considered in Rabi season after Aman harvest if soil moisture is limited?”"}
+                    </div>
+                    <span className="h-8 w-8 rounded-full bg-[#123D2A] text-white flex items-center justify-center text-xs font-bold shrink-0">
+                      কৃ
+                    </span>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <span className="h-8 w-8 rounded-full bg-emerald text-white flex items-center justify-center text-xs font-bold shrink-0">
+                      এআই
+                    </span>
+                    <div className="bg-surface border border-line p-3.5 rounded-2xl rounded-tl-xs text-xs sm:text-sm text-content max-w-[90%] shadow-xs">
+                      <p className="leading-relaxed">
+                        {locale === "bn"
+                          ? "নমুনা উত্তর: এ ধরনের পরিস্থিতিতে সাধারণত স্বল্প জীবনকালের সরিষা বা ডালজাতীয় ফসল (যেমন মসুর বা খেসারি) বিবেচনা করা হয়, কারণ এগুলোতে বোরো ধানের মতো অতিরিক্ত সেচের প্রয়োজন হয় না। তবে আপনার জমির সুনির্দিষ্ট মাটির ধরন ও স্থানীয় আবহাওয়ার ওপর ভিত্তি করে সঠিক জাত ও বপন সময় জানতে স্থানীয় উপসহকারী কৃষি কর্মকর্তার (SAAO) সঙ্গে কথা বলুন।"
+                          : "Sample answer: In moisture-limited conditions, short-duration oilseeds or pulses (such as mustard or lentils) are commonly considered, as they avoid high irrigation demands. However, specific variety selection and exact sowing dates depend on your soil conditions—verify with your local extension officer (SAAO)."}
+                      </p>
+                      <div className="mt-2.5 pt-2 border-t border-line/60 flex items-center gap-2 text-[10px] text-muted">
+                        <ShieldCheck className="h-3.5 w-3.5 text-[#247A4B]" />
+                        <span>
+                          {locale === "bn"
+                            ? "তথ্যসূত্র: BAMIS ফসল নির্দেশিকা সাধারণ নীতি · ব্যক্তিগত মাঠ জরিপ নয়"
+                            : "Reference: BAMIS General Agro-ecological Principles · Not a field survey"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
