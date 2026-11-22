@@ -39,6 +39,7 @@ test("Bondhu stays character-first at rest and opens a compact speech bubble onl
   assert.match(guide, /\(hidden \|\| tourMode\) && <span>/, "normal floating character has no pill label");
   assert.match(mascot, /new THREE\.WebGLRenderer\(\{ alpha: true/);
   assert.match(mascot, /renderer\.setClearColor\(0x000000, 0\)/);
+  assert.match(mascot, /Three\.js initialization failed; keeping the SVG fallback/, "initialization failures are visible in browser diagnostics while retaining fallback");
   assert.match(css, /\.kb-mini-launcher \{[^}]*background:transparent/);
   assert.match(css, /\.kb-bondhu-canvas canvas \{[^}]*background:transparent!important/);
   assert.match(css, /\.kb-mini-launcher \.kb-bondhu-canvas \{[^}]*background:transparent!important/);

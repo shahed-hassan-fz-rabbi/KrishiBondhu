@@ -201,8 +201,9 @@ export function BondhuMascot({ className = "", state = "idle", facing = 1, activ
         setFallback(false);
         if (mediaQuery.matches) applyPose(animationStart);
         else renderer.setAnimationLoop(renderFrame);
-      } catch {
+      } catch (error) {
         if (!disposed) {
+          console.error("[BondhuMascot] Three.js initialization failed; keeping the SVG fallback.", error);
           cleanup();
           setFallback(true);
         }
