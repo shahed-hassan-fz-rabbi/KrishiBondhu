@@ -9,7 +9,7 @@ import { BONDHU_TOUR_STEPS, findEligibleTourStepIndex, getTourStepIndexForRoute,
 import { useAuth } from "@/contexts/AuthContext.js";
 import { useLang } from "@/lib/i18n/LanguageContext.js";
 import { useVoiceOutput } from "@/hooks/useVoiceOutput.js";
-import { placeCompanionBubble } from "@/components/mascot/companionLayout.js";
+import { chooseCompanionPosition, placeCompanionBubble } from "@/components/mascot/companionLayout.js";
 
 const PLACES = [
   { href: "/crop-calendar", en: "Crop calendar", bn: "ফসল ক্যালেন্ডার" },
@@ -79,6 +79,7 @@ export function MiniGuide() {
   const isAuthenticated = Boolean(user);
   const bn = locale === "bn";
   const [open, setOpen] = useState(false);
+  const [greeting, setGreeting] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [tourMode, setTourMode] = useState(false);
   const [tourIndex, setTourIndex] = useState(0);
@@ -110,6 +111,7 @@ export function MiniGuide() {
   const visibleTourIndex = eligibleTourSteps.findIndex((step) => step.id === tourStep?.id);
   const characterState = tourMode && tourPaused ? "idle" : flying ? "flying" : isDragging ? "dragging" : tourMode && isTourVoiceSpeaking && !isTourVoicePaused ? "talking" : tourMode || pokeState ? "happy" : hovered ? "listening" : sleeping ? "sleeping" : assistantState;
   const [position, setPosition] = useState(null);
+  const [contentPosition, setContentPosition] = useState(null);
   const [bubblePosition, setBubblePosition] = useState(null);
   const dragRef = useRef(null);
   const launcherRef = useRef(null);
@@ -170,6 +172,7 @@ export function MiniGuide() {
     const key = "krishibondhu.bondhu.welcome-seen";
     try { if (window.localStorage.getItem(key)) return undefined; } catch { return undefined; }
     const timer = window.setTimeout(() => {
+      setGreeting(true);
       setOpen(true);
       try { window.localStorage.setItem(key, "1"); } catch { /* the greeting is optional */ }
     }, 900);
@@ -177,7 +180,7 @@ export function MiniGuide() {
   }, [authLoading, hidden, pathname]);
 
   useEffect(() => {
-    if (!open || tourMode) return undefined;
+    if (!open || !greeting || tourMode) return undefined;
     let timer;
     const dismissWhenIdle = () => {
       if (bubbleHoveredRef.current || bubbleRef.current?.contains(document.activeElement)) {
@@ -188,7 +191,7 @@ export function MiniGuide() {
     };
     timer = window.setTimeout(dismissWhenIdle, 14_000);
     return () => window.clearTimeout(timer);
-  }, [open, tourMode, pathname, bn, finished]);
+  }, [open, greeting, tourMode, pathname, bn, finished]);
 
   useEffect(() => {
     if (open || tourMode || flying || isDragging || assistantState !== "idle" || hidden || !animationEnabled) return undefined;
@@ -206,12 +209,61 @@ export function MiniGuide() {
   const currentPosition = position || savedPosition;
   const launcherBounds = () => {
     const compact = window.innerWidth <= 760;
-    return { width: compact ? 104 : 170, height: compact ? 122 : 182, right: compact ? 8 : 20, bottom: compact ? 76 : 20 };
+    return { width: compact ? 132 : 170, height: compact ? 154 : 182, right: compact ? 8 : 20, bottom: compact ? 76 : 20 };
   };
   const defaultPosition = () => {
     const bounds = launcherBounds();
     return { x: window.innerWidth - bounds.width - bounds.right, y: window.innerHeight - bounds.height - bounds.bottom };
   };
+  const visibleContentPosition = pathname === "/" && !tourMode && !hidden ? contentPosition : null;
+
+  // On the landing page Bondhu occupies its reserved hero stage. Elsewhere choose the
+  // viewport corner with the least collision against visible copy and controls.
+  useEffect(() => {
+    if (pathname !== "/" || position || tourMode || hidden || isDragging) return undefined;
+    let frame = 0;
+    const update = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        const size = launcherBounds();
+        const obstacles = [...document.querySelectorAll("main h1,main h2,main p,main a,main button,main input,main select,main textarea,header,nav")]
+          .filter((element) => !element.closest(".kb-mini-guide") && element.getAttribute("aria-hidden") !== "true")
+          .map((element) => {
+            const rect = element.getBoundingClientRect();
+            if (!rect.width || !rect.height || rect.bottom <= 0 || rect.top >= window.innerHeight) return null;
+            const interactive = /^(A|BUTTON|INPUT|SELECT|TEXTAREA)$/.test(element.tagName);
+            return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, weight: interactive ? 2.5 : 1 };
+          }).filter(Boolean);
+        const hasSavedPosition = Number.isFinite(preferences.x) && Number.isFinite(preferences.y);
+        const saved = hasSavedPosition ? { x: preferences.x, y: preferences.y } : null;
+        if (saved) {
+          const savedRect = { left: saved.x, top: saved.y, right: saved.x + size.width, bottom: saved.y + size.height };
+          const collision = obstacles.some((item) => Math.max(0, Math.min(savedRect.right, item.right) - Math.max(savedRect.left, item.left)) * Math.max(0, Math.min(savedRect.bottom, item.bottom) - Math.max(savedRect.top, item.top)) > 600);
+          if (!collision) {
+            setContentPosition((current) => current?.x === saved.x && current?.y === saved.y ? current : saved);
+            return;
+          }
+        }
+        const stageRect = document.querySelector("#home .kb-hero2-card-stage")?.getBoundingClientRect();
+        if (stageRect && stageRect.bottom > 0 && stageRect.top < window.innerHeight && stageRect.width > size.width) {
+          const x = Math.max(8, Math.min(window.innerWidth - size.width - 8, stageRect.left + (stageRect.width - size.width) / 2));
+          const y = Math.max(stageRect.top + 8, Math.min(window.innerHeight - size.height - 8, stageRect.bottom - size.height - 12));
+          setContentPosition((current) => current?.x === x && current?.y === y ? current : { x, y });
+          return;
+        }
+        const safe = chooseCompanionPosition({ viewportWidth: window.innerWidth, viewportHeight: window.innerHeight, size, obstacles });
+        setContentPosition((current) => current?.x === safe.x && current?.y === safe.y ? current : safe);
+      });
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update, { passive: true });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [pathname, preferences.x, preferences.y, position, tourMode, hidden, isDragging]);
 
   useLayoutEffect(() => {
     if (!open || !launcherRef.current || !bubbleRef.current) {
@@ -225,22 +277,30 @@ export function MiniGuide() {
         const launcher = launcherRef.current?.getBoundingClientRect();
         const bubble = bubbleRef.current?.getBoundingClientRect();
         if (!launcher || !bubble) return;
-        const stickyHeader = document.querySelector("[data-app-header], .kb-app-header, .kb-topbar");
-        const headerBottom = stickyHeader && ["sticky", "fixed"].includes(getComputedStyle(stickyHeader).position)
-          ? Math.max(0, stickyHeader.getBoundingClientRect().bottom)
-          : 0;
+        const visibleHeader = document.querySelector("[data-app-header], .kb-app-header, .kb-topbar, header");
+        const headerRect = visibleHeader?.getBoundingClientRect();
+        const headerBottom = headerRect && headerRect.bottom > 0 ? Math.max(0, headerRect.bottom) : 0;
         const target = tourMode && targetRect ? {
           left: targetRect.left - 8,
           right: targetRect.left + targetRect.width + 8,
           top: targetRect.top - 8,
           bottom: targetRect.top + targetRect.height + 8,
         } : null;
+        const obstacles = [...document.querySelectorAll("main h1,main h2,main p,main a,main button,main input,main select,main textarea,header,nav")]
+          .filter((element) => !element.closest(".kb-mini-guide") && element.getAttribute("aria-hidden") !== "true")
+          .map((element) => {
+            const rect = element.getBoundingClientRect();
+            if (!rect.width || !rect.height || rect.bottom <= 0 || rect.top >= window.innerHeight) return null;
+            const interactive = /^(A|BUTTON|INPUT|SELECT|TEXTAREA)$/.test(element.tagName);
+            return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, weight: interactive ? 2.5 : 1 };
+          }).filter(Boolean);
         const next = placeCompanionBubble({
           viewportWidth: window.innerWidth,
           viewportHeight: window.innerHeight,
           launcher,
           bubble,
           target,
+          obstacles,
           headerBottom,
           preferredSide: window.innerWidth <= 760 ? "above" : null,
         });
@@ -266,7 +326,8 @@ export function MiniGuide() {
     setSleeping(false);
     setIsDragging(true);
     const fallbackPosition = defaultPosition();
-    dragRef.current = { pointerId: event.pointerId, offsetX: event.clientX - (currentPosition?.x ?? fallbackPosition.x), offsetY: event.clientY - (currentPosition?.y ?? fallbackPosition.y) };
+    const visualPosition = position || visibleContentPosition || savedPosition || fallbackPosition;
+    dragRef.current = { pointerId: event.pointerId, offsetX: event.clientX - visualPosition.x, offsetY: event.clientY - visualPosition.y };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
@@ -278,7 +339,8 @@ export function MiniGuide() {
     const maxY = Math.max(8, window.innerHeight - bounds.height - 8);
     const x = Math.max(8, Math.min(maxX, event.clientX - dragRef.current.offsetX));
     const y = Math.max(8, Math.min(maxY, event.clientY - dragRef.current.offsetY));
-    if (Math.abs(x - (currentPosition?.x ?? fallbackPosition.x)) + Math.abs(y - (currentPosition?.y ?? fallbackPosition.y)) > 6) draggedRef.current = true;
+    const visualPosition = position || visibleContentPosition || savedPosition || fallbackPosition;
+    if (Math.abs(x - visualPosition.x) + Math.abs(y - visualPosition.y) > 6) draggedRef.current = true;
     setPosition({ x, y });
   };
 
@@ -295,6 +357,7 @@ export function MiniGuide() {
       return;
     }
     setSleeping(false);
+    setGreeting(false);
     if (tourMode) setOpen(true);
     else setOpen((value) => !value);
     if (hidden) savePreferences({ hidden: false });
@@ -309,7 +372,7 @@ export function MiniGuide() {
     if (!offset) return;
     event.preventDefault();
     const bounds = launcherBounds();
-    const base = currentPosition || defaultPosition();
+    const base = position || visibleContentPosition || savedPosition || defaultPosition();
     const maxX = Math.max(8, window.innerWidth - bounds.width - 8);
     const maxY = Math.max(8, window.innerHeight - bounds.height - 8);
     const next = { x: Math.max(8, Math.min(maxX, base.x + offset[0])), y: Math.max(8, Math.min(maxY, base.y + offset[1])) };
@@ -319,7 +382,7 @@ export function MiniGuide() {
 
   useEffect(() => {
     const resize = () => {
-      const base = position || (Number.isFinite(preferences.x) && Number.isFinite(preferences.y)
+      const base = position || visibleContentPosition || (Number.isFinite(preferences.x) && Number.isFinite(preferences.y)
         ? { x: preferences.x, y: preferences.y }
         : null);
       if (!base) return;
@@ -335,7 +398,7 @@ export function MiniGuide() {
     };
     window.addEventListener("resize", resize, { passive: true });
     return () => window.removeEventListener("resize", resize);
-  }, [position, preferences.x, preferences.y]);
+  }, [position, visibleContentPosition, preferences.x, preferences.y]);
 
   const startTour = useCallback((restart = false) => {
     const contextualIndex = getTourStepIndexForRoute(pathname);
@@ -347,6 +410,7 @@ export function MiniGuide() {
     setTourPaused(false);
     setPaused(false);
     setFinished(false);
+    setGreeting(false);
     setOpen(true);
     setTourNotice("");
     setTargetRect(null);
@@ -402,6 +466,7 @@ export function MiniGuide() {
   const closeGuide = useCallback(() => {
     if (tourMode) cancelTour();
     setOpen(false);
+    setGreeting(false);
     window.requestAnimationFrame(() => launcherRef.current?.focus({ preventScroll: true }));
   }, [cancelTour, tourMode]);
 
@@ -490,7 +555,8 @@ export function MiniGuide() {
     };
   }, [authLoading, bn, isAuthenticated, nextStop, pathname, paused, tourIndex, tourMode, tourStep]);
 
-  const launcherStyle = currentPosition ? { left: currentPosition.x, top: currentPosition.y, right: "auto", bottom: "auto" } : undefined;
+  const launcherPosition = position || visibleContentPosition || savedPosition;
+  const launcherStyle = launcherPosition ? { left: launcherPosition.x, top: launcherPosition.y, right: "auto", bottom: "auto" } : undefined;
   const tourPosition = tourMode && targetRect ? {
     left: (() => {
       if (window.innerWidth <= 760) return Math.max(8, window.innerWidth - 98);

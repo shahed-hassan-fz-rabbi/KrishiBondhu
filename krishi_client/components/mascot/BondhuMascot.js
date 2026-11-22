@@ -39,6 +39,10 @@ export function BondhuMascot({ className = "", state = "idle", facing = 1, activ
     let resizeFallback;
     const host = hostRef.current;
     let animationStart = 0;
+    let previousFrame = 0;
+    let previousFlying = false;
+    let flightTransitionAt = 0;
+    let flightTransitionDirection = 0;
     let nextBlinkAt = 0;
     let blinkUntil = 0;
     const gazeTarget = { x: 0, y: 0 };
@@ -79,46 +83,67 @@ export function BondhuMascot({ className = "", state = "idle", facing = 1, activ
       const current = sceneRef.current;
       if (!current) return;
       const seconds = animationStart ? (now - animationStart) / 1000 : 0;
+      const delta = previousFrame ? Math.min(0.05, Math.max(0, (now - previousFrame) / 1000)) : 1 / 60;
+      previousFrame = now;
+      const ease = (rate) => 1 - Math.exp(-rate * delta);
       const reduced = mediaQuery?.matches === true;
       const stateNow = stateRef.current;
       const pose = getBondhuPose(stateNow, seconds, reduced);
       const { root, parts } = current.model;
+      const flying = pose.state === "flying";
+      if (flying !== previousFlying) {
+        previousFlying = flying;
+        flightTransitionAt = seconds;
+        flightTransitionDirection = flying ? 1 : -1;
+      }
+      const transition = Math.max(0, 1 - (seconds - flightTransitionAt) / 0.52);
+      const flightLift = reduced ? 0 : flightTransitionDirection * transition * 0.16;
       const breathRate = pose.state === "sleeping" ? 0.8 : pose.state === "talking" ? 3.2 : 1.5;
       const breath = reduced ? 0 : Math.sin(seconds * breathRate) * (pose.state === "sleeping" ? 0.006 : 0.012);
-      root.position.set(0, -0.02 + pose.bob, 0);
-      root.rotation.z += (pose.bodySway - root.rotation.z) * 0.12;
-      root.rotation.x += ((pose.state === "flying" ? -0.1 : 0) - root.rotation.x) * 0.12;
-      root.rotation.y += ((pose.state === "flying" ? facingRef.current * 0.24 : 0) - root.rotation.y) * 0.1;
+      root.position.x += (0 - root.position.x) * ease(9);
+      root.position.y += (-0.02 + pose.bob + flightLift - root.position.y) * ease(8);
+      root.rotation.z += (pose.bodySway - root.rotation.z) * ease(7);
+      root.rotation.x += ((flying ? -0.1 : 0) - root.rotation.x) * ease(6);
+      root.rotation.y += ((flying ? facingRef.current * 0.24 : 0) - root.rotation.y) * ease(6);
       parts.body.scale.y = 1 + breath;
-      parts.head.rotation.z += (pose.headTilt - parts.head.rotation.z) * 0.14;
-      parts.head.rotation.x += ((-gazeTarget.y * 0.075) - parts.head.rotation.x) * 0.075;
-      parts.head.rotation.y += ((gazeTarget.x * 0.13) - parts.head.rotation.y) * 0.075;
+      parts.head.rotation.z += (pose.headTilt - parts.head.rotation.z) * ease(8);
+      parts.head.rotation.x += ((-gazeTarget.y * 0.075) - parts.head.rotation.x) * ease(5);
+      parts.head.rotation.y += ((gazeTarget.x * 0.13) - parts.head.rotation.y) * ease(5);
       parts.gaze.forEach((gaze) => {
-        gaze.position.x += (gazeTarget.x * 0.035 - gaze.position.x) * 0.18;
-        gaze.position.y += (gazeTarget.y * 0.028 - gaze.position.y) * 0.18;
+        gaze.position.x += (gazeTarget.x * 0.035 - gaze.position.x) * ease(12);
+        gaze.position.y += (gazeTarget.y * 0.028 - gaze.position.y) * ease(12);
       });
-      parts.tail.rotation.y += (pose.tailSway - parts.tail.rotation.y) * 0.12;
+      parts.tail.rotation.y += (pose.tailSway - parts.tail.rotation.y) * ease(6);
       parts.wings.forEach((wing, index) => {
         const direction = index === 0 ? -1 : 1;
-        const target = direction * (-0.05 + pose.wingFlap);
-        wing.rotation.z += (target - wing.rotation.z) * 0.28;
+        const idleFlutter = reduced || flying || pose.state === "happy" ? 0 : Math.sin(seconds * 1.45 + index * 0.25) * 0.014;
+        const target = direction * (-0.05 + pose.wingFlap + idleFlutter);
+        wing.rotation.z += (target - wing.rotation.z) * ease(flying ? 12 : 7);
       });
       parts.arms.forEach((arm, index) => {
         const direction = index === 0 ? -1 : 1;
         const target = direction * (0.1 + pose.armWave);
-        arm.rotation.z += (target - arm.rotation.z) * 0.2;
+        arm.rotation.z += (target - arm.rotation.z) * ease(7);
       });
       let blink = 1;
       if (!reduced && pose.eyeOpen > 0.5) {
         if (!nextBlinkAt) nextBlinkAt = seconds + 2.8 + Math.random() * 2.4;
         if (seconds >= nextBlinkAt) {
-          blinkUntil = seconds + 0.13;
+          blinkUntil = seconds + 0.17;
           nextBlinkAt = seconds + 3 + Math.random() * 3.4;
         }
-        if (seconds < blinkUntil) blink = 0.08;
+        if (seconds < blinkUntil) {
+          const progress = 1 - (blinkUntil - seconds) / 0.17;
+          blink = 1 - Math.sin(Math.PI * progress);
+        }
       }
-      parts.eyes.forEach((eye) => { eye.scale.y += (pose.eyeOpen * blink - eye.scale.y) * 0.55; });
-      parts.mouth.scale.y += (Math.max(0.05, pose.mouthOpen) - parts.mouth.scale.y) * 0.3;
+      const closed = 1 - pose.eyeOpen * blink;
+      parts.eyes.forEach((eye, index) => {
+        const lid = parts.lids[index];
+        lid.position.y += ((0.224 - closed * 0.222) - lid.position.y) * ease(32);
+        lid.scale.y = 0.226 * (0.82 + closed * 0.18);
+      });
+      parts.mouth.scale.y += (Math.max(0.008, pose.mouthOpen * 0.42) - parts.mouth.scale.y) * ease(14);
       renderer.render(current.scene, current.camera);
     };
     applyPose = (now = 0) => renderFrame(now);

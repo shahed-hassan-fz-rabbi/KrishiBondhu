@@ -218,6 +218,16 @@ test("redesigned overview never invents strategy results, metrics, or fixed aver
   assert.match(source, /source\.districtValidCoverage\?\.\[district\]\?\.lastObservationDate/);
 });
 
+test("dashboard keeps source coverage and selected location contextual without presenting sample observations as live", async () => {
+  const source = await readFile(new URL("../components/dashboard/DashboardOverview.js", import.meta.url), "utf8");
+  assert.match(source, /DATA OBSERVATION COVERAGE/);
+  assert.match(source, /latestCoverageDate/);
+  assert.match(source, /districtName \|\|/);
+  assert.match(source, /does not infer a season or field condition/);
+  assert.match(source, /Historical climate averages, not current weather observations/);
+  assert.doesNotMatch(source, /Rabi 2026|রবি ২০২৬|0\.31 m³\/m³|৫৬ মিমি|56 mm|25-Season Replay|Low precipitation forecast/);
+});
+
 test("dashboard market preview uses verified API observations and carries quote provenance", async () => {
   const source = await readFile(new URL("../components/dashboard/DashboardMarketPreview.js", import.meta.url), "utf8");
   assert.match(source, /fetchVerifiedMarketPriceCatalog\(\)/);

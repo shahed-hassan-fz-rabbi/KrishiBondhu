@@ -63,15 +63,6 @@ import { Card, CardBody, CardHeader } from "@/components/ui/Card.js";
 import { useLang } from "@/lib/i18n/LanguageContext.js";
 import { useLocation } from "@/contexts/LocationContext.js";
 
-const featureItems = [
-  { icon: Store, titleKey: "featureRainfall", descKey: "featureRainfallDesc", tone: "climate", href: "/market" },
-  { icon: Sprout, titleKey: "featureTemp", descKey: "featureTempDesc", tone: "amber", href: "/crop-rotation" },
-  { icon: Tractor, titleKey: "featureDistrict", descKey: "featureDistrictDesc", tone: "emerald", href: "/my-farm" },
-  { icon: Database, titleKey: "featureEvidence", descKey: "featureEvidenceDesc", tone: "emerald", href: "/data-sources" },
-  { icon: Languages, titleKey: "featureLanguage", descKey: "featureLanguageDesc", tone: "neutral", href: "/#about" },
-  { icon: ShieldCheck, titleKey: "featureTransparency", descKey: "featureTransparencyDesc", tone: "emerald", href: "/data-sources" },
-];
-
 /** Featured service cards (part 2). Icon order mirrors the design system; hrefs target existing routes. */
 const featuredCards = [
   { icon: Store, objKey: "cardMarket", href: "/market" },
@@ -80,7 +71,7 @@ const featuredCards = [
   { icon: Tractor, objKey: "cardCrops", href: "/crop-rotation" },
   { icon: MessageSquare, objKey: "cardAssistant", href: "/assistant" },
   { icon: Globe, objKey: "cardMap", href: "/map" },
-  { icon: Bookmark, objKey: "cardAdvisories", href: "/assistant" },
+  { icon: Bookmark, objKey: "cardAdvisories", href: "/saved-advisories" },
   { icon: Tractor, objKey: "cardMyFarm", href: "/my-farm" },
   { icon: Database, objKey: "cardData", href: "/data-sources" },
 ];
@@ -467,7 +458,7 @@ export default function LandingPage() {
 
       <main className="flex-1">
         {/* ============================================================
-            HERO SECTION (Inspired by Mati Kohon composition & storytelling)
+            HERO SECTION (Mati Kohon structural composition parity)
             ============================================================ */}
         <section className="kb-hero2" id="home">
           <div className="kb-hero2-bg" aria-hidden="true">
@@ -483,50 +474,136 @@ export default function LandingPage() {
 
               <h1 id="home-title" data-tour-target="home.hero" className="kb-hero2-title">
                 <span className="block">{t(`landing.heroHeadlineLine1`)}</span>
-                <span className="kb-hero2-line2 block"><em>{t(`landing.heroHeadlineLine2`)}</em></span>
+                <span className="kb-hero2-line2 block"><em className="kb-hero2-highlight">{t(`landing.heroHeadlineLine2`)}</em></span>
               </h1>
 
-              <p className="kb-hero2-desc">{locale === "bn" ? t("landing.heroDescriptionBn") : t("landing.heroDescription")}</p>
+              <p className="kb-hero2-desc">
+                {locale === "bn"
+                  ? "বাজারের তারিখযুক্ত প্রতিবেদন, আবহাওয়ার পূর্বাভাস, ঐতিহাসিক জলবায়ু প্রেক্ষাপট ও ফসল পরিকল্পনার সরঞ্জাম এক জায়গায়—তথ্যের উৎস ও সীমাবদ্ধতাসহ।"
+                  : "Explore dated market reports, weather forecasts, historical climate context, and crop-planning tools together, with source and coverage details."}
+              </p>
 
               <div className="kb-hero2-actions">
-                <Link href="/market" className="kb-hero2-card kb-hero2-card-primary">
-                  <Store className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  <span>{locale === "bn" ? t("landing.ctaMarketBn") : t("landing.ctaMarket")}</span>
+                <Link href="/dashboard" className="kb-hero2-card kb-hero2-card-primary">
+                  <Compass className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span>{locale === "bn" ? "লগইন ছাড়া ঘুরে দেখুন" : "Explore without login"}</span>
                   <ArrowRight className="h-4 w-4 shrink-0 ml-auto" aria-hidden="true" />
                 </Link>
                 <Link href="/crop-rotation" className="kb-hero2-card kb-hero2-card-secondary">
                   <Sprout className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  <span>{locale === "bn" ? t("landing.ctaPlanBn") : t("landing.ctaPlan")}</span>
+                  <span>{locale === "bn" ? "ফসল পর্যায় ও আবহাওয়া" : "Crop Rotation & Weather"}</span>
                 </Link>
                 <button
                   type="button"
-                  onClick={() => document.getElementById("interactive-previews")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                  className="kb-hero2-cta-assistant"
-                  aria-label={locale === "bn" ? "সহকারীকে জিজ্ঞাসা করুন" : "Ask the AI assistant"}
+                  onClick={() => {
+                    if (typeof window !== "undefined") {
+                      window.dispatchEvent(new CustomEvent("krishi:tour-start", { detail: { restart: true } }));
+                    }
+                  }}
+                  className="kb-hero2-cta-tour"
+                  aria-label={locale === "bn" ? "বন্ধুর সাথে পুরো সফর" : "Tour with Bondhu"}
                 >
-                  <MessageSquare className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  <span>{locale === "bn" ? t("landing.ctaAssistantBn") : t("landing.ctaAssistant")}</span>
-                  <Compass className="ml-auto h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  <Play className="h-4 w-4 shrink-0 fill-current text-forest" aria-hidden="true" />
+                  <span>{locale === "bn" ? "বন্ধুর সাথে পুরো সফর" : "Tour with Bondhu"}</span>
                 </button>
+                <Link href="/market" className="text-xs font-semibold text-forest hover:underline">
+                  {locale === "bn" ? t("landing.ctaMarketBn") : t("landing.ctaMarket")} &rarr;
+                </Link>
               </div>
 
               <div className="kb-hero2-proof">
-                <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span>
-                  {locale === "bn"
-                    ? "তথ্য না থাকলে কৃষিবন্ধু বিষয় সে বিষয়ে যান হাত লাগানো নয়।"
-                    : "When verified information is missing, KrishiBondhu says so instead of guessing a price."}
-                </span>
+                <div className="kb-hero2-proof-item">
+                  <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span>
+                    {locale === "bn"
+                      ? "পাওয়া তথ্যের সঙ্গে উৎস ও পর্যবেক্ষণের তারিখ দেখুন।"
+                      : "Review available information with its source and observation date."}
+                  </span>
+                </div>
+                <div className="kb-hero2-proof-item">
+                  <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span>
+                    {locale === "bn"
+                      ? "নির্দেশিকা সফর যেকোনো সময় থামান বা আবার শুরু করুন।"
+                      : "Pause, skip, or replay the guided tour at any time."}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Hero right column: Bounded application preview with reserved Bondhu dock */}
-            <div className="kb-hero2-card-stage">
-              <div className="kb-hero2-bondhu-dock" aria-hidden="true">
-                <span className="kb-bondhu-pulse" />
-              </div>
-              <div className="kb-hero2-sun" aria-hidden="true" />
+            {/* Hero right column: Agricultural snapshot & reserved Bondhu stage anchor */}
+          <div className="kb-hero2-card-stage" id="landingBondhuStage">
+            <div className="kb-hero-path-card">
+              <p className="kb-hero-path-eyebrow">{locale === "bn" ? "যেখান থেকে শুরু করবেন" : "A clear place to start"}</p>
+              <Link href="/market" className="kb-hero-path-link"><span className="kb-hero-path-number">01</span><span><strong>{locale === "bn" ? "বাজারের প্রতিবেদন" : "Market reports"}</strong><small>{locale === "bn" ? "পাওয়া তথ্যের তারিখ ও উৎস" : "Dates and sources where available"}</small></span><ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
+              <Link href="/climate" className="kb-hero-path-link"><span className="kb-hero-path-number">02</span><span><strong>{locale === "bn" ? "আবহাওয়া ও জলবায়ু" : "Weather & climate"}</strong><small>{locale === "bn" ? "পূর্বাভাস ও ঐতিহাসিক তথ্য আলাদা" : "Forecast and historical context"}</small></span><ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
+              <Link href="/crop-rotation" className="kb-hero-path-link"><span className="kb-hero-path-number">03</span><span><strong>{locale === "bn" ? "ফসল পরিকল্পনা" : "Crop planning"}</strong><small>{locale === "bn" ? "নিজের জমির তথ্য দিয়ে পরিকল্পনা করুন" : "Build a plan around your field details"}</small></span><ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
             </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ============================================================
+            3-STEP STORY FLOW (Mati Kohon structural parity: Data -> Decision -> Action)
+            ============================================================ */}
+        <section className="kb-story-flow" id="how-it-works" aria-labelledby="how-it-works-title">
+          <div className="kb-flow-intro"><p>{locale === "bn" ? "কৃষিবন্ধুর কর্মধারা" : "THE KRISHIBONDHU WORKFLOW"}</p><h2 id="how-it-works-title">{locale === "bn" ? "তথ্য থেকে কৃষকের কাজে" : "From information to farm action"}</h2><span>{locale === "bn" ? "প্রতিটি ধাপে উৎস, প্রেক্ষাপট ও অনিশ্চয়তা স্পষ্ট রাখুন।" : "Keep sources, context, and uncertainty visible at every step."}</span></div>
+          <div className="kb-flow-card">
+            <span className="kb-flow-step-tag">
+              <Satellite className="h-3.5 w-3.5" aria-hidden="true" />
+              {locale === "bn" ? "১. উপাত্ত পর্যবেক্ষণ" : "1. Scientific Data"}
+            </span>
+            <h3 className="kb-flow-title">{locale === "bn" ? "নাসা ও আবহাওয়া উপাত্ত" : "NASA & Agro Observations"}</h3>
+            <p className="kb-flow-desc">
+              {locale === "bn"
+                ? "উপলভ্য আবহাওয়া, ঐতিহাসিক জলবায়ু, উপগ্রহভিত্তিক মাটি ও বাজারের তথ্য উৎস ও তারিখসহ দেখা যায়।"
+                : "Available weather, historical climate, satellite soil context, and market information are shown with source and date details."}
+            </p>
+            <div className="kb-flow-chips">
+              <span className="kb-flow-chip">NASA POWER</span>
+              <span className="kb-flow-chip">GPM Rain</span>
+              <span className="kb-flow-chip">SMAP Moisture</span>
+              <span className="kb-flow-chip">DAM Market</span>
+            </div>
+            <Link href="/data-sources" className="kb-flow-link">{locale === "bn" ? "উৎস ও সময়সীমা দেখুন" : "Review sources and coverage"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
+          </div>
+
+          <div className="kb-flow-card">
+            <span className="kb-flow-step-tag">
+              <Layers className="h-3.5 w-3.5" aria-hidden="true" />
+              {locale === "bn" ? "২. কৃষিবন্ধু সিদ্ধান্ত" : "2. Decision Engine"}
+            </span>
+            <h3 className="kb-flow-title">{locale === "bn" ? "ফসল চক্র ও হ্যান্ডঅফ" : "Crop Rotation & Handoff"}</h3>
+            <p className="kb-flow-desc">
+              {locale === "bn"
+                ? "ফসল পর্যায়ক্রম ও বপনের সময়ের বিকল্প তুলনা করুন। ফলাফল পরিকল্পনায় সহায়তা করে; স্থানীয় জমির অবস্থা যাচাই করুন।"
+                : "Compare crop sequences and sowing-time options. Results support planning and should be checked against local field conditions."}
+            </p>
+            <div className="kb-flow-chips">
+              <span className="kb-flow-chip">{locale === "bn" ? "ফসল পর্যায়ক্রম" : "Crop sequences"}</span>
+              <span className="kb-flow-chip">{locale === "bn" ? "বপনের সময়" : "Sowing timing"}</span>
+              <span className="kb-flow-chip">{locale === "bn" ? "পরিকল্পনা সহায়তা" : "Planning support"}</span>
+            </div>
+            <Link href="/crop-rotation" className="kb-flow-link">{locale === "bn" ? "পরিকল্পনা তৈরি করুন" : "Build a crop plan"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
+          </div>
+
+          <div className="kb-flow-card">
+            <span className="kb-flow-step-tag">
+              <Tractor className="h-3.5 w-3.5" aria-hidden="true" />
+              {locale === "bn" ? "৩. কৃষকের হাতে সমাধান" : "3. Farmer Delivery"}
+            </span>
+            <h3 className="kb-flow-title">{locale === "bn" ? "সহজ বাংলা পরামর্শ ও খামার" : "Bangla Advisory & My Farm"}</h3>
+            <p className="kb-flow-desc">
+              {locale === "bn"
+                ? "বাংলা ভয়েস ও চ্যাট সহকারী এবং আমার খামারে নিজের কাজের তথ্য রাখুন। কর্মকর্তা পর্যালোচনা যেখানে চালু, সেখানে অনুরোধ পাঠান।"
+                : "Use Bangla voice or chat assistance and keep your own farm records. Request officer review where that workflow is enabled."}
+            </p>
+            <div className="kb-flow-chips">
+              <span className="kb-flow-chip">{locale === "bn" ? "বাংলা ভয়েস" : "Bangla Voice"}</span>
+              <span className="kb-flow-chip">{locale === "bn" ? "মাই ফার্ম" : "My Farm"}</span>
+              <span className="kb-flow-chip">{locale === "bn" ? "মানুষের সহায়তা" : "Human support"}</span>
+            </div>
+            <div className="kb-flow-actions"><Link href="/assistant" className="kb-flow-link">{locale === "bn" ? "সহকারী খুলুন" : "Ask the assistant"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link><Link href="/my-farm" className="kb-flow-link">{locale === "bn" ? "আমার খামার" : "Open My Farm"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link></div>
           </div>
         </section>
 
@@ -562,7 +639,7 @@ export default function LandingPage() {
               {locale === "bn" ? t("landing.previewsTitle") : "Explore Application Previews"}
             </h2>
             <p className="mt-3 text-base text-muted">
-              {locale === "bn" ? t("landing.previewsSub") : "Watch market, weather, planning and assistant previews with real data."}
+              {t("landing.previewsSub")}
             </p>
           </div>
 
@@ -972,250 +1049,11 @@ export default function LandingPage() {
           )}
         </section>
 
-        {/* ============================================================
-            KRISHIBONDHU 4 CORE PILLARS FROM PROPOSAL
-            ============================================================ */}
-        <section id="krishibondhu-pillars" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <span className="inline-flex items-center gap-2 rounded-full border border-[#247A4B]/30 bg-[#247A4B]/10 px-3.5 py-1 text-xs font-semibold text-[#123D2A] dark:text-[#56B870]">
-              <Sparkles className="h-3.5 w-3.5 text-[#247A4B]" />
-              <span>{locale === "bn" ? "সমন্বিত কৃষি ব্যবস্থা" : "Integrated Farm Intelligence"}</span>
-            </span>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-[#123D2A] dark:text-green-100 sm:text-4xl">
-              {locale === "bn" ? "বীজ থেকে বাজার — ৪টি প্রধান সিদ্ধান্ত স্তর" : "From Seed to Market — 4 Core Decision Pillars"}
-            </h2>
-            <p className="mt-3 text-base text-muted">
-              {locale === "bn"
-                ? "কী চাষ করবেন, কখন বপন করবেন, কীভাবে পরিচর্যা করবেন এবং কোথায় ও কখন বিক্রি করবেন—সবকিছু এক প্ল্যাটফর্মে।"
-                : "What to cultivate, when to sow, how to manage, and where to sell—all in one unified platform."}
-            </p>
-          </div>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {/* Pillar 1: What to Cultivate (AI Crop Recommendation Engine) */}
-            <div className="flex flex-col justify-between rounded-3xl border border-line bg-surface p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:bg-surface-card">
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-[#123D2A] dark:bg-emerald-950 dark:text-emerald-300">
-                    <Sprout className="h-6 w-6" />
-                  </span>
-                  <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-mono font-bold text-muted">
-                    ০১
-                  </span>
-                </div>
-                <span className="mt-4 block text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                  {locale === "bn" ? "কী চাষ করবেন?" : "What to Cultivate?"}
-                </span>
-                <h3 className="mt-1 text-lg font-bold text-content">
-                  {locale === "bn" ? "শস্য নির্বাচন ও ৭ডি শস্যবিন্যাস" : "Crop Selection & 7D Rotation"}
-                </h3>
-                <p className="mt-2 text-xs leading-relaxed text-muted">
-                  {locale === "bn"
-                    ? "মাটির ধরন, সেচ সুবিধা, উৎপাদন খরচ ও লাভজনকতার ৭-মাত্রিক বিশ্লেষণে সর্বোত্তম ফসল নির্বাচন।"
-                    : "Location suitability, soil/water needs, 7-dimensional trade-offs, and estimated cost comparison."}
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-line">
-                <Link
-                  href="/crop-rotation"
-                  className="inline-flex w-full items-center justify-between text-xs font-bold text-[#123D2A] hover:text-[#247A4B] dark:text-emerald-300"
-                >
-                  <span>{locale === "bn" ? "পরিকল্পনা শুরু করুন" : "Start Planning"}</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
 
-            {/* Pillar 2: When to Cultivate (Handoff Window) */}
-            <div className="flex flex-col justify-between rounded-3xl border border-line bg-surface p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:bg-surface-card">
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-[#AC8052] dark:bg-amber-950 dark:text-amber-300">
-                    <CalendarRange className="h-6 w-6" />
-                  </span>
-                  <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-mono font-bold text-muted">
-                    ০২
-                  </span>
-                </div>
-                <span className="mt-4 block text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                  {locale === "bn" ? "কখন চাষ করবেন?" : "When to Cultivate?"}
-                </span>
-                <h3 className="mt-1 text-lg font-bold text-content">
-                  {locale === "bn" ? "হ্যান্ডঅফ উইন্ডো বিশ্লেষণ" : "Handoff Window Analysis"}
-                </h3>
-                <p className="mt-2 text-xs leading-relaxed text-muted">
-                  {locale === "bn"
-                    ? "আমন কাটার পর ০, ৭ ও ১৪ দিনের বিলম্বের সুযোগ ও ঝুঁকি তুলনা। বৃষ্টি ও তাপমাত্রার ঐতিহাসিক সূচক ভিত্তিক।"
-                    : "Compare 0, 7, and 14-day sowing delays post-harvest to optimize moisture & minimize flowering heat stress."}
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-line">
-                <Link
-                  href="/handoff"
-                  className="inline-flex w-full items-center justify-between text-xs font-bold text-[#AC8052] hover:text-amber-700 dark:text-amber-300"
-                >
-                  <span>{locale === "bn" ? "সময়ের তুলনা দেখুন" : "Compare Timing"}</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
 
-            {/* Pillar 3: How to Manage (My Farm Lifecycle) */}
-            <div className="flex flex-col justify-between rounded-3xl border border-line bg-surface p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:bg-surface-card">
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300">
-                    <Tractor className="h-6 w-6" />
-                  </span>
-                  <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-mono font-bold text-muted">
-                    ০৩
-                  </span>
-                </div>
-                <span className="mt-4 block text-[11px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
-                  {locale === "bn" ? "কীভাবে পরিচালনা করবেন?" : "How to Manage?"}
-                </span>
-                <h3 className="mt-1 text-lg font-bold text-content">
-                  {locale === "bn" ? "আমার খামার ও পরিচর্যা" : "My Farm Crop Lifecycle"}
-                </h3>
-                <p className="mt-2 text-xs leading-relaxed text-muted">
-                  {locale === "bn"
-                    ? "বপন থেকে ফসল তোলা—সার ও সেচের রিমাইন্ডার, দৈনন্দিন মাঠের কাজ ও মৌসুমি নির্দেশিকা।"
-                    : "Personalized dashboard for cultivation calendars, irrigation & fertilizer reminders, and harvest tracking."}
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-line">
-                <Link
-                  href="/my-farm"
-                  className="inline-flex w-full items-center justify-between text-xs font-bold text-sky-700 hover:text-sky-800 dark:text-sky-300"
-                >
-                  <span>{locale === "bn" ? "আমার খামার খুলুন" : "Open My Farm"}</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
 
-            {/* Pillar 4: Where and When to Sell (Market Intelligence) */}
-            <div className="flex flex-col justify-between rounded-3xl border border-line bg-surface p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:bg-surface-card">
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
-                    <Store className="h-6 w-6" />
-                  </span>
-                  <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-mono font-bold text-muted">
-                    ০৪
-                  </span>
-                </div>
-                <span className="mt-4 block text-[11px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
-                  {locale === "bn" ? "কোথায় ও কখন বিক্রি করবেন?" : "Where & When to Sell?"}
-                </span>
-                <h3 className="mt-1 text-lg font-bold text-content">
-                  {locale === "bn" ? "কৃষি বাজার ও ন্যায্যমূল্য" : "Market Intelligence"}
-                </h3>
-                <p className="mt-2 text-xs leading-relaxed text-muted">
-                  {locale === "bn"
-                    ? "তারিখসহ পাওয়া বাজার প্রতিবেদন ও আগের দামের তথ্য দেখুন। প্রতিটি দামের সঙ্গে উৎস ও পর্যবেক্ষণের তারিখ থাকবে।"
-                    : "Browse dated market reports and available price history. Prices appear with their source and observation date."}
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-line">
-                <Link
-                  href="/market"
-                  className="inline-flex w-full items-center justify-between text-xs font-bold text-rose-700 hover:text-rose-800 dark:text-rose-300"
-                >
-                  <span>{locale === "bn" ? "বাজার দর দেখুন" : "Explore Market"}</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
 
-        {/* ============================================================
-            FEATURE DISCOVERY GRID (AUDIT CONTRACT PRESERVED)
-            ============================================================ */}
-        <section id="features" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="text-3xl font-bold tracking-tight text-content sm:text-4xl">
-              {t("landing.sectionFeatures")}
-            </h2>
-            <p className="mt-4 text-base text-muted sm:text-lg">{t("landing.sectionFeaturesSub")}</p>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {featureItems.map((f, index) => {
-              const palettes = [
-                { card: "border-sky-200 bg-gradient-to-br from-sky-50 to-cyan-100/70 dark:border-sky-800 dark:from-sky-950/50 dark:to-surface", icon: "bg-sky-200/70 text-sky-700 dark:bg-sky-800/40 dark:text-sky-300", art: "text-sky-500" },
-                { card: "border-amber-200 bg-gradient-to-br from-amber-50 to-orange-100/70 dark:border-amber-800 dark:from-amber-950/40 dark:to-surface", icon: "bg-amber-200/70 text-orange-700 dark:bg-amber-800/40 dark:text-amber-300", art: "text-orange-400" },
-                { card: "border-green-200 bg-gradient-to-br from-green-50 to-lime-100/70 dark:border-green-800 dark:from-green-950/50 dark:to-surface", icon: "bg-green-200/70 text-green-800 dark:bg-green-800/40 dark:text-green-300", art: "text-green-500" },
-                { card: "border-violet-200 bg-gradient-to-br from-violet-50 to-indigo-100/70 dark:border-violet-800 dark:from-violet-950/40 dark:to-surface", icon: "bg-violet-200/70 text-violet-700 dark:bg-violet-800/40 dark:text-violet-300", art: "text-violet-500" },
-                { card: "border-teal-200 bg-gradient-to-br from-teal-50 to-cyan-100/70 dark:border-teal-800 dark:from-teal-950/50 dark:to-surface", icon: "bg-teal-200/70 text-teal-800 dark:bg-teal-800/40 dark:text-teal-300", art: "text-teal-500" },
-                { card: "border-rose-200 bg-gradient-to-br from-rose-50 to-orange-100/60 dark:border-rose-800 dark:from-rose-950/40 dark:to-surface", icon: "bg-rose-200/70 text-rose-700 dark:bg-rose-800/40 dark:text-rose-300", art: "text-rose-400" },
-              ];
-              const palette = palettes[index];
-              return (
-                <Link
-                  key={f.titleKey}
-                  href={f.href}
-                  className={`group relative isolate flex h-full flex-col overflow-hidden rounded-2xl border p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg motion-reduce:transform-none ${palette.card}`}
-                >
-                  <f.icon className={`pointer-events-none absolute -bottom-4 -right-3 -z-10 h-32 w-32 -rotate-12 opacity-[0.07] dark:opacity-[0.12] ${palette.art}`} strokeWidth={1.2} aria-hidden="true" />
-                  <span className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm ${palette.icon}`}>
-                    <f.icon className="h-8 w-8" strokeWidth={1.7} aria-hidden="true" />
-                  </span>
-                  <h3 className="mt-5 text-lg font-bold leading-snug text-content group-hover:text-[#247A4B] dark:group-hover:text-emerald-300 transition-colors">
-                    {t(`landing.${f.titleKey}`)}
-                  </h3>
-                  <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted">
-                    {t(`landing.${f.descKey}`)}
-                  </p>
-                  <div className="mt-4 pt-3 border-t border-line/60 flex items-center justify-between text-xs font-bold text-[#247A4B] dark:text-[#56B870]">
-                    <span>{locale === "bn" ? "বিস্তারিত দেখুন" : "Explore feature"}</span>
-                    <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* ============================================================
-            4-STEP DECISION PATH (AUDIT CONTRACT PRESERVED)
-            ============================================================ */}
-        <section id="how-it-works" aria-labelledby="how-it-works-title" className="scroll-mt-20 border-t border-line bg-surface px-4 py-14 dark:bg-bg sm:px-6 sm:py-16">
-          <div className="mx-auto max-w-6xl">
-            <div className="mx-auto max-w-2xl text-center">
-              <h2 id="how-it-works-title" className="text-3xl font-bold tracking-tight text-forest dark:text-emerald-300 sm:text-4xl">{t("landing.howStepsTitle")}</h2>
-              <p className="mt-3 text-base leading-relaxed text-muted">{t("landing.howStepsSub")}</p>
-            </div>
-            <ol className="kb-steps-modern mt-9" aria-label={t("landing.sectionHow")}>
-              {steps.map((step, index) => {
-                const stepWord = ["One", "Two", "Three", "Four"][index];
-                return (
-                  <li key={step.n} className="kb-step-modern">
-                    <span className="kb-step-modern-num">{index + 1}</span>
-                    <span className="kb-step-modern-icon"><step.icon className="h-7 w-7" strokeWidth={1.7} aria-hidden="true" /></span>
-                    <h3 className="kb-step-modern-title">{t(`landing.step${stepWord}Title`)}</h3>
-                    <p className="kb-step-modern-body">{t(`landing.step${stepWord}Desc`)}</p>
-                  </li>
-                );
-              })}
-            </ol>
-            <div className="mt-7 flex flex-col gap-5 overflow-hidden rounded-3xl bg-gradient-to-r from-[#123D2A] via-[#2D534E] to-[#56B870] p-6 text-white shadow-lg sm:p-7 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h3 className="text-lg font-bold">{t("landing.howSimple.ctaTitle")}</h3>
-                <p className="mt-1 text-sm text-green-100">{t("landing.howSimple.ctaBody")}</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <Link href="/crop-rotation" className="inline-flex min-h-12 shrink-0 items-center justify-center gap-3 rounded-xl bg-[#d9f99d] px-6 py-3 text-base font-bold text-[#143d24] shadow-md transition-colors hover:bg-[#bef264] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
-                  <Sprout className="h-5 w-5" aria-hidden="true" />{t("landing.howSimple.cta")}<ArrowRight className="h-5 w-5" aria-hidden="true" />
-                </Link>
-                <Link href="/climate" className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/20">
-                  <CloudSun className="h-4 w-4" aria-hidden="true" />{t("publicHeader.climateData")}
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* ============================================================
             DATA OVERVIEW (AUDIT CONTRACT PRESERVED)

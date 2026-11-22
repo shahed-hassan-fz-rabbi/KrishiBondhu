@@ -6,8 +6,29 @@ function intersectionArea(a, b) {
     * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
 }
 
+/** Find the least obstructive fixed position for the floating companion. */
+export function chooseCompanionPosition({ viewportWidth, viewportHeight, size, obstacles = [], margin = 12 }) {
+  const maxX = Math.max(margin, viewportWidth - size.width - margin);
+  const maxY = Math.max(margin, viewportHeight - size.height - margin);
+  const candidates = [
+    { x: maxX, y: maxY, preference: 0 },
+    { x: margin, y: maxY, preference: 1 },
+    { x: maxX, y: margin + 58, preference: 1.2 },
+    { x: margin, y: margin + 58, preference: 1.4 },
+    { x: maxX, y: clamp((viewportHeight - size.height) / 2, margin, maxY), preference: 1.8 },
+  ];
+  let best = null;
+  for (const candidate of candidates) {
+    const rect = { left: candidate.x, top: candidate.y, right: candidate.x + size.width, bottom: candidate.y + size.height };
+    const overlap = obstacles.reduce((sum, obstacle) => sum + intersectionArea(rect, obstacle) * (obstacle.weight || 1), 0);
+    const cost = overlap + candidate.preference * 1000;
+    if (!best || cost < best.cost) best = { x: candidate.x, y: candidate.y, cost };
+  }
+  return { x: best.x, y: best.y };
+}
+
 /** Place a compact speech bubble near Bondhu while avoiding its body and a tour spotlight target. */
-export function placeCompanionBubble({ viewportWidth, viewportHeight, launcher, bubble, target = null, headerBottom = 0, preferredSide = null, margin = 12, gap = 14 }) {
+export function placeCompanionBubble({ viewportWidth, viewportHeight, launcher, bubble, target = null, obstacles = [], headerBottom = 0, preferredSide = null, margin = 12, gap = 14 }) {
   const width = Math.min(bubble.width, Math.max(180, viewportWidth - margin * 2));
   const height = Math.min(bubble.height, Math.max(120, viewportHeight - headerBottom - margin * 2));
   const bounds = { left: margin, right: viewportWidth - margin, top: Math.max(margin, headerBottom + margin), bottom: viewportHeight - margin };
@@ -26,7 +47,8 @@ export function placeCompanionBubble({ viewportWidth, viewportHeight, launcher, 
     const rect = { left, right: left + width, top, bottom: top + height };
     const displacement = Math.abs(left - option.x) + Math.abs(top - option.y);
     const sidePenalty = preferredSide && option.side !== preferredSide ? 2200 : 0;
-    const cost = intersectionArea(rect, launcher) * 3 + intersectionArea(rect, target) * 5 + displacement + option.preference * width * 0.025 + sidePenalty;
+    const contentOverlap = obstacles.reduce((sum, obstacle) => sum + intersectionArea(rect, obstacle) * (obstacle.weight || 1) * 10, 0);
+    const cost = intersectionArea(rect, launcher) * 3 + intersectionArea(rect, target) * 5 + contentOverlap + displacement + option.preference * width * 0.025 + sidePenalty;
     if (!best || cost < best.cost) best = { left, top, width, height, side: option.side, cost };
   }
   return best;

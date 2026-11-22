@@ -72,7 +72,7 @@ export const translations = {
 
       // ===== PART 2 — Homepage Redesign =====
       heroEyebrow: "Made for Bangladesh's farmers · Bangla & English",
-      heroHeadlineLine1: "By the farmer's side, in every decision.",
+      heroHeadlineLine1: "Plan with confidence.",
       heroHeadlineLine2: "From seed to market.",
       heroHeadlineAlt1: "কৃষকের পাশে, প্রতিটি সিদ্ধান্তে।",
       heroHeadlineAlt2: "বীজ থেকে বাজারে সহজ সমাধান।",
@@ -1263,7 +1263,7 @@ export const translations = {
 
       // ===== PART 2 — Homepage Redesign =====
       heroEyebrow: "বাংলাদেশের কৃষকের জন্য · বাংলা ও ইংরেজিতে",
-      heroHeadlineLine1: "কৃষকের পাশে, প্রতিটি সিদ্ধান্তে।",
+      heroHeadlineLine1: "পরিকল্পনায় কৃষিবন্ধু পাশে।",
       heroHeadlineLine2: "বীজ থেকে বাজারে সহজ সমাধান।",
       heroDescriptionBn: "বাজারদর, আবহাওয়া ও ফসলের তথ্য জানুন সহজেই। কোন ফসল করবেন তা বাছা থেকে বপন, পরিচর্যা ও বিক্রির পরিকল্পনা—কৃষকের দরকারি তথ্য ও সরঞ্জাম এক জায়গায়, নিজের ভাষায়।",
       ctaMarketBn: "বাজারদর দেখুন",

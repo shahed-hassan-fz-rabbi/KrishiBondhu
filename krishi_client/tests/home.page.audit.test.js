@@ -97,12 +97,17 @@ test("retired Mati Kohon reference route opens KrishiBondhu instead of a separat
   assert.doesNotMatch(route, /iframe|Mati Kohon|NASA/);
 });
 
-test("homepage feature and workflow labels resolve in their landing translation namespace", () => {
+test("homepage keeps one linked three-step workflow and a single service discovery grid", () => {
   const page = read("../app/page.js");
-  assert.match(page, /t\(`landing\.\$\{f\.titleKey\}`\)/);
-  assert.match(page, /t\(`landing\.\$\{f\.descKey\}`\)/);
-  assert.match(page, /t\(`landing\.\$\{s\.titleKey\}`\)|t\(`landing\.step\$\{stepWord\}Title`\)/);
-  assert.match(page, /t\(`landing\.\$\{s\.descKey\}`\)|t\(`landing\.step\$\{stepWord\}Desc`\)/);
+  assert.match(page, /t\(`landing\.\$\{objKey\}\.title`\)/);
+  assert.match(page, /t\(`landing\.\$\{objKey\}\.desc`\)/);
+  assert.equal((page.match(/id="features"/g) || []).length, 1);
+  assert.equal((page.match(/id="how-it-works"/g) || []).length, 1);
+  assert.match(page, /id="how-it-works" aria-labelledby="how-it-works-title"/);
+  assert.match(page, /href="\/data-sources" className="kb-flow-link"/);
+  assert.match(page, /href="\/crop-rotation" className="kb-flow-link"/);
+  assert.match(page, /href="\/assistant" className="kb-flow-link"/);
+  assert.doesNotMatch(page, /Rabi 2026|রবি ২০২৬|0\.31 m³\/m³|<5 mm \(Safe\)|25-Season Replay/);
 });
 
 test("homepage explains KrishiBondhu as a farmer app, with source limits in both languages", () => {
@@ -159,30 +164,18 @@ test("assistant entry points focus on farming and route price outlooks through t
   assert.match(toolExecutor, /ageDays <= freshnessWindowDays/);
 });
 
-test("How KrishiBondhu Works presents a farmer's four-step planning path", () => {
+test("homepage story flow appears before service discovery and application previews", () => {
   const page = read("../app/page.js");
-  const start = page.indexOf('id="how-it-works"');
-  const end = page.indexOf('id="data"', start);
-  assert.ok(start >= 0 && end > start, "How section is present before the contextual data section");
-  const section = page.slice(start, end);
-  assert.match(section, /aria-labelledby="how-it-works-title"/);
-  assert.match(section, /<ol className=.*(?:sm:grid-cols-2|kb-steps-modern)/);
-  assert.match(section, /href="\/climate"/);
-  assert.match(section, /href="\/crop-rotation"/);
-
-  for (const locale of ["en", "bn"]) {
-    const landing = translations[locale].landing;
-    const stepKeySets = [
-      ["step1Title", "step1Desc", "step2Title", "step2Desc", "step3Title", "step3Desc", "step4Title", "step4Desc"],
-      ["stepOneTitle", "stepOneDesc", "stepTwoTitle", "stepTwoDesc", "stepThreeTitle", "stepThreeDesc", "stepFourTitle", "stepFourDesc"],
-    ];
-    const selectedStepKeys = stepKeySets.find((keys) => keys.every((key) => typeof landing[key] === "string" && landing[key].length > 0));
-    assert.ok(selectedStepKeys, `${locale} has a complete localized four-step workflow`);
-    for (const key of selectedStepKeys) {
-      assert.equal(typeof landing[key], "string", `${locale}.landing.${key}`);
-      assert.ok(landing[key].length > 0, `${locale}.landing.${key}`);
-    }
-  }
+  const hero = page.indexOf('id="home"');
+  const flow = page.indexOf('id="how-it-works"');
+  const services = page.indexOf('id="features"');
+  const previews = page.indexOf('id="interactive-previews"');
+  const data = page.indexOf('id="data"');
+  assert.ok(hero >= 0 && hero < flow && flow < services && services < previews && previews < data);
+  assert.match(page.slice(flow, services), /aria-labelledby="how-it-works-title"/);
+  assert.match(page.slice(flow, services), /kb-flow-card/);
+  assert.match(page, /Compare crop sequences and sowing-time options/);
+  assert.match(page, /ফসল পর্যায়ক্রম ও বপনের সময়ের বিকল্প তুলনা করুন/);
 
   assert.match(translations.en.landing.howSimple.intro, /next crop/i);
   assert.match(translations.en.landing.howSimple.body2, /soil and water/i);
