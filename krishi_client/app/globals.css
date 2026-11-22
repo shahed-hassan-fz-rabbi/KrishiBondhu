@@ -403,6 +403,7 @@
 .kb-mini-launcher.is-flying .kb-mini-face { animation:kb-mini-flight .4s cubic-bezier(.2,.75,.25,1) both; }
 @keyframes kb-mini-flight { 0% { transform:translate(0,0) rotate(0); } 40% { transform:translate(-10px,-14px) rotate(-13deg); } 100% { transform:translate(0,0) rotate(0); } }
 .kb-mini-panel { width:min(365px,calc(100vw - 32px)); max-height:min(76vh,670px); overflow-y:auto; overscroll-behavior:contain; border:1px solid #e5dcc9; border-radius:22px; background:#fffaf0; color:#173B2A; box-shadow:0 20px 65px #243c332b; pointer-events:auto; animation:kb-mini-appear .2s ease-out both; }
+.kb-mini-guide:not(.is-tour-active) .kb-mini-panel { position:fixed; right:20px; bottom:100px; }
 @keyframes kb-mini-appear { from { opacity:0; transform:translateY(9px) scale(.98); } to { opacity:1; transform:translateY(0) scale(1); } }
 .kb-mini-panel-head { position:sticky; top:0; z-index:1; display:flex; align-items:center; gap:11px; border-bottom:1px solid #e9e1d2; background:#fffaf0f2; padding:13px 15px; backdrop-filter:blur(8px); }
 .kb-mini-avatar { display:grid; width:42px; height:42px; flex:none; place-items:center; border:1px solid #e8dcbf; border-radius:14px; background:#f5e8cf; }
@@ -447,6 +448,18 @@
 .kb-mini-launcher.is-hidden .kb-bondhu-canvas { display:none; }
 .kb-mini-avatar .kb-bondhu-canvas { width:38px; height:38px; }
 .kb-bondhu-monogram { display:grid; width:38px; height:38px; place-items:center; border-radius:11px; background:#247A4B; color:#fffaf0; font-size:18px; font-weight:800; }
+.kb-tour-spotlight { position:fixed; inset:0; z-index:80; width:100vw; height:100dvh; overflow:visible; pointer-events:none; }
+.kb-tour-spotlight path { fill:rgba(8,24,16,.72); }
+.kb-tour-outline { position:fixed; z-index:81; border:2px solid #d5ea92; border-radius:14px; box-shadow:0 0 0 3px #174b3440,0 0 26px #d5ea9266; pointer-events:none; transition:left .18s ease,top .18s ease,width .18s ease,height .18s ease; }
+.kb-mini-guide.is-tour-active { align-items:flex-start; transition:left .62s cubic-bezier(.2,.75,.25,1),top .62s cubic-bezier(.2,.75,.25,1); }
+.kb-mini-guide.is-tour-active .kb-mini-launcher { min-height:94px; gap:5px; flex-direction:column; border-radius:28px; padding:4px 8px 7px; }
+.kb-mini-guide.is-tour-active .kb-mini-launcher .kb-mini-face { width:80px; height:80px; }
+.kb-mini-guide.is-tour-active .kb-mini-launcher span { font-size:10px; }
+.kb-mini-guide.is-tour-active .kb-mini-launcher.is-flying { transform:scale(1.05) rotate(-4deg); }
+.kb-mini-panel.is-tour-panel { position:fixed; z-index:88; max-height:min(70vh,560px); overflow-y:auto; }
+.kb-mini-tour-description { margin:0; color:#40594a; font-size:13px; line-height:1.7; }
+.kb-mini-tour-notice { margin:8px 0 0; border-radius:10px; background:#fff4d8; padding:8px 10px; color:#604b23; font-size:11px; line-height:1.5; }
+.kb-mini-tour-actions button { min-height:40px; }
 .kb-cat-actions { position:absolute; z-index:3; top:calc(7% + 128px); right:-1%; display:grid; gap:7px; width:min(235px,65%); }
 .kb-cat-actions button,.kb-cat-actions a { display:inline-flex; min-height:36px; align-items:center; justify-content:center; border:1px solid #efe6d5; border-radius:11px; background:#fffaf0; padding:7px 10px; color:#24584a; font:inherit; font-size:11px; font-weight:700; line-height:1.3; text-align:center; text-decoration:none; cursor:pointer; }
 .kb-cat-actions button:hover,.kb-cat-actions a:hover { background:#eef5e8; }
@@ -466,13 +479,19 @@
   .kb-mini-launcher { min-height:53px; padding:4px 13px 4px 4px; font-size:12px; }
   .kb-mini-launcher .kb-mini-face { width:43px; height:43px; }
   .kb-mini-panel { width:min(360px,calc(100vw - 22px)); max-height:min(67vh,560px); border-radius:19px; }
+  .kb-mini-guide:not(.is-tour-active) .kb-mini-panel { right:11px; bottom:calc(86px + env(safe-area-inset-bottom)); }
   .kb-mini-panel-head { padding:11px 13px; }
   .kb-mini-panel-body { padding:13px; }
   .kb-mini-panel-body h2 { font-size:16px; }
+  .kb-mini-panel.is-tour-panel { max-height:min(66vh,500px); }
+  .kb-mini-guide.is-tour-active .kb-mini-launcher { min-height:76px; padding:3px 7px 6px; }
+  .kb-mini-guide.is-tour-active .kb-mini-launcher .kb-mini-face { width:64px; height:64px; }
+  .kb-tour-outline { border-radius:11px; }
   .kb-mini-places nav { max-height:175px; }
 }
 @media(prefers-reduced-motion:reduce) {
   .kb-mini-launcher,.kb-mini-panel,.kb-mini-launcher .kb-mini-face { animation:none!important; transition:none!important; }
+  .kb-mini-guide.is-tour-active,.kb-tour-outline { animation:none!important; transition:none!important; }
   .kb-mini-eyes { transition:none; }
 }
 

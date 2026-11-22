@@ -173,7 +173,7 @@ function MyFarmPage() {
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#052e21]/95 via-[#052e21]/60 to-transparent" />
         <div className="flex min-h-[200px] flex-col justify-center gap-6 p-5 sm:min-h-[220px] sm:p-7 lg:flex-row lg:items-end lg:justify-between lg:p-8">
           <div className="max-w-2xl">
-            <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">{t("myFarm.title")}</h1>
+            <h1 data-tour-target="farm.overview" className="text-3xl font-bold tracking-tight text-white sm:text-4xl">{t("myFarm.title")}</h1>
             <p className="mt-2 max-w-xl text-sm leading-6 text-white/85 sm:text-base">{t("myFarm.subtitle")}</p>
           </div>
 

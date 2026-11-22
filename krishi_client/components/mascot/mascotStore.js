@@ -4,7 +4,7 @@ import { useSyncExternalStore } from "react";
 
 const STORAGE_KEY = "krishibondhu.bondhu.preferences";
 const LEGACY_STORAGE_KEY = "krishibondhu.krishu.preferences";
-const DEFAULT_PREFERENCES = { animationEnabled: true, hidden: false, muted: false, x: null, y: null };
+const DEFAULT_PREFERENCES = { animationEnabled: true, hidden: false, muted: false, x: null, y: null, tourProgress: null };
 let snapshot = DEFAULT_PREFERENCES;
 let loaded = false;
 
@@ -41,6 +41,7 @@ export function parseMascotPreferences(currentValue, legacyValue = null) {
       muted: value.muted === true,
       x: Number.isFinite(value.x) ? value.x : null,
       y: Number.isFinite(value.y) ? value.y : null,
+      tourProgress: Number.isInteger(value.tourProgress) && value.tourProgress >= 0 ? value.tourProgress : null,
     };
   } catch {
     return { ...DEFAULT_PREFERENCES };

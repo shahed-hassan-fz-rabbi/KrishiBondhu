@@ -20,7 +20,7 @@ test("Bondhu supports the required interaction states and reduced-motion poses",
 test("existing mascot preferences migrate without losing position, visibility or voice settings", async () => {
   const { parseMascotPreferences } = await import("../components/mascot/mascotStore.js");
   assert.deepEqual(parseMascotPreferences(null, JSON.stringify({ animationEnabled: false, hidden: true, muted: true, x: 21, y: 77 })), {
-    animationEnabled: false, hidden: true, muted: true, x: 21, y: 77,
+    animationEnabled: false, hidden: true, muted: true, x: 21, y: 77, tourProgress: null,
   });
   assert.equal(parseMascotPreferences(JSON.stringify({ muted: false }), JSON.stringify({ muted: true })).muted, false);
   assert.equal(parseMascotPreferences("invalid").animationEnabled, true);

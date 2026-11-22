@@ -90,7 +90,7 @@ function SavedAdvisoriesContent() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="max-w-2xl">
           <p className="flex items-center gap-2 text-sm font-bold text-amber-800 dark:text-amber-300"><Bookmark size={17} aria-hidden="true" />{bn ? "আপনার সংগ্রহ" : "Your collection"}</p>
-          <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-content sm:text-4xl">{bn ? "সংরক্ষিত পরামর্শ" : "Saved advisories"}</h1>
+          <h1 data-tour-target="advisories.overview" className="mt-2 text-3xl font-extrabold tracking-tight text-content sm:text-4xl">{bn ? "সংরক্ষিত পরামর্শ" : "Saved advisories"}</h1>
           <p className="mt-2 text-sm leading-6 text-muted">{bn ? "ফসল পরিকল্পনা, পর্যায়ক্রম ও সহকারীর সংরক্ষিত পরামর্শ সূত্রসহ ফিরে দেখুন।" : "Return to saved crop guidance with its category, date, location and originating page."}</p>
         </div>
         {!loading && !loadError && <span className="inline-flex min-h-9 w-fit items-center rounded-full border border-line bg-surface px-3 text-xs font-semibold text-muted">{new Intl.NumberFormat(bn ? "bn-BD" : "en-US").format(advisories.length)} {bn ? "টি সংরক্ষিত" : "saved"}</span>}

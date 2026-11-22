@@ -125,7 +125,7 @@ function MapPage() {
       <div className="flex flex-col gap-4 rounded-3xl border border-emerald-200 bg-gradient-to-br from-lime-100 via-emerald-50 to-sky-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-7 dark:border-emerald-900 dark:from-lime-950/30 dark:via-emerald-950/30 dark:to-sky-950/30">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-forest font-heading sm:text-3xl dark:text-emerald-100">
+            <h1 data-tour-target="map.overview" className="text-2xl font-bold tracking-tight text-forest font-heading sm:text-3xl dark:text-emerald-100">
               {isBn ? "ভৌগোলিক তথ্য ব্যবস্থা (GIS) মানচিত্র" : "Interactive GIS & Environmental Map"}
             </h1>
           </div>

@@ -481,7 +481,7 @@ export default function LandingPage() {
                 <span>{locale === "bn" ? "বাংলাদেশের কৃষকের জন্য · বাংলা ও ইংরেজিতে" : "Made for Bangladesh's farmers · Bangla & English"}</span>
               </div>
 
-              <h1 id="home-title" className="kb-hero2-title">
+              <h1 id="home-title" data-tour-target="home.hero" className="kb-hero2-title">
                 <span className="block">{t(`landing.heroHeadlineLine1`)}</span>
                 <span className="kb-hero2-line2 block"><em>{t(`landing.heroHeadlineLine2`)}</em></span>
               </h1>

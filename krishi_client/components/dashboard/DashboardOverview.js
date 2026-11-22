@@ -42,7 +42,7 @@ export default function DashboardOverview({ available, metrics, years, chartSeri
       <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-20 h-64 w-64 rounded-full border-[34px] border-white/10" />
       <div className="relative max-w-3xl">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-100">{isBn ? "কৃষিবন্ধু · কৃষি কর্মক্ষেত্র" : "KrishiBondhu · Your farm workspace"}</p>
-        <h1 className="mt-2 text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">{isBn ? `${user?.name ? `${user.name}, ` : ""}আপনার কৃষি ড্যাশবোর্ড` : `${user?.name ? `Welcome, ${user.name}` : "Your agriculture dashboard"}`}</h1>
+        <h1 data-tour-target="dashboard.overview" className="mt-2 text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">{isBn ? `${user?.name ? `${user.name}, ` : ""}আপনার কৃষি ড্যাশবোর্ড` : `${user?.name ? `Welcome, ${user.name}` : "Your agriculture dashboard"}`}</h1>
         <p className="mt-2 text-sm leading-6 text-white/85">{isBn ? "আবহাওয়া, ঐতিহাসিক জলবায়ু তথ্য ও কৃষি সেবাগুলো এক জায়গায় দেখুন।" : "A clear view of weather, historical climate context, and your agricultural services."}</p>
         <div className="mt-5 flex flex-wrap items-center gap-2">
           <span className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3 text-sm font-medium"><Map className="h-4 w-4" aria-hidden="true" />{districtName || "—"}</span>

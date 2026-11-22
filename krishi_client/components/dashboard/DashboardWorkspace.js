@@ -312,7 +312,7 @@ export default function DashboardWorkspace({ view = "overview", children }) {
     {view === "overview" ? null : <>
 
       <DistrictLocationPanel district={selectedDistrictLocation} locale={locale} />
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 dark:border-emerald-900 dark:bg-emerald-950/20"><h1 className="text-2xl font-semibold text-content">{t("publicHeader.climateData")}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 dark:border-emerald-900 dark:bg-emerald-950/20"><h1 data-tour-target="weather.overview" className="text-2xl font-semibold text-content">{t("publicHeader.climateData")}</h1>
           <div className="flex flex-wrap items-center justify-start gap-2">
           {/* District selector */}
           <label className="relative flex min-h-10 items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 shadow-km-sm transition-colors focus-within:border-emerald">

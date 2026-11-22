@@ -238,7 +238,7 @@ export default function MarketPage() {
   return <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:py-12">
     <header className="mb-8 rounded-3xl bg-[#eee7d8] p-6 text-[#173B2A] sm:p-10">
       <div className="flex items-center gap-2 text-sm font-bold text-[#9a6226]"><Store size={18}/> KrishiBondhu · Market</div>
-      <h1 className="mt-4 max-w-3xl text-3xl font-extrabold tracking-tight sm:text-5xl">{c.title}</h1>
+      <h1 data-tour-target="market.overview" className="mt-4 max-w-3xl text-3xl font-extrabold tracking-tight sm:text-5xl">{c.title}</h1>
       <p className="mt-4 max-w-2xl text-base leading-7 text-[#526761]">{c.intro}</p>
       {user?.role === "admin" ? <Link href="/market-import" className="mt-5 inline-flex rounded-full border border-[#0d6865] px-4 py-2 text-sm font-bold text-[#247A4B]">{bn ? "সরকারি বাজারদর আমদানি" : "Admin: import official prices"}</Link> : null}
       <div className="mt-5 rounded-2xl border border-[#d9d0ba] bg-white/70 p-4 pr-24 text-sm text-[#526761] sm:pr-4" role="status">

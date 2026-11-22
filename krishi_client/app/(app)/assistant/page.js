@@ -262,8 +262,10 @@ function AssistantContent() {
     const lastMessage = messages[messages.length - 1];
     const state = isListening
       ? "listening"
-      : isLoading || isTtsSpeaking
+      : isTtsSpeaking
           ? "talking"
+          : isLoading
+            ? "thinking"
           : error
             ? "concerned"
             : lastMessage?.sender === "assistant" ? "happy" : "idle";
@@ -755,7 +757,7 @@ function AssistantContent() {
           <header className="flex shrink-0 items-center justify-between gap-3 border-b border-emerald-100 bg-emerald-50/60 px-4 py-3 sm:px-6 dark:border-emerald-900 dark:bg-emerald-950/20">
             <div className="flex min-w-0 items-center gap-3">
               <Image src={BRAND_LOGO_SRC} alt="" width={40} height={40} className="h-10 w-10 shrink-0 rounded-xl object-contain" />
-              <h1 className="text-lg font-semibold tracking-tight text-content sm:text-xl">{t("assistant.title")}</h1>
+              <h1 data-tour-target="assistant.overview" className="text-lg font-semibold tracking-tight text-content sm:text-xl">{t("assistant.title")}</h1>
             </div>
             <button
               type="button"

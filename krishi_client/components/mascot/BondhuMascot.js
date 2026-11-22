@@ -23,11 +23,12 @@ function BondhuFallback() {
 }
 
 /** Lazy, low-power 3D companion with a vector fallback for disabled or unavailable WebGL. */
-export function BondhuMascot({ className = "", state = "idle", active = true, label = "Bondhu, a friendly baby dragon" }) {
+export function BondhuMascot({ className = "", state = "idle", facing = 1, active = true, label = "Bondhu, a friendly baby dragon" }) {
   const hostRef = useRef(null);
   const rendererHostRef = useRef(null);
   const sceneRef = useRef(null);
   const stateRef = useRef(state);
+  const facingRef = useRef(facing);
   const [fallback, setFallback] = useState(true);
   useEffect(() => {
     if (!active) return undefined;
@@ -77,6 +78,7 @@ export function BondhuMascot({ className = "", state = "idle", active = true, la
       root.position.set(0, -0.02 + pose.bob, 0);
       root.rotation.z += (pose.bodySway - root.rotation.z) * 0.12;
       root.rotation.x += ((pose.state === "flying" ? -0.1 : 0) - root.rotation.x) * 0.12;
+      root.rotation.y += ((pose.state === "flying" ? facingRef.current * 0.24 : 0) - root.rotation.y) * 0.1;
       parts.body.scale.y = 1 + breath;
       parts.head.rotation.z += (pose.headTilt - parts.head.rotation.z) * 0.14;
       parts.tail.rotation.y += (pose.tailSway - parts.tail.rotation.y) * 0.12;
@@ -190,13 +192,14 @@ export function BondhuMascot({ className = "", state = "idle", active = true, la
 
   useEffect(() => {
     stateRef.current = state;
+    facingRef.current = facing;
     const current = sceneRef.current;
     if (current && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       current.renderer.setAnimationLoop(null);
       current.applyPose(performance.now());
       current.renderer.render(current.scene, current.camera);
     }
-  }, [state]);
+  }, [facing, state]);
 
   return <div ref={hostRef} className={`kb-bondhu-canvas ${fallback ? "is-fallback" : ""} ${className}`} role="img" aria-label={label}>
     <div ref={rendererHostRef} className="kb-bondhu-renderer" aria-hidden="true" />
