@@ -221,7 +221,7 @@ export function PublicHeader() {
           <BrandMark tone="light" />
 
           {/* Regional Context Chip (inspired by reference location breadcrumb) */}
-          <div className="hidden items-center gap-1.5 rounded-full border border-line bg-surface-2/80 px-2.5 py-1 text-xs text-muted md:inline-flex">
+          <div className="hidden items-center gap-1.5 rounded-full border border-line bg-surface-2/80 px-2.5 py-1 text-xs text-muted xl:inline-flex">
             <MapPin className="h-3.5 w-3.5 text-[#247A4B] dark:text-[#56B870]" />
             <span className="font-semibold text-content">{districtName}</span>
             <span className="text-[10px] text-muted">• {locale === "bn" ? "সক্রিয় জেলা" : "Active District"}</span>

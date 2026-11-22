@@ -6,6 +6,7 @@ import { filterObservationsByDate, filterVerifiedSeries, isObservationStale, loc
 const explorer = readFileSync(new URL("../components/market/MarketPriceExplorer.js", import.meta.url), "utf8");
 const forecast = readFileSync(new URL("../components/market/MarketForecastPanel.js", import.meta.url), "utf8");
 const api = readFileSync(new URL("../services/api.js", import.meta.url), "utf8");
+const publicChrome = readFileSync(new URL("../components/layout/PublicChrome.js", import.meta.url), "utf8");
 
 const observed = [
   { commodity: "Rice", division: "Dhaka", priceType: "retail", frequency: "daily", unit: "kg", district: "A", market: "Central", observedOn: "2026-10-01" },
@@ -54,4 +55,9 @@ test("history and forecast clients pass exact source and location filters", () =
   assert.match(api, /export function fetchMarketPriceHistory\(\{[^}]*district, upazila/);
   assert.match(api, /export function fetchMarketPriceForecast\(\{ commodity, division, district, upazila, market, unit, source/);
   assert.match(api, /query\.set\("source", source\)/);
+});
+
+test("tablet header keeps the location chip out of the compact navigation row", () => {
+  assert.match(publicChrome, /text-muted xl:inline-flex/);
+  assert.doesNotMatch(publicChrome, /text-muted md:inline-flex/);
 });
