@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ArrowUpRight, FileSpreadsheet, FileText, ShieldCheck, UploadCloud } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext.js";
 import { commitMarketPriceImport, fetchMarketPriceDataStatus, previewMarketCsvUpload, previewMarketPdfUpload } from "@/services/api.js";
@@ -19,17 +19,32 @@ export default function MarketImportPage() {
   const [preview, setPreview] = useState(null);
   const [evidence, setEvidence] = useState(null);
   const [status, setStatus] = useState(null);
+  const [statusLoading, setStatusLoading] = useState(true);
+  const [statusError, setStatusError] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [humanVerified, setHumanVerified] = useState(false);
 
+  const loadStatus = useCallback(async () => {
+    setStatusLoading(true);
+    setStatusError("");
+    try {
+      const result = await fetchMarketPriceDataStatus();
+      if (result.success) setStatus(result.data);
+      else setStatusError("Import history is unavailable. Retry to check the server.");
+    } catch {
+      setStatusError("Import history is unavailable. Check the connection and retry.");
+    } finally {
+      setStatusLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    if (user?.role !== "admin") return;
-    let active = true;
-    fetchMarketPriceDataStatus().then((result) => { if (active && result.success) setStatus(result.data); });
-    return () => { active = false; };
-  }, [user]);
+    if (user?.role !== "admin") return undefined;
+    const timer = window.setTimeout(() => { void loadStatus(); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadStatus, user?.role]);
 
   const handlePdfPreview = async () => {
     if (!pdfFile) return;
@@ -50,7 +65,7 @@ export default function MarketImportPage() {
   };
 
   const handleImport = async () => {
-    if (!preview?.records?.length) return;
+    if (!preview?.records?.length || !humanVerified || busy) return;
     setBusy(true); setError(""); setNotice("");
     const result = await commitMarketPriceImport({
       records: preview.records.map((row) => ({ ...row, frequency })),
@@ -60,7 +75,7 @@ export default function MarketImportPage() {
     if (result.success) {
       setNotice(`${result.data.submittedRecords} ${result.data.frequency} records imported as ${result.data.qualityStatus}. Last successful sync: ${new Date(result.data.lastSuccessfulSyncAt).toLocaleString()}.`);
       setPreview(null); setCsvFile(null); setHumanVerified(false);
-      const latest = await fetchMarketPriceDataStatus(); if (latest.success) setStatus(latest.data);
+      await loadStatus();
     } else setError(result.error?.message || "Could not import these records.");
     setBusy(false);
   };
@@ -76,7 +91,10 @@ export default function MarketImportPage() {
       <a className="mt-4 inline-flex items-center gap-1 text-sm font-bold underline" href={OFFICIAL_REPORT} target="_blank" rel="noreferrer">Open official DAM report <ArrowUpRight size={15}/></a>
     </header>
 
-    {status?.syncs?.length ? <section className="mt-6 rounded-2xl border border-line bg-surface p-5"><h2 className="font-bold text-content">Last successful imports</h2><div className="mt-3 flex flex-wrap gap-3">{status.syncs.map((item) => <div className="rounded-xl bg-canvas px-4 py-3 text-sm" key={`${item.frequency}-${item.lastSuccessfulSyncAt}`}><strong className="text-content">{item.frequency}</strong><p className="mt-1 text-muted">{new Date(item.lastSuccessfulSyncAt).toLocaleString()} · {item.verifiedRecords} verified / {item.importedRecords} submitted</p></div>)}</div></section> : <p className="mt-6 rounded-xl bg-surface p-4 text-sm text-muted">No successful DAM admin import has been recorded yet.</p>}
+    <section aria-labelledby="imports-heading" className="mt-6 rounded-2xl border border-line bg-surface p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3"><h2 id="imports-heading" className="font-bold text-content">Last successful imports</h2><button type="button" onClick={loadStatus} disabled={statusLoading} className="min-h-11 rounded-xl border border-line px-4 py-2 text-sm font-semibold text-content hover:bg-surface-2 disabled:opacity-60">{statusLoading ? "Checking…" : "Refresh history"}</button></div>
+      {statusError ? <p role="alert" className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/25 dark:text-amber-200">{statusError}</p> : statusLoading && !status ? <p role="status" className="mt-3 text-sm text-muted">Loading verified import history…</p> : status?.syncs?.length ? <div className="mt-3 grid gap-3 sm:grid-cols-2">{status.syncs.map((item) => <div className="rounded-xl bg-canvas px-4 py-3 text-sm" key={`${item.frequency}-${item.lastSuccessfulSyncAt}`}><strong className="text-content">{item.frequency}</strong><p className="mt-1 text-muted">{new Date(item.lastSuccessfulSyncAt).toLocaleString()} · {item.verifiedRecords} verified / {item.importedRecords} submitted</p></div>)}</div> : <p className="mt-3 text-sm text-muted">No successful DAM admin import has been recorded yet.</p>}
+    </section>
 
     <section className="mt-6 grid gap-6 lg:grid-cols-2">
       <article className="rounded-2xl border border-line bg-surface p-5 sm:p-6">
@@ -98,7 +116,7 @@ export default function MarketImportPage() {
         <button type="button" disabled={!csvFile || busy} onClick={handleCsvPreview} className="mt-3 rounded-xl border border-[#0d6865] px-4 py-2.5 text-sm font-bold text-[#247A4B] disabled:opacity-50">Preview CSV</button>
         {preview ? <div className="mt-4 overflow-x-auto rounded-xl border border-line"><table className="w-full text-left text-xs"><thead className="bg-canvas text-muted"><tr>{["Date", "Crop", "Division", "Market", "Type", "Range"].map((heading) => <th className="p-2" key={heading}>{heading}</th>)}</tr></thead><tbody>{preview.records.slice(0, 8).map((row, index) => <tr className="border-t border-line text-content" key={`${row.date}-${row.commodity}-${index}`}><td className="p-2">{row.date}</td><td className="p-2">{row.commodity}</td><td className="p-2">{row.division}</td><td className="p-2">{row.market || "—"}</td><td className="p-2">{row.priceType}</td><td className="p-2">{row.priceMin}–{row.priceMax} {row.unit}</td></tr>)}</tbody></table><p className="p-2 text-xs text-muted">{preview.previewCount} total rows · {frequency}</p></div> : null}
         {preview ? <label className="mt-4 flex items-start gap-2 text-sm text-content"><input type="checkbox" checked={humanVerified} onChange={(event) => setHumanVerified(event.target.checked)} className="mt-1 accent-[#247A4B]"/><span>I checked each row against the official DAM report, including date, market, crop, type, unit, and price range. Verified rows become visible to farmers and forecasting.</span></label> : null}
-        {preview ? <button type="button" disabled={busy} onClick={handleImport} className="mt-4 rounded-xl bg-[#247A4B] px-5 py-3 text-sm font-bold text-white disabled:opacity-50">{busy ? "Importing…" : `Import ${preview.previewCount} ${frequency} rows`}</button> : null}
+        {preview ? <button type="button" disabled={busy || !humanVerified} onClick={handleImport} className="mt-4 min-h-11 rounded-xl bg-[#247A4B] px-5 py-3 text-sm font-bold text-white disabled:opacity-50">{busy ? "Importing…" : `Import ${preview.previewCount} ${frequency} rows`}</button> : null}
       </article>
     </section>
     {error ? <p role="alert" className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-800">{error}</p> : null}

@@ -34,8 +34,7 @@ function LoginForm() {
   const { t } = useLang();
   const { login } = useAuth();
   const errorParam = searchParams.get("error");
-  const messageParam = searchParams.get("message");
-  const queryNoticeKey = `${errorParam || ""}:${messageParam || ""}`;
+  const queryNoticeKey = errorParam || "";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -46,10 +45,8 @@ function LoginForm() {
   const [dismissedQueryNotice, setDismissedQueryNotice] = useState("");
   const [dismissedQueryError, setDismissedQueryError] = useState("");
 
-  const isRawGoogleError = messageParam && (messageParam.includes("failed") || messageParam.includes("reason:") || messageParam.includes("EACCES") || messageParam.includes("ECONNREFUSED"));
-  const cleanGoogleError = isRawGoogleError 
-    ? (t("auth.googleAuthFailed") || "Google sign-in was unable to connect. Please try again or sign in with email/password.")
-    : (messageParam || t("auth.googleAuthFailed") || "Google sign-in failed. Please try again.");
+  // Never reflect query text into the page; URLs can contain tokens or raw provider details.
+  const cleanGoogleError = t("auth.googleAuthFailed") || "Google sign-in was unable to connect. Please try again or sign in with email/password.";
 
   const queryError = (errorParam === "google_failed" || errorParam === "state_mismatch") && dismissedQueryError !== queryNoticeKey
     ? cleanGoogleError

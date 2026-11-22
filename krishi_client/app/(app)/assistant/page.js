@@ -1232,7 +1232,7 @@ function AssistantContent() {
           )}
 
           {/* Message Composer Area */}
-          <div className="sticky bottom-0 bg-gradient-to-r from-emerald-50/95 via-surface to-sky-50/95 backdrop-blur-md px-4 pb-4 pt-3 mt-3 border-t border-emerald-100 z-10 sm:px-6 dark:from-emerald-950/80 dark:to-sky-950/80 dark:border-emerald-900">
+          <div className="sticky bottom-0 bg-gradient-to-r from-emerald-50/95 via-surface to-sky-50/95 backdrop-blur-md px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3 mt-3 border-t border-emerald-100 z-10 sm:px-6 dark:from-emerald-950/80 dark:to-sky-950/80 dark:border-emerald-900">
             {/* Active Listening / Interim Transcription Banner */}
             {(isListening || isTranscribing) && (
               <div className="mb-2 p-2.5 rounded-xl border border-emerald/30 bg-emerald/5 dark:bg-emerald-950/30 flex items-center justify-between gap-3 animate-in fade-in duration-150">
@@ -1353,7 +1353,7 @@ function AssistantContent() {
                     ? t("assistant.voiceInputStop")
                     : t("assistant.voiceInputStart")
                 }
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200 cursor-pointer ${
+                className={`flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl transition-all duration-200 cursor-pointer ${
                   !isVoiceSupported
                     ? "text-muted opacity-40 cursor-not-allowed"
                     : isListening
@@ -1387,7 +1387,7 @@ function AssistantContent() {
                 type="submit"
                 disabled={!inputValue.trim() || isLoading}
                 aria-label={isBn ? "বার্তা পাঠান" : "Send message"}
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-200 ${
+                className={`flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full transition-all duration-200 ${
                   inputValue.trim() && !isLoading
                     ? "bg-emerald text-white hover:bg-emerald/90 active:scale-95 shadow-2xs cursor-pointer scale-100"
                     : "bg-surface-hover text-muted cursor-not-allowed opacity-40 scale-95"
