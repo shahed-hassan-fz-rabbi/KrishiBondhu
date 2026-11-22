@@ -209,3 +209,23 @@ test("My Farm Planning: Client API Contracts & Translations Suite", async (t) =>
     assert.equal(getCropPlanningErrorMessage({ status: 400, error: { message: "Invalid district" } }, translate), "Invalid district");
   });
 });
+
+test("soil type input is disclosed as farmer-reported and distinct from satellite observations", () => {
+  const english = translations.en.myFarm.fields.soilTypeNote;
+  const bengali = translations.bn.myFarm.fields.soilTypeNote;
+  assert.match(english, /Farmer-reported/);
+  assert.match(english, /not a laboratory soil test/i);
+  assert.match(bengali, /কৃষকের দেওয়া/);
+  assert.match(bengali, /মাটি পরীক্ষা নয়/);
+
+  const farmForm = readFileSync(new URL("../app/(app)/my-farm/new/page.js", import.meta.url), "utf8");
+  const cropPlan = readFileSync(new URL("../app/(app)/my-farm/plan/page.js", import.meta.url), "utf8");
+  const rotation = readFileSync(new URL("../components/RotationPlanner.js", import.meta.url), "utf8");
+  const farmDetails = readFileSync(new URL("../app/(app)/my-farm/[id]/page.js", import.meta.url), "utf8");
+  assert.match(farmForm, /fields\.soilTypeNote/);
+  assert.match(cropPlan, /fields\.soilTypeNote/);
+  assert.match(rotation, /fields\.soilTypeNote/);
+  assert.match(farmDetails, /fields\.soilTypeNote/);
+  assert.match(cropPlan, /planning\.satelliteContextDescription/);
+  assert.match(translations.en.myFarm.planning.satelliteContextDescription, /District-level observations/);
+});

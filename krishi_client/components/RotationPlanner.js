@@ -106,10 +106,10 @@ export function RotationPlanner({ publicMode = false, initialDistrict, initialPr
     finally { setExplainBusy(false); }
   };
   const cropName = (code) => t(`rotation.crops.${code}`);
-  const field = (key, options, namespace = "options") => <label key={key} className="block rounded-2xl border border-green-100 bg-green-50/60 p-3 text-sm font-medium text-content dark:border-green-900 dark:bg-green-950/20">{t(`rotation.${key}`)}
+  const field = (key, options, namespace = "options") => <div key={key} className="rounded-2xl border border-green-100 bg-green-50/60 p-3 text-sm font-medium text-content dark:border-green-900 dark:bg-green-950/20"><label className="block">{t(`rotation.${key}`)}
     <select className={selectClass} value={profile[key]} onChange={(e) => change(key, e.target.value)}>
       {options.map((value) => <option key={value} value={value}>{t(`rotation.${namespace}.${value}`)}</option>)}
-    </select></label>;
+    </select></label>{key === "soilType" && <p className="mt-1.5 text-xs leading-5 text-muted">{t("myFarm.fields.soilTypeNote")}</p>}</div>;
 
   return <div className="space-y-8">
     <RotationOverview publicMode={publicMode} />

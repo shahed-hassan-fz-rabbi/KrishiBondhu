@@ -604,6 +604,7 @@ function FarmDetailsContent() {
                 {t(`myFarm.soilTypes.${farm.soil?.type || "unknown"}`)}
               </span>
             </div>
+            <p className="text-[11px] leading-5 text-muted">{t("myFarm.fields.soilTypeNote")}</p>
             <div className="flex justify-between py-1 dark:border-line">
               <span className="text-stone-500 dark:text-muted">{t("myFarm.fields.drainage")}</span>
               <span className="capitalize font-medium text-stone-900 dark:text-content">

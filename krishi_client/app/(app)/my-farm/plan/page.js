@@ -597,6 +597,7 @@ function CropPlanningPageContent() {
                     </option>
                   ))}
                 </select>
+                <p className="mt-1.5 text-xs leading-5 text-muted">{t("myFarm.fields.soilTypeNote")}</p>
               </div>
             </div>
           </div>

@@ -456,6 +456,7 @@ function NewFarmWizardPage() {
                 <option value="other">{t("myFarm.soilTypes.other")}</option>
                 <option value="unknown">{t("myFarm.soilTypes.unknown")}</option>
               </select>
+              <p className="mt-1.5 text-xs leading-5 text-muted">{t("myFarm.fields.soilTypeNote")}</p>
             </div>
 
             {/* Drainage Condition */}
