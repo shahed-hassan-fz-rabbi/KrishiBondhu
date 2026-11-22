@@ -171,10 +171,11 @@ test("dashboard sample years come only from supplied observation dates", async (
   for (const missing of [null, undefined, "", "not-a-date", "2024", 2024]) assert.equal(observationYear(missing), null);
 });
 
-test("dashboard keeps weather mounted in a closed disclosure after planning content", async () => {
+test("dashboard overview shows API-backed weather with the full weather workspace retained on climate", async () => {
   const source = await readFile(new URL("../components/dashboard/DashboardWorkspace.js", import.meta.url), "utf8");
-  assert.ok(source.indexOf('t("dashboardUi.planButton")') < source.indexOf("<DistrictLocationPanel"));
-  assert.ok(source.indexOf("<WeatherIntelligenceSection") > source.indexOf('t("dashboard.handoffTeaserTitle")'));
+  const overview = await readFile(new URL("../components/dashboard/DashboardOverview.js", import.meta.url), "utf8");
+  assert.match(overview, /<WeatherIntelligenceSection locationCode=\{district\}/);
+  assert.match(source, /<WeatherIntelligenceSection/);
   assert.match(source, /<details[^>]*>\s*<summary[^>]*>\{t\("dashboardUi.weatherTitle"\)\}/);
   assert.doesNotMatch(source, /<details[^>]*\bopen[= >]/);
   const cards = await readFile(new URL("../components/dashboard/EnvironmentalIntelligenceCards.js", import.meta.url), "utf8");
@@ -193,7 +194,7 @@ test("overview and climate reuse the loader while separating their presentation"
   assert.match(overview, /href="\/data-sources"/);
   assert.doesNotMatch(overview, /fetch\(|fetchClimate|previewCropRotations|compareCropRotations/);
   assert.match(overview, /Number.isFinite\(years\)/);
-  assert.match(overview, /getDistrictValidCoverage\(source, district\)/);
+  assert.match(overview, /source\.districtValidCoverage\?\.\[district\]\?\.lastObservationDate/);
   const climate = await readFile(new URL("../app/(public-data)/climate/page.js", import.meta.url), "utf8");
   assert.match(climate, /DashboardWorkspace view="climate"/);
   const chart = await readFile(new URL("../components/charts/ClimateMonthlyChart.js", import.meta.url), "utf8");
@@ -212,6 +213,18 @@ test("redesigned overview never invents strategy results, metrics, or fixed aver
   assert.doesNotMatch(source, /fetch\(|Math.random|Soil Health|Healthy|Resilience rating|farmSize|waterUsePercent/);
   assert.match(source, /Number.isFinite\(years\) && years > 0/);
   assert.match(source, /tiles.filter\(\(\{ value \}\) => value !== "—"\)/);
+  assert.match(source, /<MetricCard key=\{key\} variant="dashboard"/);
   assert.match(source, /row.value !== "—"/);
-  assert.match(source, /getDistrictValidCoverage\(source, district\)/);
+  assert.match(source, /source\.districtValidCoverage\?\.\[district\]\?\.lastObservationDate/);
+});
+
+test("dashboard market preview uses verified API observations and carries quote provenance", async () => {
+  const source = await readFile(new URL("../components/dashboard/DashboardMarketPreview.js", import.meta.url), "utf8");
+  assert.match(source, /fetchVerifiedMarketPriceCatalog\(\)/);
+  assert.match(source, /fetchMarketPriceHistory\(/);
+  assert.match(source, /fetchMarketDataStatus\(/);
+  for (const field of ["priceMin", "priceMax", "priceType", "observedOn", "source", "unit", "market"]) assert.match(source, new RegExp(`observation\\.${field}`));
+  assert.match(source, /not a current quote/);
+  assert.match(source, /No verified market observations are available/);
+  assert.doesNotMatch(source, /Math\.random|priceMin:\s*\d/);
 });

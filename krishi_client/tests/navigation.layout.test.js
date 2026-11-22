@@ -29,7 +29,7 @@ test("private pages own their login gate while the shared layout keeps their rou
 test("sidebar and mobile navigation mark nested routes active", () => {
   const sidebar = read("../components/layout/AppSidebar.js");
   const bottomNav = read("../components/layout/BottomNav.js");
-  assert.match(sidebar, /pathname === href \|\| pathname\.startsWith\(`\$\{href\}\/`\)/);
+  assert.match(sidebar, /const matchesPath = pathname === href \|\| pathname\.startsWith\(`\$\{href\}\/`\)/);
   assert.match(sidebar, /bg-white font-semibold text-forest/);
   assert.match(bottomNav, /pathname === href \|\| pathname\.startsWith\(`\$\{href\}\/`\)/);
   assert.match(bottomNav, /bg-forest text-white/);
@@ -88,6 +88,15 @@ test("sidebar supports 250px expanded and 72px collapsed states with 200ms width
   assert.match(sidebar, /LayoutDashboard/);
   assert.match(sidebar, /ChartNoAxesCombined/);
   assert.match(sidebar, /CalendarDays/);
+});
+
+test("sidebar groups navigation and keeps the guest crop-rotation route in the Plan group", () => {
+  const navigation = read("../lib/nav.js");
+  const sidebar = read("../components/layout/AppSidebar.js");
+  for (const group of ["Work", "Plan", "Field", "Data & evidence"]) assert.match(navigation, new RegExp(`key: "${group.replace(/[&]/g, "\\&")}"`));
+  assert.match(sidebar, /href === "\/rotation-planner" && item\.href === "\/crop-rotation"/);
+  assert.match(sidebar, /isCollapsed \? "px-2 py-2" : "px-3 py-3"/);
+  assert.match(sidebar, /min-h-11/);
 });
 
 test("authenticated app layout mounts one persistent utility header before page content", () => {

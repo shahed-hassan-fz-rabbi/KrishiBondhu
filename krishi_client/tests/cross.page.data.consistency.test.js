@@ -23,11 +23,10 @@ test("Dashboard links to the implemented public Crop Calendar in both locales", 
 
 test("Dashboard groups NASA POWER metrics and summaries as historical information", () => {
   const dashboard = read("components/dashboard/DashboardWorkspace.js") + read("components/dashboard/DashboardOverview.js");
-  assert.match(dashboard, /t\("dashboardUi.historyBoundary"\)/);
-  assert.match(translations.en.dashboardUi.historyBoundary, /not live weather/);
-  assert.match(translations.bn.dashboardUi.historyBoundary, /লাইভ আবহাওয়া নয়/);
+  assert.match(dashboard, /Historical climate averages, not current weather observations/);
+  assert.match(dashboard, /ঐতিহাসিক জলবায়ু গড়।/);
   assert.match(dashboard, /dashboard\.metricsTitle/);
-  assert.match(dashboard, /dashboard\.summaryTitle/);
+  assert.match(dashboard, /HISTORICAL CONTEXT/);
   assert.equal(translations.en.dashboard.metricsTitle.includes("2001"), false);
   assert.equal(translations.bn.dashboard.metricsTitle.includes("২০০১"), false);
 });

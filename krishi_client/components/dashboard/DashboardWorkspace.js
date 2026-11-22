@@ -368,7 +368,7 @@ export default function DashboardWorkspace({ view = "overview", children }) {
       )}
 
 
-    {view === "overview" ? <DashboardOverview available={hasCurrentSummary} metrics={{ rainfall: annualRainfallMean, temperature: meanTempAvg, humidity: humidityAvg, solar: solarAvg }} years={currentClimateMeta?.years_used} chartSeries={chartSeries} wettest={wettest} driest={driest} sources={environmentalSources} district={selectedDistrict} /> : <>
+    {view === "overview" ? <DashboardOverview available={hasCurrentSummary} metrics={{ rainfall: annualRainfallMean, temperature: meanTempAvg, humidity: humidityAvg, solar: solarAvg }} years={currentClimateMeta?.years_used} chartSeries={chartSeries} wettest={wettest} driest={driest} sources={environmentalSources} district={selectedDistrict} districtName={districtDisplayName} /> : <>
 
       {hasCurrentSummary && <>
           {/* Climate summary panel + monthly rainfall normal chart */}

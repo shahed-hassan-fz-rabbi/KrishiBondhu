@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 
 import { BrandMark } from "@/components/layout/BrandMark.js";
-import { appNav } from "@/lib/nav.js";
+import { appNav, appNavGroups } from "@/lib/nav.js";
 import { isPrivatePath } from "@/lib/access.js";
 import { LanguageSwitcher, ThemeSwitcher } from "@/components/layout/Switchers.js";
 import { GlobalSearch } from "@/components/layout/GlobalSearch.js";
@@ -67,17 +67,28 @@ const icons = {
 
 function NavList({ onNavigate, isCollapsed = false }) {
   const pathname = usePathname();
-  const { t } = useLang();
+  const { t, locale } = useLang();
   const { user } = useAuth();
   const navigation = appNav
     .filter((item) => !item.roles || (user && item.roles.includes(user.role)))
     .map((item) => !user && item.href === "/rotation-planner" ? { ...item, href: "/crop-rotation" } : item);
+  const groupedNavigation = appNavGroups.map((group) => ({
+    ...group,
+    items: group.hrefs
+      .map((href) => navigation.find((item) => item.href === href || (href === "/rotation-planner" && item.href === "/crop-rotation")))
+      .filter(Boolean),
+  })).filter((group) => group.items.length);
 
   return (
-    <nav className={`space-y-1 ${isCollapsed ? "px-2 py-2" : "px-3 py-3"}`} aria-label="Application">
-      {navigation.map(({ href, key }) => {
+    <nav className={`space-y-3 ${isCollapsed ? "px-2 py-2" : "px-3 py-3"}`} aria-label={locale === "bn" ? "প্রধান নেভিগেশন" : "Main navigation"}>
+      {groupedNavigation.map((group) => (
+        <div key={group.key}>
+          {!isCollapsed && <h2 className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-muted">{locale === "bn" ? group.keyBn : group.key}</h2>}
+          <ul className="space-y-1">
+      {group.items.map(({ href, key }) => {
         const Icon = icons[href] || ScanLine;
-        const active = pathname === href || pathname.startsWith(`${href}/`);
+        const matchesPath = pathname === href || pathname.startsWith(`${href}/`);
+        const active = matchesPath && !navigation.some((item) => item.href !== href && item.href.startsWith(`${href}/`) && (pathname === item.href || pathname.startsWith(`${item.href}/`)));
         const label = t(key);
         const destination = !user && isPrivatePath(href)
           ? `/login?redirect=${encodeURIComponent(href)}`
@@ -85,14 +96,14 @@ function NavList({ onNavigate, isCollapsed = false }) {
 
         if (isCollapsed) {
           return (
-            <div key={href} className="group relative flex justify-center">
+            <li key={href} className="group relative flex justify-center">
               <Link
                 href={destination}
                 onClick={onNavigate}
                 aria-label={label}
                 title={label}
                 aria-current={active ? "page" : undefined}
-                className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
+                className={`flex h-11 w-11 items-center justify-center rounded-lg transition-colors ${
                   active
                     ? "bg-white font-semibold text-forest shadow-sm ring-1 ring-white/15"
                     : "text-sidebar-text/80 hover:bg-sidebar-hover hover:text-white"
@@ -108,17 +119,17 @@ function NavList({ onNavigate, isCollapsed = false }) {
                 {label}
                 <div className="absolute right-full top-1/2 -translate-y-1/2 -mr-[1px] border-4 border-transparent border-r-[#0d3122]" />
               </div>
-            </div>
+            </li>
           );
         }
 
         return (
+          <li key={href}>
           <Link
-            key={href}
             href={destination}
             onClick={onNavigate}
             aria-current={active ? "page" : undefined}
-            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
+            className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
               active
                 ? "bg-white font-semibold text-forest shadow-sm ring-1 ring-white/15"
                 : "text-sidebar-text/80 hover:bg-sidebar-hover hover:text-white"
@@ -127,8 +138,12 @@ function NavList({ onNavigate, isCollapsed = false }) {
             <Icon className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
             <span className="truncate">{label}</span>
           </Link>
+          </li>
         );
       })}
+          </ul>
+        </div>
+      ))}
     </nav>
   );
 }
