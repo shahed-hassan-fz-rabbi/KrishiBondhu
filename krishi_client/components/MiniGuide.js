@@ -170,21 +170,33 @@ export function MiniGuide() {
     ? { x: preferences.x, y: preferences.y }
     : null;
   const currentPosition = position || savedPosition;
+  const launcherBounds = () => {
+    const compact = window.innerWidth <= 760;
+    return { width: compact ? 70 : 170, height: compact ? 82 : 182, right: compact ? 5 : 20, bottom: compact ? 68 : 20 };
+  };
+  const defaultPosition = () => {
+    const bounds = launcherBounds();
+    return { x: window.innerWidth - bounds.width - bounds.right, y: window.innerHeight - bounds.height - bounds.bottom };
+  };
 
   const startDrag = (event) => {
     if (event.button !== 0) return;
     setSleeping(false);
     setIsDragging(true);
-    dragRef.current = { pointerId: event.pointerId, offsetX: event.clientX - (currentPosition?.x ?? window.innerWidth - 160), offsetY: event.clientY - (currentPosition?.y ?? window.innerHeight - 90) };
+    const fallbackPosition = defaultPosition();
+    dragRef.current = { pointerId: event.pointerId, offsetX: event.clientX - (currentPosition?.x ?? fallbackPosition.x), offsetY: event.clientY - (currentPosition?.y ?? fallbackPosition.y) };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const drag = (event) => {
     if (!dragRef.current || dragRef.current.pointerId !== event.pointerId) return;
-    const maxX = Math.max(8, window.innerWidth - Math.min(365, window.innerWidth - 20));
+    const fallbackPosition = defaultPosition();
+    const bounds = launcherBounds();
+    const maxX = Math.max(8, window.innerWidth - bounds.width - 8);
+    const maxY = Math.max(8, window.innerHeight - bounds.height - 8);
     const x = Math.max(8, Math.min(maxX, event.clientX - dragRef.current.offsetX));
-    const y = Math.max(8, Math.min(window.innerHeight - 80, event.clientY - dragRef.current.offsetY));
-    if (Math.abs(x - (currentPosition?.x ?? window.innerWidth - 160)) + Math.abs(y - (currentPosition?.y ?? window.innerHeight - 90)) > 6) draggedRef.current = true;
+    const y = Math.max(8, Math.min(maxY, event.clientY - dragRef.current.offsetY));
+    if (Math.abs(x - (currentPosition?.x ?? fallbackPosition.x)) + Math.abs(y - (currentPosition?.y ?? fallbackPosition.y)) > 6) draggedRef.current = true;
     setPosition({ x, y });
   };
 
@@ -199,9 +211,11 @@ export function MiniGuide() {
     const offset = offsets[event.key];
     if (!offset) return;
     event.preventDefault();
-    const base = currentPosition || { x: window.innerWidth - 160, y: window.innerHeight - 90 };
-    const maxX = Math.max(8, window.innerWidth - Math.min(365, window.innerWidth - 20));
-    const next = { x: Math.max(8, Math.min(maxX, base.x + offset[0])), y: Math.max(8, Math.min(window.innerHeight - 80, base.y + offset[1])) };
+    const bounds = launcherBounds();
+    const base = currentPosition || defaultPosition();
+    const maxX = Math.max(8, window.innerWidth - bounds.width - 8);
+    const maxY = Math.max(8, window.innerHeight - bounds.height - 8);
+    const next = { x: Math.max(8, Math.min(maxX, base.x + offset[0])), y: Math.max(8, Math.min(maxY, base.y + offset[1])) };
     setPosition(next);
     savePreferences(next);
   };
@@ -352,12 +366,12 @@ export function MiniGuide() {
   const launcherStyle = currentPosition ? { left: currentPosition.x, top: currentPosition.y, right: "auto", bottom: "auto" } : undefined;
   const tourPosition = tourMode && targetRect ? {
     left: (() => {
-      const size = window.innerWidth < 640 ? 76 : 90;
+      const size = window.innerWidth < 640 ? 92 : 132;
       const rightSide = targetRect.left + targetRect.width + 8;
       const leftSide = targetRect.left - size - 8;
       return rightSide + size <= window.innerWidth - 8 ? rightSide : leftSide >= 8 ? leftSide : Math.max(8, window.innerWidth - size - 8);
     })(),
-    top: Math.min(Math.max(76, window.innerHeight - (window.innerWidth < 640 ? 86 : 100)), Math.max(76, targetRect.top)),
+      top: Math.min(Math.max(72, window.innerHeight - (window.innerWidth < 640 ? 190 : 212)), Math.max(72, targetRect.top)),
     right: "auto",
     bottom: "auto",
   } : launcherStyle;
@@ -389,7 +403,7 @@ export function MiniGuide() {
       </div>
     </section>}
     <button type="button" className={`kb-mini-launcher ${flying ? "is-flying" : ""} ${hidden ? "is-hidden" : ""}`} onPointerDown={startDrag} onPointerMove={drag} onPointerUp={endDrag} onPointerCancel={endDrag} onKeyDown={moveWithKeyboard} onClick={(event)=>{if(draggedRef.current){draggedRef.current=false;event.preventDefault();return;}setSleeping(false);setOpen((value)=>!value);if(hidden){savePreferences({hidden:false});}}} aria-expanded={open} aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight" aria-label={bn ? (hidden ? "বন্ধুকে দেখান" : "বন্ধুর কাছে সাহায্য চান") : (hidden ? "Show Bondhu" : "Ask Bondhu for help")}>
-      <BondhuMascot active={(!hidden || tourMode) && animationEnabled} className="kb-mini-face" state={characterState} facing={facing} label={bn ? "বন্ধু, কৃষকের সহায়ক ড্রাগন" : "Bondhu, a friendly farmer companion"}/><span>{hidden ? (bn ? "বন্ধুকে দেখান" : "Show Bondhu") : (open ? (bn ? "বন্ধ" : "Close") : (bn ? "বন্ধু" : "Bondhu"))}</span>
+      <BondhuMascot active={!hidden && animationEnabled} className="kb-mini-face" state={characterState} facing={facing} label={bn ? "বন্ধু, কৃষকের সহায়ক ড্রাগন" : "Bondhu, a friendly farmer companion"}/>{(hidden || tourMode) && <span>{hidden ? (bn ? "বন্ধুকে দেখান" : "Show Bondhu") : "Bondhu"}</span>}
     </button>
   </div>
   </>;

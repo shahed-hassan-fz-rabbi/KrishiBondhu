@@ -4,9 +4,10 @@ export function createBondhuModel(THREE) {
   root.name = "Bondhu";
   const parts = { root, eyes: [], wings: [], arms: [], mouth: null, tail: null };
 
-  const green = new THREE.MeshPhysicalMaterial({ color: 0x329d62, roughness: 0.34, clearcoat: 0.5, clearcoatRoughness: 0.28 });
-  const greenLight = new THREE.MeshPhysicalMaterial({ color: 0x58bd73, roughness: 0.38, clearcoat: 0.35 });
+  const green = new THREE.MeshPhysicalMaterial({ color: 0x278c55, roughness: 0.3, metalness: 0, clearcoat: 0.62, clearcoatRoughness: 0.23 });
+  const greenLight = new THREE.MeshPhysicalMaterial({ color: 0x54b873, roughness: 0.34, clearcoat: 0.48, clearcoatRoughness: 0.27 });
   const greenDeep = new THREE.MeshStandardMaterial({ color: 0x176447, roughness: 0.48 });
+  const scaleGreen = new THREE.MeshPhysicalMaterial({ color: 0x71cb84, roughness: 0.42, clearcoat: 0.2 });
   const belly = new THREE.MeshPhysicalMaterial({ color: 0xf2dfb4, roughness: 0.63, clearcoat: 0.16 });
   const bellyLight = new THREE.MeshStandardMaterial({ color: 0xffedcc, roughness: 0.62 });
   const sclera = new THREE.MeshPhysicalMaterial({ color: 0xfffdf6, roughness: 0.18, clearcoat: 0.7 });
@@ -17,7 +18,7 @@ export function createBondhuModel(THREE) {
   const nostrilMat = new THREE.MeshStandardMaterial({ color: 0x18553d, roughness: 0.6 });
   const blushMat = new THREE.MeshStandardMaterial({ color: 0xe99586, roughness: 0.75, transparent: true, opacity: 0.55 });
 
-  const sphereGeometry = new THREE.SphereGeometry(1, 28, 20);
+  const sphereGeometry = new THREE.SphereGeometry(1, 48, 32);
   const ball = (material, size, position, parent = root) => {
     const mesh = new THREE.Mesh(sphereGeometry, material);
     mesh.scale.set(...size);
@@ -36,10 +37,11 @@ export function createBondhuModel(THREE) {
     horn.position.set(x, 0.55, -0.02);
     horn.rotation.z = direction * -0.22;
     head.add(horn);
-    const shaft = new THREE.Mesh(new THREE.ConeGeometry(0.105, 0.32, 14), bellyLight);
-    shaft.position.y = 0.13;
+    const shaft = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.27, 20), bellyLight);
+    shaft.position.y = 0.105;
+    shaft.rotation.z = direction * 0.13;
     horn.add(shaft);
-    ball(bellyLight, [0.09, 0.065, 0.09], [0, 0.28, 0], horn);
+    ball(bellyLight, [0.075, 0.055, 0.075], [0, 0.235, 0], horn);
   };
 
   // Rounded body and layered cream belly.
@@ -52,6 +54,15 @@ export function createBondhuModel(THREE) {
   for (const y of [-0.31, -0.05, 0.2]) {
     tube([[-0.31, y, 0.568], [0, y - 0.025, 0.615], [0.31, y, 0.568]], 0.012, bellyLight, body, 12);
   }
+  // Small back ridges and shoulder scales add a soft reptile finish without sharp spines.
+  for (let index = 0; index < 5; index += 1) {
+    const x = (index - 2) * 0.19;
+    const ridge = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), index % 2 ? greenLight : scaleGreen);
+    ridge.scale.set(0.095, 0.14, 0.09);
+    ridge.position.set(x, 0.77 - Math.abs(index - 2) * 0.055, -0.42);
+    ridge.rotation.z = (2 - index) * 0.12;
+    root.add(ridge);
+  }
 
   // A large, soft silhouette with a small muzzle.
   const head = new THREE.Group();
@@ -63,6 +74,8 @@ export function createBondhuModel(THREE) {
   for (const direction of [-1, 1]) {
     ball(nostrilMat, [0.033, 0.027, 0.018], [direction * 0.12, -0.19, 0.825], head);
     ball(blushMat, [0.105, 0.052, 0.025], [direction * 0.5, -0.23, 0.49], head);
+    ball(scaleGreen, [0.09, 0.045, 0.03], [direction * 0.54, 0.13, 0.48], head);
+    ball(greenDeep, [0.13, 0.035, 0.025], [direction * 0.285, 0.36, 0.62], head).rotation.z = direction * -0.12;
     roundedHorn(direction * 0.43, direction);
   }
   // Eye groups blink as one soft lid; pupils and highlights follow the same motion.
@@ -89,6 +102,10 @@ export function createBondhuModel(THREE) {
     const sleeve = ball(green, [0.145, 0.34, 0.14], [direction * 0.08, -0.13, 0], arm);
     sleeve.rotation.z = direction * -0.38;
     ball(greenLight, [0.135, 0.13, 0.13], [direction * 0.19, -0.37, 0.05], arm);
+    for (let claw = -1; claw <= 1; claw += 1) {
+      const fingertip = ball(bellyLight, [0.025, 0.055, 0.025], [direction * 0.19 + claw * 0.055, -0.43, 0.12], arm);
+      fingertip.rotation.z = direction * -0.2;
+    }
     parts.arms.push(arm);
 
     const leg = new THREE.Group();
@@ -97,6 +114,9 @@ export function createBondhuModel(THREE) {
     const shin = ball(greenDeep, [0.135, 0.25, 0.14], [0, -0.08, 0], leg);
     shin.rotation.z = direction * 0.05;
     ball(green, [0.21, 0.13, 0.22], [direction * 0.035, -0.27, 0.08], leg);
+    for (let claw = -1; claw <= 1; claw += 1) {
+      ball(bellyLight, [0.024, 0.045, 0.035], [direction * 0.035 + claw * 0.073, -0.31, 0.26], leg);
+    }
   }
 
   // Rounded, scalloped wings with visible support ribs; mirrored from one original shape.

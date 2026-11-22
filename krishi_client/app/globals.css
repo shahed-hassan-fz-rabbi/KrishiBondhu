@@ -395,10 +395,11 @@
 /* Mini stays available across the public and signed-in app as a farmer guide. */
 .kb-mini-guide { position:fixed; z-index:85; right:20px; bottom:20px; display:flex; align-items:flex-end; flex-direction:column; gap:12px; pointer-events:none; }
 .kb-mini-guide button,.kb-mini-guide a,.kb-mini-guide summary { pointer-events:auto; }
-.kb-mini-launcher { display:flex; min-height:61px; align-items:center; gap:8px; border:1px solid #ffffffb3; border-radius:999px; background:#247A4B; padding:5px 16px 5px 5px; color:#fffaf0; box-shadow:0 9px 26px #153d3a37; font:inherit; font-size:13px; font-weight:700; line-height:1; cursor:pointer; pointer-events:auto!important; transition:transform .18s,box-shadow .18s; }
-.kb-mini-launcher:hover { transform:translateY(-3px); box-shadow:0 13px 32px #153d3a42; }
-.kb-mini-face { display:block; width:50px; height:50px; overflow:visible; }
-.kb-mini-launcher .kb-mini-face { width:49px; height:49px; border-radius:50%; background:#fffaf0; }
+.kb-mini-launcher { position:relative; display:flex; width:160px; height:176px; flex:none; align-items:center; justify-content:center; border:0; border-radius:0; background:transparent; padding:0; color:inherit; box-shadow:none; font:inherit; font-size:0; line-height:1; cursor:grab; pointer-events:auto!important; transition:transform .22s ease; }
+.kb-mini-launcher:hover { transform:translateY(-4px); box-shadow:none; }
+.kb-mini-launcher:active { cursor:grabbing; }
+.kb-mini-face { display:block; width:150px; height:166px; overflow:visible; }
+.kb-mini-launcher .kb-mini-face { width:150px; height:166px; border-radius:0; background:transparent; filter:drop-shadow(0 10px 7px #173e3026); }
 .kb-mini-eyes { transform:translate(var(--mini-look-x,0),var(--mini-look-y,0)); transition:transform .09s linear; }
 .kb-mini-launcher.is-flying .kb-mini-face { animation:kb-mini-flight .4s cubic-bezier(.2,.75,.25,1) both; }
 @keyframes kb-mini-flight { 0% { transform:translate(0,0) rotate(0); } 40% { transform:translate(-10px,-14px) rotate(-13deg); } 100% { transform:translate(0,0) rotate(0); } }
@@ -438,13 +439,18 @@
 .kb-mini-preferences button:hover { border-color:#aac4a9; background:#f2f7ea; }
 .kb-mini-guide[style] { position:fixed; z-index:85; }
 .kb-mini-launcher { touch-action:none; }
-.kb-mini-launcher.is-hidden { min-height:44px; padding:4px 12px; background:#f9f5e9; color:#155447; border-color:#b4c9a9; }
-.kb-bondhu-canvas { position:relative; display:block; width:100%; height:100%; overflow:hidden; pointer-events:none; }
-.kb-bondhu-renderer { position:absolute; inset:0; }
-.kb-bondhu-canvas canvas { display:block; width:100%; height:100%; }
+.kb-mini-launcher.is-hidden { width:auto; height:44px; min-height:44px; border:1px solid #b4c9a9; border-radius:999px; background:#f9f5e9; padding:4px 12px; color:#155447; box-shadow:0 6px 18px #153d3a20; font-size:12px; }
+.kb-mini-launcher.is-hidden .kb-mini-face { display:none; }
+.kb-mini-launcher>span { position:absolute; right:3px; bottom:4px; border:1px solid #dce7d7; border-radius:999px; background:#fffaf0ed; padding:4px 8px; color:#245c42; font-size:10px; font-weight:750; box-shadow:0 3px 10px #183b2918; }
+.kb-mini-guide.is-tour-active .kb-mini-launcher { width:140px; height:156px; min-height:0; gap:0; flex-direction:initial; border:0; border-radius:0; background:transparent; padding:0; }
+.kb-mini-guide.is-tour-active .kb-mini-launcher .kb-mini-face { width:132px; height:148px; }
+.kb-mini-guide.is-tour-active .kb-mini-launcher>span { right:0; bottom:1px; font-size:10px; }
+.kb-bondhu-canvas { position:relative; display:block; width:100%; height:100%; overflow:visible; background:transparent!important; pointer-events:none; }
+.kb-bondhu-renderer { position:absolute; inset:0; overflow:visible; background:transparent!important; }
+.kb-bondhu-canvas canvas { display:block; width:100%; height:100%; background:transparent!important; }
 .kb-bondhu-canvas.is-fallback canvas { display:none; }
 .kb-bondhu-fallback { display:block; width:100%; height:100%; }
-.kb-mini-launcher .kb-bondhu-canvas { flex:0 0 auto; width:49px; height:49px; border-radius:50%; background:#fffaf0; }
+.kb-mini-launcher .kb-bondhu-canvas { flex:0 0 auto; width:100%; height:100%; border-radius:0; background:transparent!important; }
 .kb-mini-launcher.is-hidden .kb-bondhu-canvas { display:none; }
 .kb-mini-avatar .kb-bondhu-canvas { width:38px; height:38px; }
 .kb-bondhu-monogram { display:grid; width:38px; height:38px; place-items:center; border-radius:11px; background:#247A4B; color:#fffaf0; font-size:18px; font-weight:800; }
@@ -452,9 +458,6 @@
 .kb-tour-spotlight path { fill:rgba(8,24,16,.72); }
 .kb-tour-outline { position:fixed; z-index:81; border:2px solid #d5ea92; border-radius:14px; box-shadow:0 0 0 3px #174b3440,0 0 26px #d5ea9266; pointer-events:none; transition:left .18s ease,top .18s ease,width .18s ease,height .18s ease; }
 .kb-mini-guide.is-tour-active { align-items:flex-start; transition:left .62s cubic-bezier(.2,.75,.25,1),top .62s cubic-bezier(.2,.75,.25,1); }
-.kb-mini-guide.is-tour-active .kb-mini-launcher { min-height:94px; gap:5px; flex-direction:column; border-radius:28px; padding:4px 8px 7px; }
-.kb-mini-guide.is-tour-active .kb-mini-launcher .kb-mini-face { width:80px; height:80px; }
-.kb-mini-guide.is-tour-active .kb-mini-launcher span { font-size:10px; }
 .kb-mini-guide.is-tour-active .kb-mini-launcher.is-flying { transform:scale(1.05) rotate(-4deg); }
 .kb-mini-panel.is-tour-panel { position:fixed; z-index:88; max-height:min(70vh,560px); overflow-y:auto; }
 .kb-mini-tour-description { margin:0; color:#40594a; font-size:13px; line-height:1.7; }
@@ -475,17 +478,17 @@
 .dark .kb-mini-places nav button:hover,.dark .kb-mini-places nav button[aria-current="page"] { border-color:#629276; background:#285444; }
 .dark .kb-mini-ask { background:#22483f; color:#d6e8d7; }
 @media(max-width:760px) {
-  .kb-mini-guide { right:11px; bottom:calc(86px + env(safe-area-inset-bottom)); gap:9px; }
-  .kb-mini-launcher { min-height:53px; padding:4px 13px 4px 4px; font-size:12px; }
-  .kb-mini-launcher .kb-mini-face { width:43px; height:43px; }
+  .kb-mini-guide { right:5px; bottom:calc(68px + env(safe-area-inset-bottom)); gap:9px; }
+  .kb-mini-launcher { width:70px; height:82px; }
+  .kb-mini-launcher .kb-mini-face { width:66px; height:78px; }
   .kb-mini-panel { width:min(360px,calc(100vw - 22px)); max-height:min(67vh,560px); border-radius:19px; }
   .kb-mini-guide:not(.is-tour-active) .kb-mini-panel { right:11px; bottom:calc(86px + env(safe-area-inset-bottom)); }
   .kb-mini-panel-head { padding:11px 13px; }
   .kb-mini-panel-body { padding:13px; }
   .kb-mini-panel-body h2 { font-size:16px; }
   .kb-mini-panel.is-tour-panel { max-height:min(66vh,500px); }
-  .kb-mini-guide.is-tour-active .kb-mini-launcher { min-height:76px; padding:3px 7px 6px; }
-  .kb-mini-guide.is-tour-active .kb-mini-launcher .kb-mini-face { width:64px; height:64px; }
+  .kb-mini-guide.is-tour-active .kb-mini-launcher { width:64px; height:74px; }
+  .kb-mini-guide.is-tour-active .kb-mini-launcher .kb-mini-face { width:60px; height:70px; }
   .kb-tour-outline { border-radius:11px; }
   .kb-mini-places nav { max-height:175px; }
 }
