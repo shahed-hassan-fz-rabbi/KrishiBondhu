@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   CheckCircle2,
   Clock,
+  Search,
   ListTodo,
   Check,
   Play,
@@ -44,6 +45,8 @@ function MyFarmPage() {
   const [error, setError] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [updatingTaskId, setUpdatingTaskId] = useState(null);
+  const [farmSearch, setFarmSearch] = useState("");
+  const [farmStatusFilter, setFarmStatusFilter] = useState("all");
 
   const digits = value => lang === "bn" ? String(value ?? "—").replace(/[0-9]/g, digit => "০১২৩৪৫৬৭৮৯"[Number(digit)]) : String(value ?? "—");
   const farmLabel = (farm, kind) => {
@@ -105,6 +108,13 @@ function MyFarmPage() {
   const displayedFarms = farmDataIsCurrent ? farms : [];
   const displayedSummary = farmDataIsCurrent ? summary : null;
   const displayedActivityOverview = farmDataIsCurrent ? activityOverview : null;
+  const normalizedFarmSearch = farmSearch.trim().toLocaleLowerCase(lang === "bn" ? "bn-BD" : "en-US");
+  const visibleFarms = displayedFarms.filter((farm) => {
+    const searchText = [farm.farmName, farm.location?.upazila, farm.location?.district, farm.location?.districtCode, farm.crop?.cropName, farm.crop?.cropCode]
+      .filter(Boolean).join(" ").toLocaleLowerCase(lang === "bn" ? "bn-BD" : "en-US");
+    return (!normalizedFarmSearch || searchText.includes(normalizedFarmSearch))
+      && (farmStatusFilter === "all" || String(farm.status || "").toLowerCase() === farmStatusFilter);
+  });
 
   const handleQuickStatus = async (farmId, activityId, newStatus) => {
     setUpdatingTaskId(activityId);
@@ -342,8 +352,28 @@ function MyFarmPage() {
             {digits(displayedSummary?.totalFarms ?? displayedFarms.length)} {lang === "bn" ? "টি খামার" : "farms"}
           </span>
         </div>
+        <div className="mb-4 grid gap-3 rounded-2xl border border-line bg-surface p-3 sm:grid-cols-[minmax(0,1fr)_13rem] sm:p-4">
+          <label className="block text-xs font-semibold text-muted">
+            <span>{lang === "bn" ? "খামার খুঁজুন" : "Find a farm"}</span>
+            <span className="relative mt-1.5 block">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden="true" />
+              <input value={farmSearch} onChange={(event) => setFarmSearch(event.target.value)} type="search" className="min-h-11 w-full rounded-xl border border-line bg-bg pl-9 pr-3 text-sm font-normal text-content outline-none focus-visible:ring-2 focus-visible:ring-emerald/40" placeholder={lang === "bn" ? "নাম, এলাকা বা ফসল" : "Name, place, or crop"} />
+            </span>
+          </label>
+          <label className="block text-xs font-semibold text-muted">
+            <span>{lang === "bn" ? "অবস্থা অনুযায়ী দেখুন" : "Filter by status"}</span>
+            <select value={farmStatusFilter} onChange={(event) => setFarmStatusFilter(event.target.value)} className="mt-1.5 min-h-11 w-full rounded-xl border border-line bg-bg px-3 text-sm font-normal text-content outline-none focus-visible:ring-2 focus-visible:ring-emerald/40">
+              <option value="all">{lang === "bn" ? "সব খামার" : "All farms"}</option>
+              {["active", "planning", "harvested", "archived"].map((status) => <option key={status} value={status}>{t(`myFarm.status.${status}`)}</option>)}
+            </select>
+          </label>
+        </div>
+        {visibleFarms.length === 0 && <div className="mb-4 rounded-2xl border border-dashed border-line bg-surface p-6 text-center">
+          <p className="text-sm font-semibold text-content">{lang === "bn" ? "এই খোঁজে কোনো খামার পাওয়া যায়নি" : "No farms match these filters"}</p>
+          <button type="button" onClick={() => { setFarmSearch(""); setFarmStatusFilter("all"); }} className="mt-3 min-h-10 rounded-lg border border-line px-3 py-2 text-sm font-medium text-content hover:bg-surface-2">{lang === "bn" ? "ফিল্টার মুছুন" : "Clear filters"}</button>
+        </div>}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {displayedFarms.map((farm) => (
+          {visibleFarms.map((farm) => (
             <div
               key={farm._id}
               className="group relative flex min-w-0 flex-col justify-between overflow-hidden rounded-3xl border border-emerald-200 bg-gradient-to-br from-surface via-surface to-emerald-50 p-5 shadow-km-sm transition-shadow before:absolute before:inset-x-0 before:top-0 before:h-1.5 before:bg-gradient-to-r before:from-emerald-500 before:via-lime-400 before:to-sky-400 hover:shadow-md sm:p-6 dark:border-emerald-900 dark:to-emerald-950/30"
@@ -362,6 +392,7 @@ function MyFarmPage() {
                       </span>
                     </div>
                   </div>
+                  {farm.status && <span className="shrink-0 rounded-full border border-line bg-surface px-2 py-1 text-[10px] font-semibold text-muted">{t(`myFarm.status.${String(farm.status).toLowerCase()}`)}</span>}
                 </div>
 
                 {/* Details Section */}

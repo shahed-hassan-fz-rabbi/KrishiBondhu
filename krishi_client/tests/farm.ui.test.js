@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
 import {
   fetchFarms,
@@ -203,4 +204,14 @@ test("My Farm: Client Services & Upazila Registry Suite", async (t) => {
       global.fetch = originalFetch;
     }
   });
+});
+
+test("My Farm overview filters only the owner's loaded farm cards by supported text and status", async () => {
+  const page = await readFile(new URL("../app/(app)/my-farm/page.js", import.meta.url), "utf8");
+  assert.match(page, /const displayedFarms = farmDataIsCurrent \? farms : \[\]/);
+  assert.match(page, /const visibleFarms = displayedFarms\.filter/);
+  assert.match(page, /farmName, farm\.location\?\.upazila/);
+  assert.match(page, /farmStatusFilter === "all"/);
+  assert.match(page, /visibleFarms\.map/);
+  assert.match(page, /Clear filters/);
 });

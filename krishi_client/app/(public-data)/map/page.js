@@ -181,18 +181,22 @@ function MapPage() {
         </div>
       </div>
 
-      {/* Layer Toggles Toolbar */}
-      <div className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-emerald-200 bg-surface/90 p-4 text-xs shadow-sm sm:p-5 dark:border-emerald-900">
-        <span className="font-semibold text-ink flex items-center gap-1.5 mr-2">
+      {/* Responsive map workspace: controls become a side panel on wide screens. */}
+      <section aria-label={isBn ? "মানচিত্র ও স্তর নিয়ন্ত্রণ" : "Map and layer controls"} className="grid min-w-0 gap-4 xl:grid-cols-[19rem_minmax(0,1fr)]">
+      <aside className="order-2 min-w-0 space-y-2 rounded-2xl border border-emerald-200 bg-surface/90 p-4 text-xs shadow-sm sm:p-5 xl:order-1 dark:border-emerald-900" aria-label={isBn ? "মানচিত্র স্তর" : "Map layers"}>
+        <div className="mb-3">
+        <h2 className="font-semibold text-ink flex items-center gap-1.5">
           <Layers size={14} strokeWidth={1.8} className="text-emerald" />
-          {isBn ? "লেয়ার নিয়ন্ত্রণ:" : "Layer Controls:"}
-        </span>
+          {isBn ? "মানচিত্রের স্তর" : "Map layers"}
+        </h2>
+        <p className="mt-1 text-xs leading-5 text-muted">{isBn ? "প্রয়োজন অনুযায়ী উপাত্তের স্তর চালু বা বন্ধ করুন।" : "Turn supported data layers on or off."}</p>
+        </div>
 
         <button
           type="button"
           aria-pressed={activeLayers.boundary}
           onClick={() => toggleLayer("boundary")}
-          className={`flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 py-2 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 ${
+          className={`flex min-h-11 w-full items-center justify-start gap-2 rounded-xl px-3 py-2 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 ${
             activeLayers.boundary
               ? "bg-emerald-100 text-emerald-900 border border-emerald-300 shadow-xs hover:bg-emerald-200 dark:bg-emerald-900/50 dark:border-emerald-700 dark:text-emerald-200"
               : "bg-surface text-muted hover:bg-surface-2 hover:text-content border border-line"
@@ -206,7 +210,7 @@ function MapPage() {
           type="button"
           aria-pressed={activeLayers.gpm}
           onClick={() => toggleLayer("gpm")}
-          className={`flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 py-2 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 ${
+          className={`flex min-h-11 w-full items-center justify-start gap-2 rounded-xl px-3 py-2 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 ${
             activeLayers.gpm ? "bg-sky-100 text-sky-900 border border-sky-300 shadow-xs hover:bg-sky-200 dark:bg-sky-900/50 dark:border-sky-700 dark:text-sky-200" : "bg-surface text-muted hover:bg-surface-2 hover:text-content border border-line"
           }`}
         >
@@ -218,7 +222,7 @@ function MapPage() {
           type="button"
           aria-pressed={activeLayers.smap}
           onClick={() => toggleLayer("smap")}
-          className={`flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 py-2 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 ${
+          className={`flex min-h-11 w-full items-center justify-start gap-2 rounded-xl px-3 py-2 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 ${
             activeLayers.smap
               ? "bg-teal-100 text-teal-900 border border-teal-300 shadow-xs hover:bg-teal-200 dark:bg-teal-900/50 dark:border-teal-700 dark:text-teal-200"
               : "bg-surface text-muted hover:bg-surface-2 hover:text-content border border-line"
@@ -233,7 +237,7 @@ function MapPage() {
           type="button"
           aria-pressed={activeLayers.modis}
           onClick={() => toggleLayer("modis")}
-          className={`flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 py-2 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 ${
+          className={`flex min-h-11 w-full items-center justify-start gap-2 rounded-xl px-3 py-2 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 ${
             activeLayers.modis
               ? "bg-green-100 text-green-900 border border-green-300 shadow-xs hover:bg-green-200 dark:bg-green-900/50 dark:border-green-700 dark:text-green-200"
               : "bg-surface text-muted hover:bg-surface-2 hover:text-content border border-line"
@@ -248,7 +252,7 @@ function MapPage() {
           type="button"
           aria-pressed={activeLayers.climate}
           onClick={() => toggleLayer("climate")}
-          className={`flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 py-2 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 ${
+          className={`flex min-h-11 w-full items-center justify-start gap-2 rounded-xl px-3 py-2 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 ${
             activeLayers.climate
               ? "bg-orange-100 text-orange-900 border border-orange-300 shadow-xs hover:bg-orange-200 dark:bg-orange-900/50 dark:border-orange-700 dark:text-orange-200"
               : "bg-surface text-muted hover:bg-surface-2 hover:text-content border border-line"
@@ -263,7 +267,7 @@ function MapPage() {
           type="button"
           aria-pressed={activeLayers.footprints}
           onClick={() => toggleLayer("footprints")}
-          className={`flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 py-2 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 ${
+          className={`flex min-h-11 w-full items-center justify-start gap-2 rounded-xl px-3 py-2 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 ${
             activeLayers.footprints
               ? "bg-violet-100 text-violet-900 border border-violet-300 shadow-xs hover:bg-violet-200 dark:bg-violet-900/50 dark:border-violet-700 dark:text-violet-200"
               : "bg-surface text-muted hover:bg-surface-2 hover:text-content border border-line"
@@ -273,13 +277,13 @@ function MapPage() {
           <Compass size={12} strokeWidth={2} />
           {isBn ? "স্থানিক ফুটপ্রিন্ট (Footprints)" : "Spatial Footprints"}
         </button>
-      </div>
+      </aside>
 
       {/* Main Interactive Map Canvas */}
       {error ? (
-        <ErrorState message={error} onRetry={() => loadMapData(selectedDistrict)} />
+        <div className="order-1 min-w-0 xl:order-2"><ErrorState message={error} onRetry={() => loadMapData(selectedDistrict)} /></div>
       ) : (
-        <div className="overflow-hidden rounded-3xl border border-sky-200 bg-surface p-2 shadow-sm dark:border-sky-900">
+        <div className="order-1 min-w-0 overflow-hidden rounded-3xl border border-sky-200 bg-surface p-2 shadow-sm xl:order-2 dark:border-sky-900">
         <DynamicGisMap
           boundaryData={boundaryData}
           layersData={layersData}
@@ -288,6 +292,7 @@ function MapPage() {
         />
         </div>
       )}
+      </section>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[

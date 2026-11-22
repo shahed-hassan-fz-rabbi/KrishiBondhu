@@ -162,7 +162,7 @@ export default function DistrictGisMap({
   const gpmPos = gpm?.location ? [gpm.location.latitude, gpm.location.longitude] : null;
 
   return (
-    <div className="relative h-[620px] w-full overflow-hidden rounded-2xl border border-line bg-surface shadow-xs">
+    <div className="relative h-[420px] min-w-0 w-full overflow-hidden rounded-2xl border border-line bg-surface shadow-xs sm:h-[520px] xl:h-[min(72vh,760px)] xl:min-h-[560px]">
       {/* Offline Vector Mode Banner */}
       {isOfflineBasemap && (
         <div role="status" aria-live="polite" className="pointer-events-auto absolute top-4 right-4 z-[1000] flex items-center gap-2.5 rounded-xl border border-amber-300 bg-amber-50/95 px-3 py-2 text-xs font-medium text-amber-900 shadow-md backdrop-blur-xs">

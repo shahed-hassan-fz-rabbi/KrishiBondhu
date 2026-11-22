@@ -81,3 +81,15 @@ test("GIS basemap uses keyless OSM tiles and exposes a visible vector fallback o
   assert.match(map, /Showing BBS 2020 boundaries and selected data layers/);
   assert.match(map, /aria-live="polite"/);
 });
+
+test("GIS map groups existing layer controls beside a responsive canvas without adding unsupported search", () => {
+  const page = fs.readFileSync(path.resolve(__dirname, "../app/(public-data)/map/page.js"), "utf8");
+  const map = fs.readFileSync(path.resolve(__dirname, "../components/map/DistrictGisMap.js"), "utf8");
+  assert.match(page, /xl:grid-cols-\[19rem_minmax\(0,1fr\)\]/);
+  assert.match(page, /aria-label=\{isBn \? "মানচিত্র স্তর" : "Map layers"\}/);
+  assert.match(page, /aria-pressed=\{activeLayers\.boundary\}/);
+  assert.match(page, /toggleLayer\("footprints"\)/);
+  assert.match(page, /fetchGisLayers\(districtCode\)/);
+  assert.match(map, /h-\[420px\].*sm:h-\[520px\]/);
+  assert.match(map, /Basemap tiles unavailable/);
+});
