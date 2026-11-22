@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { observedTemperature, summarizeMonthlyTemperature, rotationLinkForDistrict, resolveRotationDistrict, fillClimateText } from "../lib/climatePlanning.js";
 import { translations } from "../lib/i18n/translations.js";
 
@@ -45,4 +46,25 @@ test("signed-in climate links use the existing workspace planner", () => {
   assert.equal(rotationLinkForDistrict("cumilla", true), "/rotation-planner?district=cumilla");
   assert.equal(rotationLinkForDistrict("chattogram", true), "/rotation-planner?district=chattogram");
   assert.equal(rotationLinkForDistrict("cumilla", false), "/crop-rotation?district=cumilla");
+});
+
+test("latest climate panel labels archived observations and preserves provenance", async () => {
+  const panel = await readFile(new URL("../components/climate/LatestClimateReadings.js", import.meta.url), "utf8");
+  assert.match(panel, /fetchClimateLatest\(district\)/);
+  assert.match(panel, /historical daily values stored from NASA POWER, not live weather or a forecast/i);
+  assert.match(panel, /row\.observationDate/);
+  assert.match(panel, /row\.unit/);
+  assert.match(panel, /state\.meta\?\.provider/);
+  assert.match(panel, /state\.meta\?\.timeStandard/);
+  assert.match(panel, /Older observation/);
+  assert.match(panel, /No verified archived observations are available/);
+  assert.doesNotMatch(panel, /"Live weather"|"Today's weather"|"Current temperature"/);
+});
+
+test("rotation planning presents its existing inputs as an ordered three-step workflow", async () => {
+  const planner = await readFile(new URL("../components/RotationPlanner.js", import.meta.url), "utf8");
+  assert.match(planner, /Field and location/);
+  assert.match(planner, /Crop history and priority/);
+  assert.match(planner, /rotation\.baseline/);
+  assert.match(planner, /compareCropRotations\)\(\{ \.\.\.profile, baseline \}\)/);
 });

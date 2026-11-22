@@ -15,6 +15,7 @@ import { fillClimateText, observedTemperature, rotationLinkForDistrict, summariz
 import RainfallSection from "@/components/climate/RainfallSection.js";
 import SoilMoistureSection from "@/components/climate/SoilMoistureSection.js";
 import VegetationSection from "@/components/climate/VegetationSection.js";
+import LatestClimateReadings from "@/components/climate/LatestClimateReadings.js";
 
 export default function ClimateObservationDetails() {
   const { t, locale } = useLang();
@@ -98,6 +99,7 @@ export default function ClimateObservationDetails() {
 
     {(isLoading || (!error && dataDistrict !== selectedDistrict)) && <Card><CardBody><LoadingState /></CardBody></Card>}
     {error && !isLoading && <Card><CardBody><ErrorState onRetry={() => loadClimateData(selectedDistrict)} /><p className="mt-3 text-center text-sm text-muted">{t("climatePlanning.loadError")}</p></CardBody></Card>}
+    <LatestClimateReadings district={selectedDistrict} districtName={districtName} />
 
     {!isLoading && !error && tempData && dataDistrict === selectedDistrict && <>
       <section id="power" aria-labelledby="climate-summary" className="scroll-mt-24 rounded-2xl border border-emerald/20 bg-emerald/5 p-5 sm:p-7">
