@@ -328,7 +328,7 @@ npm run build
 cd krishi_server
 npm install
 npm run dev
-# Server API runs at http://localhost:5000/api/v1
+# Server API runs at http://localhost:5001/api/v1
 ```
 
 </details>

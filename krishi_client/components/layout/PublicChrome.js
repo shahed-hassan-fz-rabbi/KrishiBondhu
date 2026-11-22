@@ -214,8 +214,8 @@ export function PublicHeader() {
   );
 
   return (
-    <header className="sticky top-2 z-40 mx-auto max-w-7xl rounded-2xl border border-line/90 bg-surface/95 px-3 py-2 shadow-km-sm backdrop-blur-md transition-shadow duration-200">
-      <div className="flex h-14 items-center justify-between gap-3 px-2 sm:px-4">
+    <header className="sticky top-2 z-40 mx-auto w-full min-w-0 max-w-7xl rounded-2xl border border-line/90 bg-surface/95 px-3 py-2 shadow-km-sm backdrop-blur-md transition-shadow duration-200">
+      <div className="flex h-14 w-full min-w-0 items-center justify-between gap-1 px-2 sm:gap-3 sm:px-4">
         {/* Left: Brand + Geographic context pill */}
         <div className="flex items-center gap-3">
           <BrandMark tone="light" />

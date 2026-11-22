@@ -567,8 +567,8 @@ export default function LandingPage() {
           </div>
 
           {/* Interactive Tab Switcher */}
-          <div className="flex justify-center mb-8 overflow-x-auto pb-2">
-            <div className="inline-flex p-1.5 rounded-full border border-line bg-surface-2 shadow-sm gap-1">
+          <div className="flex max-w-full justify-center mb-8 pb-2">
+            <div className="inline-flex max-w-full flex-wrap justify-center p-1.5 rounded-full border border-line bg-surface-2 shadow-sm gap-1">
               {[
                 { id: "market", labelBn: "বাজারদর ও তথ্য", labelEn: "Market Reports", icon: Store },
                 { id: "weather", labelBn: "আবহাওয়া ও মাটি", labelEn: "Weather & Soil", icon: CloudSun },

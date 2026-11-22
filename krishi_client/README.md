@@ -151,7 +151,7 @@ flowchart TD
 The frontend communicates with the KrishiBondhu REST API using standard JSON request/response envelopes:
 
 ```
-GET http://localhost:5000/api/v1/...
+GET http://localhost:5001/api/v1/...
 ```
 
 ### Consumed Endpoints
