@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" preserveAspectRatio="xMidYMid meet">
+  <rect x="0" y="0" width="640" height="400" fill="#EDE6DA" />
+  <!-- hills -->
+  <path d="M0 318 Q260 272 320 342 L320 274 Q420 320 640 300 Z" fill="#E8F2E9" />
+  <path d="M0 332 Q180 356 320 320 L320 400 Z" fill="#E8F2E9" />
+  <path d="M0 340 Q230 370 320 335 L320 400 Z" fill="#A8D2B4" opacity=".5" />
+  <!-- sun at center-left, slightly rising -->
+  <circle cx="196" cy="120" r="46" fill="#F2F1E3" />
+  <g stroke="#D99631" stroke-width="5" stroke-linecap="round" fill="none">
+    <path d="M196 90 L196 40" stroke-width="6" />
+    <path d="M196 166 L196 220" stroke-width="6" />
+    <path d="M232 120 L280 120" stroke-width="6" />
+    <path d="M152 120 L108 120" stroke-width="6" />
+    <path d="M232 94 L278 141" stroke-width="6" />
+    <path d="M232 147 L278 94" stroke-width="6" />
+    <path d="M152 94 L208 147" stroke-width="6" />
+    <path d="M152 146 L208 94" stroke-width="6" />
+  </g>
+  <!-- clouds -->
+  <g stroke="#CFC9C0" stroke-width="2">
+    <ellipse cx="160" cy="200" rx="30" ry="10" fill="#F2F1E3" />
+    <ellipse cx="190" cy="204" rx="12" ry="5" fill="#F2F1E3" />
+    <ellipse cx="150" cy="198" rx="16" ry="8" fill="#F2F1E3" />
+    <circle cx="150" cy="196" r="5" fill="#EDE6DA" opacity=".4" />
+    <circle cx="172" cy="197" r="5" fill="#EDE6DA" opacity=".4" />
+    <circle cx="160" cy="189" ry="4" fill="#EDE6DA" opacity=".4" r="5" />
+    <circle cx="186" cy="204" ry="4" fill="#EDE6DA" opacity=".4" r="5" />
+  </g>
+  <!-- upper clouds -->
+  <ellipse cx="500" cy="60" rx="40" ry="12" fill="#F2F1E3" stroke="#CFC9C0" stroke-width="2" />
+  <!-- misty bubbles -->
+  <circle cx="280" cy="330" r="9" fill="#EDE6DA" opacity=".5" />
+  <circle cx="320" cy="320" r="9" fill="#EDE6DA" opacity=".55" />
+  <circle cx="360" cy="340" r="9" fill="#EDE6DA" opacity=".5" />
+  <!-- hills clouds and crops -->
+  <ellipse cx="520" cy="336" rx="26" ry="8" fill="#F2F1E3" stroke="#CFC9C0" stroke-width="2" />
+  <ellipse cx="540" cy="346" rx="24" ry="8" fill="#F2F1E3" stroke="#CFC9C0" stroke-width="2" />
+  <g fill="#56B870">
+    <ellipse cx="40" cy="180" rx="3" ry="8" />
+    <ellipse cx="80" cy="240" rx="3" ry="8" />
+    <ellipse cx="120" cy="165" rx="3" ry="8" />
+    <ellipse cx="400" cy="350" rx="3" ry="8" />
+    <ellipse cx="440" cy="300" rx="3" ry="8" />
+    <ellipse cx="480" cy="260" rx="3" ry="8" />
+    <ellipse cx="520" cy="340" rx="3" ry="8" />
+  </g>
+</svg>

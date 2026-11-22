@@ -23,9 +23,14 @@ export function explainRotationResult(payload) {
 }
 
 export function fetchMarketPriceAlerts() { return request("/market/alerts"); }
-export function fetchMarketPriceForecast({ commodity, division, priceType = "wholesale", frequency = "daily", horizonDays = 30 }) {
+export function fetchMarketPriceForecast({ commodity, division, district, upazila, market, unit, source, priceType = "wholesale", frequency = "daily", horizonDays = 30 }) {
   const query = new URLSearchParams({ commodity, priceType, frequency, horizonDays: String(horizonDays) });
   if (division) query.set("division", division);
+  if (district) query.set("district", district);
+  if (upazila) query.set("upazila", upazila);
+  if (market) query.set("market", market);
+  if (unit) query.set("unit", unit);
+  if (source) query.set("source", source);
   return request(`/market/prices/forecast?${query.toString()}`);
 }
 export function fetchMarketReferenceCatalog() { return request("/market/reference/catalog"); }
@@ -34,9 +39,11 @@ export function fetchMarketReferenceSeries({ cropId, division }) {
   return request(`/market/reference/series?${query.toString()}`);
 }
 export function fetchVerifiedMarketPriceCatalog() { return request("/market/prices/catalog"); }
-export function fetchMarketPriceHistory({ commodity, division, priceType = "wholesale", frequency = "daily", market, unit, source } = {}) {
+export function fetchMarketPriceHistory({ commodity, division, priceType = "wholesale", frequency = "daily", district, upazila, market, unit, source } = {}) {
   const query = new URLSearchParams({ commodity, priceType, frequency });
   if (division) query.set("division", division);
+  if (district) query.set("district", district);
+  if (upazila) query.set("upazila", upazila);
   if (market) query.set("market", market);
   if (unit) query.set("unit", unit);
   if (source) query.set("source", source);

@@ -17,16 +17,23 @@ test("profit and comparison tools begin without sample prices, costs, or yields"
   assert.match(page, /const \[cost, setCost\] = useState\(0\)/);
   assert.match(page, /const \[yieldKg, setYieldKg\] = useState\(0\)/);
   assert.match(page, /const \[marginCrops, setMarginCrops\] = useState\(\[\]\)/);
-  assert.match(page, /Choose at least two crops and enter your own cost and expected yield/);
+  assert.match(page, /Choose a division, then select at least two crops and enter your own cost and expected yield/);
   assert.match(page, /breakEven == null \? "—"/);
   assert.doesNotMatch(page, /totalCostBdt: "30000"|expectedYieldKg: "1800"|totalCostBdt: "22000"|expectedYieldKg: "2400"/);
 });
 
 test("market crop pickers fail closed when the verified catalog is unavailable", () => {
-  assert.match(page, /const \[forecastCrop, setForecastCrop\] = useState\(""\)/);
+  assert.match(page, /fetchMarketSourceCatalog\(\)/);
   assert.match(page, /setSourceCatalogError\(result\.error\?\.message/);
-  assert.match(page, /setForecastCrop\(\(current\) => crops\.some/);
-  assert.match(page, /Verified catalog unavailable/);
-  assert.match(page, /disabled=\{forecastLoading \|\| !forecastCrop\}/);
+  assert.match(page, /sourceCatalog\?\.crops/);
   assert.doesNotMatch(page, /\|\| \[\{ commodity: "green chilli" \}\]/);
+});
+
+test("market page mounts the verified explorer and removes the broad, non-location-bound forecast form", () => {
+  assert.match(page, /<MarketPriceExplorer locale=\{locale\}/);
+  assert.doesNotMatch(page, /Market price outlook|handleForecast|forecastCrop/);
+  assert.match(page, /Monthly market reference and outlook/);
+  assert.match(page, /Compare estimated crop margins/);
+  assert.match(page, /Your break-even price/);
+  assert.match(page, /My price alerts/);
 });

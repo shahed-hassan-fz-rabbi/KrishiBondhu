@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" preserveAspectRatio="xMidYMid meet">
+  <rect x="0" y="0" width="640" height="400" fill="#EDE6DA" />
+  <ellipse cx="320" cy="380" rx="190" ry="4" fill="#4C664F" opacity=".3" />
+  <rect x="0" y="366" width="640" height="14" fill="#2D4E3A" />
+  <!-- rolling hills -->
+  <path d="M0 296 Q200 340 320 270 Q480 316 640 296 L640 366 Z" fill="#E8F2E9" />
+  <path d="M0 310 Q150 358 380 300 L640 302" stroke="#A8D2B4" stroke-width="8" fill="none" opacity=".7" />
+  <!-- market stalls (4 canopies over canvas lines) -->
+  <g>
+    <path d="M84 354 L150 354 L160 322 L74 322 Z" fill="#F2F0E2" />
+    <path d="M216 354 L282 354 L292 322 L206 322 Z" fill="#F2F0E2" />
+    <path d="M348 354 L414 354 L424 322 L338 322 Z" fill="#F2F0E2" />
+    <path d="M470 354 L536 354 L546 322 L460 322 Z" fill="#F2F0E2" />
+  </g>
+  <g stroke="#247A4B" stroke-width="2.5" fill="none">
+    <path d="M86 326 L84 322 H156 L158 330 Z" stroke-linejoin="round" />
+    <path d="M218 326 L216 322 H288 L290 330 Z" stroke-linejoin="round" />
+    <path d="M350 326 L348 322 H420 L422 330 Z" stroke-linejoin="round" />
+    <path d="M472 326 L470 322 H542 L544 330 Z" stroke-linejoin="round" />
+  </g>
+  <!-- banner tag at first stall -->
+  <g>
+    <rect x="96" y="322" width="66" height="18" rx="6" fill="#247A4B" />
+    <path d="M99 322 L109 322 C111 322 112 326 112.5 327.5 C113 329.5 112.5 332 110 332 L106 332 Z" fill="#EDE6DA" />
+    <rect x="113" y="330" width="16" height="3" rx="1" fill="#EDE6DA" />
+    <circle cx="100" cy="331" r="2.5" fill="#EDE6DA" />
+    <circle cx="108" cy="331" r="2.5" fill="#EDE6DA" />
+    <circle cx="115" cy="331" r="2.5" fill="#EDE6DA" />
+  </g>
+  <!-- basket goods: rice grains, potatoes, vegetables -->
+  <g fill="#8B5A2E">
+    <ellipse cx="96" cy="344" rx="8" ry="6" />
+    <ellipse cx="88" cy="338" rx="6" ry="5" />
+    <ellipse cx="104" cy="349" rx="6" ry="5" />
+    <circle cx="228" cy="330" r="5" />
+    <circle cx="224" cy="318" r="5.5" />
+    <circle cx="217" cy="314" r="5" />
+  </g>
+  <g fill="#56B870">
+    <circle cx="185" cy="336" r="6" />
+    <circle cx="197" cy="342" r="5" />
+    <circle cx="174" cy="340" r="5" />
+  </g>
+  <g fill="#D99631">
+    <ellipse cx="393" cy="326" rx="6" ry="4" />
+    <ellipse cx="389" cy="318" rx="5" ry="5" />
+  </g>
+  <!-- person icon at second stall -->
+  <g fill="none" stroke="#1F2B2A" stroke-width="3" stroke-linecap="round">
+    <path d="M240 270 C248 262 256 258 264 264" />
+    <path d="M248 268 C252 262 256 255 248 250" stroke-width="2.5" />
+    <path d="M240 285 C252 276 264 285 264 290 L250 290 C245 292 236 290 236 286 Z" />
+  </g>
+  <!-- misty bubbles -->
+  <circle cx="300" cy="300" r="8" fill="#EDE6DA" opacity=".5" />
+  <circle cx="330" cy="285" r="9" fill="#EDE6DA" opacity=".45" />
+  <circle cx="360" cy="310" r="8" fill="#EDE6DA" opacity=".5" />
+</svg>

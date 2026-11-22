@@ -3,7 +3,9 @@
 **Document status:** Part 1 of 8 — Reference analysis and design foundation.
 **Date:** 2026-11-21
 **Baseline commit:** `585a075` (`Redesign: unified green-on-cream design system across all routes`)
-**Scope of this part:** Analysis, inventory, mapping and planning only. No structural UI work has been started.
+**Scope of this part:** Reference analysis, route inventory, design audit, mapping and planning. This document records the Part 1 baseline and is reconciled with the current repository checkpoint below; no product code was changed for this document update.
+
+> **Current checkpoint (2026-11-21):** The Part 1 baseline (`585a075`) is followed by Part 2 commits `67aa50e` and `7da07cd` on `main`. Part 2 is therefore already present in this checkout's history. This Part 1 document update does not add new homepage, navigation or footer implementation. The worktree has unrelated in-progress edits; they are preserved and listed in §0.
 
 ---
 
@@ -13,10 +15,11 @@
 | --- | --- |
 | Git remote `origin` | `https://github.com/shahed-hassan-fz-rabbi/KrishiBondhu` |
 | Current branch | `main`, tracking `origin/main` |
-| HEAD | `585a075` |
+| Part 1 baseline | `585a075` (`Redesign: unified green-on-cream design system across all routes`) |
+| Current verified HEAD | `7da07cd` (`Fix Part 2 data honesty in homepage previews and location presentation`), on `main` tracking `origin/main` |
 | Worktree used | `R:\Shahed  All Folders\Hackathone\CoU hack2026\KrishiBondhu` |
-| Other worktree | `C:\Users\Shahed\.local\share\opencode\worktree\0e7b80\misty-sailor` (detached at `edcc6be`) — left untouched |
-| Unrelated workspace changes | `krishi_client/public/matikohon/` is **untracked** and was left exactly as found. It is reference material only; no assets from it were copied into the product. |
+| Current unrelated/in-progress changes | Modified: `krishi_client/app/globals.css`, `krishi_client/app/page.js`, `krishi_client/lib/i18n/translations.js`; untracked: four `krishi_client/public/img/kb-*-concept.svg` / `kb-hero-field.svg` assets and `krishi_client/public/matikohon/`. All were left untouched. |
+| Reference bundle | `krishi_client/public/matikohon/` is untracked reference material; do not copy its code, assets, fonts, mascot, or copy into the product. |
 | Backend / database / Python ML / APIs | Not inspected for modification and not changed. No server files were edited. |
 
 ---
@@ -145,7 +148,7 @@ Every card states its source, observation date and limitations. Unavailable data
 
 ---
 
-## 4. KrishiBondhu route inventory (current, commit `585a075`)
+## 4. KrishiBondhu route inventory (28 application page files)
 
 Legend — **Group**: P = public/landing, D = authenticated app shell, R = public-data route group, A = auth/onboarding. **Priority** is for the remaining redesign parts, not this one.
 
@@ -193,7 +196,7 @@ Build output also includes `/_not-found`, `/icon.svg`, and partial-prerendered d
 - **Domain**: `DashboardWorkspace`/`DashboardOverview`, `WeatherIntelligenceSection`, `EnvironmentalIntelligenceCards`, `DistrictLocationPanel`, `DivisionPointMap`, `DistrictGisMap`, climate sections, Recharts charts, `AgriculturalNewsTicker`.
 - **Guide infrastructure (must be preserved)**: `components/MiniGuide.js` — `PLACES`, `TOUR_STOPS`, `pageTip()` and the tour state machine; `components/mascot/mascotStore.js` — persistent preferences via `useSyncExternalStore`; `components/mascot/KrishuMascot.js` — the visual character to be **replaced in Part 6**; `app/(app)/assistant/page.js` — the real AI UI whose backend must not be duplicated.
 
-### 5.2 Audit findings (current state after `585a075`)
+### 5.2 Audit findings at the Part 1 baseline (`585a075`)
 
 | Finding | Impact | Planned response |
 | --- | --- | --- |
@@ -202,10 +205,10 @@ Build output also includes `/_not-found`, `/icon.svg`, and partial-prerendered d
 | No shared "freshness strip" component; freshness is implemented ad hoc per page | Reference puts freshness first; our pages bury it | Introduce `DataFreshnessBar` in Part 2/3 and reuse on dashboard, market, climate, data-sources |
 | No shared "page header" (kicker → title → lead → actions) | Inconsistent hierarchy across 28 pages | Introduce `PageHeader` and `SectionHeader` primitives |
 | Sidebar groups exist but are flatter than the reference's Work/Plan/Field/Data grouping | Information architecture less legible | Re-group nav in `lib/nav.js` + `AppSidebar` in Part 3 (labels must stay farmer-friendly and bilingual) |
-| Landing has no explicit product-preview row (dashboard/AI/market/weather) and no FAQ | Lower discoverability than reference | Add compact, real-feature preview cards and a transparency FAQ in Part 2 — no invented claims |
+| Landing lacked an explicit product-preview row (dashboard/AI/market/weather) and a FAQ at the Part 1 baseline | Lower discoverability than reference | Addressed in the subsequent Part 2 work; preserve data honesty and verify current behavior during later regression review |
 | Footer is multi-column and now honest (fake newsletter removed) | Good | Keep; add support/privacy links **only when real pages exist** |
 | Two names in guide copy ("Mini" in `pageTip`, "Krishu" in brand) | Confusing before Bondhu arrives | Normalise to a single neutral "guide" voice in Part 6, not Part 1 |
-| No viewport emulation available in this session | Mobile not visually verified | Schedule mobile verification in Part 7 |
+| Mobile viewport verification was not available in the Part 1 repository audit | Mobile not visually verified at that baseline | Schedule mobile verification in Part 7 |
 
 ### 5.3 Preserved design tokens (do not change without approval)
 
@@ -280,11 +283,11 @@ Component rules: semantic tokens only, no raw hex in new code; lucide-react icon
 
 ---
 
-## 9. Implementation plan for the remaining parts (outline only)
+## 9. Implementation plan (Part 1 proposal; later status noted)
 
 | Part | Planned work | Exit criteria |
 | --- | --- | --- |
-| 2 | Landing page structure + footer refinement; `PageHeader`/`SectionHeader`/`StatusChip`/`SourceDisclosure`; design-token cleanup | Landing rebuild verified, build+tests green |
+| 2 | Landing page structure + footer refinement; `PageHeader`/`SectionHeader`/`StatusChip`/`SourceDisclosure`; design-token cleanup | **Already present in history** (`67aa50e`, `7da07cd`); review its implementation and verification in its own report |
 | 3 | App shell: sidebar re-grouping, header, location chip, breadcrumbs, bottom nav, `DataFreshnessBar` | All D-group routes render through one consistent shell |
 | 4 | Dashboard, market, weather/climate, crop/farm, auth and admin pages restyled with shared components; charts and tables aligned | Every route visually consistent; no backend change |
 | 5 | Website-wide motion, skeleton/empty states, tab/accordion/modal transitions | Reduced-motion verified; no layout shifts |
@@ -292,7 +295,7 @@ Component rules: semantic tokens only, no raw hex in new code; lucide-react icon
 | 7 | Mobile-first responsive pass, accessibility and performance refinement | Emulated device checks, Lighthouse on key routes |
 | 8 | Browser comparison, regression tests, final report and push | All checks green; before/after evidence delivered where capture permits |
 
-Each part will be committed separately so regressions are isolated. **No Part 2 work has begun.**
+The proposal was to commit each implementation part separately so regressions are isolated. At the current checkpoint, Part 2 has already been committed; later parts remain proposals in this document and must follow their own prompts.
 
 ---
 
@@ -300,15 +303,14 @@ Each part will be committed separately so regressions are isolated. **No Part 2 
 
 | Check | Result |
 | --- | --- |
-| Git remote/branch/HEAD | Verified (see §0) |
-| Live reference opened in interactive browser | ✅ Verified across 70 live steps on desktop & mobile viewports; EN/BN toggles, 10 Manager sections, Farmer portal, Judge walkthrough, 14 dataset cards, and interactive map inspected |
-| Reference repository inspected | ✅ Cloned read-only; design tokens, screens and tour data reviewed |
-| Local `public/matikohon` bundle inspected | ✅ 61 files reviewed as reference only; left untracked and unchanged |
-| All KrishiBondhu routes/components inventoried | ✅ 27 page files / 32 build routes / 45 components |
-| Foundational code changes in Part 1 | **None** — analysis + design plan document only |
-| Client test suite (baseline) | ✅ 195 tests pass, 0 fail (re-run this session) |
-| Lint | ✅ Clean |
-| Screenshots & Visuals | ✅ Live screenshots captured across key flows (landing, hero, story flow, country map, manager desk, farmer cases, and companion dialogs) |
+| Git remote/branch/HEAD | ✅ Rechecked for this update (see §0) |
+| Live reference opened in interactive browser | ✅ Recorded from the original Part 1 exploration: 70 actions across desktop/mobile, EN/BN, Manager/Farmer flows, Judge walkthrough, datasets and map. Not rerun in this document-only update. |
+| Reference repository inspected | ✅ Recorded from the original Part 1 analysis; clone was read-only. Not re-cloned in this update. |
+| Local `public/matikohon` bundle inspected | ✅ Recorded from the original Part 1 analysis; local copy remains untracked and unchanged. |
+| KrishiBondhu routes inventoried | ✅ 28 application page files in the current route tree; see §4. Prior build-route count is historical and is not asserted as freshly verified here. |
+| Foundational code changes in this Part 1 update | **None** — documentation only; application files were not edited. |
+| Tests and lint | Not rerun in this document-only update. Earlier Part 1 notes report 195 client tests passing and lint clean; those are historical results, not a current verification claim. |
+| Screenshots & visuals | ✅ Recorded from the original Part 1 exploration; not recaptured in this update. |
 
 ---
 

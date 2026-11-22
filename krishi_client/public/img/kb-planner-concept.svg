@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" preserveAspectRatio="xMidYMid meet">
+  <rect x="0" y="0" width="640" height="400" fill="#EDE6DA" />
+  <ellipse cx="320" cy="388" rx="200" ry="4" fill="#4C664F" opacity=".3" />
+  <!-- terraced field rows -->
+  <path d="M8 364 Q160 372 200 326 Q240 336 290 312 Q340 324 400 322 Q460 354 632 342 L632 364 Z" fill="#E8F2E9" />
+  <path d="M8 370 Q160 386 200 350 Q240 360 290 330 Q340 352 400 346 Q460 386 632 366 L632 364 Z" fill="#B9DFC5" />
+  <path d="M8 375 Q180 400 220 356 Q270 390 420 372 L632 366 Z" fill="#A8D2B4" />
+  <!-- person on first terrace -->
+  <circle cx="90" cy="310" r="11" fill="#F2F0E2" />
+  <path d="M90 288 L90 274" stroke="#1F2B2A" stroke-width="3" fill="none" stroke-linecap="round" />
+  <path d="M90 274 C100 268 110 275 110 282" stroke="#1F2B2A" stroke-width="3" fill="none" stroke-linecap="round" />
+  <path d="M90 303 C101 296 112 304 112 312 L90 312 Z" stroke="#1F2B2A" stroke-width="3" fill="none" stroke-linecap="round" />
+  <!-- season markers -->
+  <circle cx="100" cy="352" r="10" fill="#D99631" />
+  <circle cx="200" cy="330" r="9" fill="#D99631" />
+  <circle cx="320" cy="338" r="9" fill="#D99631" />
+  <circle cx="430" cy="316" r="9" fill="#D99631" />
+  <!-- sprouts on first terrace -->
+  <g fill="#247A4B">
+    <ellipse cx="54" cy="300" rx="4" ry="4" />
+    <ellipse cx="72" cy="292" rx="4" ry="4" />
+    <ellipse cx="38" cy="298" rx="4" ry="4" />
+    <ellipse cx="40" cy="285" rx="4" ry="4" />
+  </g>
+  <!-- crop sprigs on second terrace -->
+  <g fill="#56B870">
+    <ellipse cx="560" cy="342" rx="5" ry="6" />
+    <ellipse cx="560" cy="336" rx="5" ry="6" />
+    <ellipse cx="560" cy="314" rx="5" ry="6" />
+    <ellipse cx="560" cy="306" rx="5" ry="6" />
+  </g>
+  <!-- misty bubbles -->
+  <circle cx="150" cy="388" r="6" fill="#EDE6DA" opacity=".5" />
+  <circle cx="250" cy="378" r="6" fill="#EDE6DA" opacity=".45" />
+  <circle cx="410" cy="388" r="6" fill="#EDE6DA" opacity=".5" />
+  <circle cx="510" cy="362" r="6" fill="#EDE6DA" opacity=".5" />
+  <circle cx="600" cy="334" r="6" fill="#EDE6DA" opacity=".45" />
+</svg>

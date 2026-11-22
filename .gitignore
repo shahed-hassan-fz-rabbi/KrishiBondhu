@@ -45,3 +45,7 @@ next-env.d.ts
 /AUDIT-2026-11-14.md
 audit-*.html
 audit-*.log
+
+# Reference bundles
+krishi_client/public/matikohon/
+

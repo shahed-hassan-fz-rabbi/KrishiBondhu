@@ -4,8 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Bell, Calculator, ExternalLink, Info, LoaderCircle, MapPin, Plus, Store, Trash2, TrendingUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext.js";
+import MarketPriceExplorer from "@/components/market/MarketPriceExplorer.js";
 import { useLang } from "@/lib/i18n/LanguageContext.js";
-import { compareMarketMargins, createMarketPriceAlert, deleteMarketPriceAlert, fetchMarketDataStatus, fetchMarketPriceAlerts, fetchMarketPriceForecast, fetchMarketReferenceCatalog, fetchMarketReferenceSeries, fetchMarketSourceCatalog, recordMarketQuote } from "@/services/api.js";
+import { compareMarketMargins, createMarketPriceAlert, deleteMarketPriceAlert, fetchMarketDataStatus, fetchMarketPriceAlerts, fetchMarketReferenceCatalog, fetchMarketReferenceSeries, fetchMarketSourceCatalog, recordMarketQuote } from "@/services/api.js";
 
 const REPORT_BASE_URL = "https://market.dam.gov.bd/market_daily_price_report/";
 const MARKET_DIRECTORY_URL = "https://market.dam.gov.bd/manage_market_directory";
@@ -79,18 +80,12 @@ export default function MarketPage() {
   const [unit, setUnit] = useState("kg");
   const [targetPrice, setTargetPrice] = useState("");
   const [quotes, setQuotes] = useState({});
-  const [forecastCrop, setForecastCrop] = useState("");
   const [forecastDivision, setForecastDivision] = useState("");
-  const [forecastType, setForecastType] = useState("wholesale");
-  const [forecastFrequency, setForecastFrequency] = useState("daily");
-  const [forecastHorizon, setForecastHorizon] = useState("7");
-  const [forecastResult, setForecastResult] = useState(null);
-  const [forecastError, setForecastError] = useState("");
-  const [forecastLoading, setForecastLoading] = useState(false);
   const [referenceCatalog, setReferenceCatalog] = useState(null);
   const [sourceCatalog, setSourceCatalog] = useState(null);
   const [sourceCatalogError, setSourceCatalogError] = useState("");
   const [marketDataStatus, setMarketDataStatus] = useState(null);
+  const [marketDataStatusState, setMarketDataStatusState] = useState("loading");
   const [referenceCrop, setReferenceCrop] = useState("rice-coarse");
   const [referenceDivision, setReferenceDivision] = useState("National");
   const [referenceCatalogError, setReferenceCatalogError] = useState("");
@@ -133,23 +128,6 @@ export default function MarketPage() {
     return { observations, historyPath, forecastPath, chartWidth, chartHeight, min, max };
   }, [referenceSeries]);
 
-  const handleForecast = async (event) => {
-    event.preventDefault(); setForecastLoading(true); setForecastError(""); setForecastResult(null);
-    if (!forecastCrop) {
-      setForecastError(sourceCatalogError || (bn ? "যাচাইকৃত ফসলের তালিকা পাওয়া যায়নি। পরে আবার চেষ্টা করুন।" : "The verified crop catalog is unavailable. Please try again later."));
-      setForecastLoading(false);
-      return;
-    }
-    try {
-      const result = await fetchMarketPriceForecast({ commodity: forecastCrop, division: forecastDivision, priceType: forecastType, frequency: forecastFrequency, horizonDays: forecastFrequency === "weekly" ? 28 : Number(forecastHorizon) });
-      if (result.success) setForecastResult(result.data);
-      else setForecastError(result.error?.code === "MARKET_HISTORY_UNAVAILABLE"
-        ? (bn ? "এই ফসলের যাচাইকৃত ইতিহাস এখনো যোগ হয়নি। DAM-এর ৫ বছরের তথ্য যোগ হলে পূর্বাভাস দেখা যাবে।" : "Verified price history for this crop is not loaded yet. Forecasts will appear after the DAM historical data is imported.")
-        : result.error?.message || (bn ? "দরের পূর্বাভাস আনা যায়নি।" : "Could not load a price outlook."));
-    } catch { setForecastError(bn ? "দরের পূর্বাভাস আনতে সংযোগ পাওয়া যায়নি।" : "Could not connect to load a price outlook."); }
-    setForecastLoading(false);
-  };
-
   useEffect(() => {
     let active = true;
     void fetchMarketSourceCatalog().then((result) => {
@@ -157,8 +135,6 @@ export default function MarketPage() {
       if (result.success) {
         setSourceCatalog(result.data);
         setSourceCatalogError("");
-        const crops = result.data?.crops || [];
-        setForecastCrop((current) => crops.some((item) => item.commodity.toLocaleLowerCase("en") === current) ? current : (crops[0]?.commodity.toLocaleLowerCase("en") || ""));
       } else {
         setSourceCatalogError(result.error?.message || (bn ? "যাচাইকৃত ফসলের তালিকা পাওয়া যায়নি।" : "Could not load the verified crop catalog."));
       }
@@ -168,7 +144,13 @@ export default function MarketPage() {
 
   useEffect(() => {
     let active = true;
-    void fetchMarketDataStatus().then((result) => { if (active && result.success) setMarketDataStatus(result.data); });
+    void fetchMarketDataStatus().then((result) => {
+      if (!active) return;
+      if (result.success && result.data) {
+        setMarketDataStatus(result.data);
+        setMarketDataStatusState("ready");
+      } else setMarketDataStatusState("unavailable");
+    }).catch(() => { if (active) setMarketDataStatusState("unavailable"); });
     return () => { active = false; };
   }, []);
 
@@ -199,8 +181,8 @@ export default function MarketPage() {
 
   const handleMarginComparison = async (event) => {
     event.preventDefault(); setMarginLoading(true); setMarginError(""); setMarginResults(null);
-    if (marginCrops.length < 2 || marginCrops.some((item) => !item.commodity || Number(item.totalCostBdt) < 0 || Number(item.expectedYieldKg) <= 0)) {
-      setMarginError(bn ? "তুলনার জন্য অন্তত দুইটি ফসল বেছে নিয়ে নিজের খরচ ও ফলন লিখুন।" : "Choose at least two crops and enter your own cost and expected yield for each.");
+    if (!forecastDivision || marginCrops.length < 2 || marginCrops.some((item) => !item.commodity || Number(item.totalCostBdt) < 0 || Number(item.expectedYieldKg) <= 0)) {
+      setMarginError(bn ? "তুলনার জন্য বিভাগ বেছে নিন, অন্তত দুইটি ফসল বেছে নিয়ে নিজের খরচ ও ফলন লিখুন।" : "Choose a division, then select at least two crops and enter your own cost and expected yield for each.");
       setMarginLoading(false);
       return;
     }
@@ -261,11 +243,13 @@ export default function MarketPage() {
       {user?.role === "admin" ? <Link href="/market-import" className="mt-5 inline-flex rounded-full border border-[#0d6865] px-4 py-2 text-sm font-bold text-[#247A4B]">{bn ? "সরকারি বাজারদর আমদানি" : "Admin: import official prices"}</Link> : null}
       <div className="mt-5 rounded-2xl border border-[#d9d0ba] bg-white/70 p-4 text-sm text-[#526761]" role="status">
         <p className="font-bold text-[#173B2A]">{bn ? "বাজার ডেটার সর্বশেষ অবস্থা" : "Market data freshness"}</p>
-        <p className="mt-1">{bn ? "সর্বশেষ সফল আমদানি" : "Last successful import"}: {marketDataStatus?.lastSuccessfulSyncAt ? new Date(marketDataStatus.lastSuccessfulSyncAt).toLocaleString(bn ? "bn-BD" : "en-BD", { timeZone: "Asia/Dhaka", dateStyle: "medium", timeStyle: "short" }) : (bn ? "এখনো কোনো যাচাইকৃত DAM আমদানি নেই" : "No verified DAM import yet")}</p>
+        <p className="mt-1">{bn ? "সর্বশেষ সফল আমদানি" : "Last successful import"}: {marketDataStatus?.lastSuccessfulSyncAt ? new Date(marketDataStatus.lastSuccessfulSyncAt).toLocaleString(bn ? "bn-BD" : "en-BD", { timeZone: "Asia/Dhaka", dateStyle: "medium", timeStyle: "short" }) : marketDataStatusState === "loading" ? (bn ? "অবস্থা যাচাই হচ্ছে…" : "Checking status…") : marketDataStatusState === "unavailable" ? (bn ? "অবস্থা পাওয়া যায়নি" : "Status unavailable") : (bn ? "এখনো কোনো যাচাইকৃত DAM আমদানি নেই" : "No verified DAM import yet")}</p>
         <p className="mt-1">{bn ? "সর্বশেষ দামের রিপোর্ট তারিখ" : "Latest observed price date"}: {marketDataStatus?.latestVerifiedDailyObservation?.observedOn ? new Date(marketDataStatus.latestVerifiedDailyObservation.observedOn).toLocaleDateString(bn ? "bn-BD" : "en-BD", { timeZone: "Asia/Dhaka" }) : "—"}{marketDataStatus?.latestVerifiedDailyObservation?.stale ? (bn ? " · পুরোনো তথ্য; বর্তমান দাম নয়" : " · Stale; not a current quote") : ""}</p>
         <p className="mt-1 text-xs">{bn ? "DAM-এর অনুমোদিত স্বয়ংক্রিয় API পাওয়া যায়নি। অ্যাডমিন সরকারি রিপোর্ট যাচাই করে আমদানি করেন।" : "No authorized DAM live API is documented. An administrator must verify and import official reports."}</p>
       </div>
     </header>
+
+    <MarketPriceExplorer locale={locale} />
 
     <section className="mb-8 grid gap-6 lg:grid-cols-[1.25fr_.75fr]">
       <article className="overflow-hidden rounded-2xl border border-[#dfd7c4] bg-[#fbf7ec]">
@@ -330,22 +314,9 @@ export default function MarketPage() {
     </section>
 
     <section className="mb-8 rounded-2xl border border-[#dfd7c4] bg-[#fbf7ec] p-5 sm:p-6">
-      <div className="flex items-start gap-3"><TrendingUp className="mt-1 text-[#247A4B]"/><div><h2 className="text-xl font-bold text-[#173B2A]">{bn ? "বাজারদরের পূর্বাভাস" : "Market price outlook"}</h2><p className="mt-1 max-w-3xl text-sm leading-6 text-[#62736A]">{bn ? "নির্বাচিত ফসল, এলাকার ধরন, দরের ধরন ও সময়কালের যাচাইকৃত ইতিহাস উপযুক্ত হলে তবেই পূর্বাভাস আসে। নিচের মাসিক রেফারেন্স আলাদা মডেলভিত্তিক তথ্য; কোনোটিই আজকের DAM দর বা নিশ্চিত বিক্রয়মূল্য নয়।" : "Forecasts appear only when verified history supports the selected crop, area, price type, and frequency. The monthly reference below is a separate modeled series. Neither is a live DAM quote or a guaranteed selling price."}</p></div></div>
-      <form onSubmit={handleForecast} className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <label className="text-xs font-semibold text-[#526761]">{bn ? "ফসল / পণ্য" : "Crop / commodity"}<select value={forecastCrop} onChange={e=>setForecastCrop(e.target.value)} disabled={!sourceCatalog?.crops?.length} className="mt-1 block w-full rounded-lg border border-[#d9d0ba] bg-white px-3 py-2.5 text-sm text-[#173B2A]">{!sourceCatalog?.crops?.length ? <option value="">{sourceCatalogError ? (bn ? "যাচাইকৃত তালিকা পাওয়া যায়নি" : "Verified catalog unavailable") : sourceCatalog ? (bn ? "যাচাইকৃত ফসলের তথ্য নেই" : "No verified crops available") : (bn ? "ফসলের তালিকা লোড হচ্ছে…" : "Loading crop catalog…")}</option> : sourceCatalog.crops.map((item) => <option key={item.commodity} value={item.commodity.toLocaleLowerCase("en")}>{item.commodity}</option>)}</select></label>
-        <label className="text-xs font-semibold text-[#526761]">{bn ? "বিভাগ / ডেটা এলাকা" : "Division / dataset area"}<select value={forecastDivision} onChange={e=>setForecastDivision(e.target.value)} className="mt-1 block w-full rounded-lg border border-[#d9d0ba] bg-white px-3 py-2.5 text-sm text-[#173B2A]"><option value="">{bn ? "DAM-এর সব বিভাগ" : "All DAM divisions"}</option><option value="National">{bn ? "জাতীয় গবেষণা ডেটাসেট" : "National research dataset"}</option>{["Dhaka","Chattogram","Khulna","Rajshahi","Barishal","Rangpur","Sylhet","Mymensingh"].map(item=><option value={item} key={item}>{item}</option>)}</select></label>
-        <label className="text-xs font-semibold text-[#526761]">{bn ? "দরের ধরন" : "Price type"}<select value={forecastType} onChange={e=>setForecastType(e.target.value)} className="mt-1 block w-full rounded-lg border border-[#d9d0ba] bg-white px-3 py-2.5 text-sm text-[#173B2A]"><option value="wholesale">{bn ? "পাইকারি" : "Wholesale"}</option><option value="producer">{bn ? "উৎপাদক" : "Grower / producer"}</option><option value="retail">{bn ? "খুচরা" : "Retail"}</option></select></label>
-        <label className="text-xs font-semibold text-[#526761]">{bn ? "ডেটার সময়কাল" : "Data frequency"}<select value={forecastFrequency} onChange={e=>setForecastFrequency(e.target.value)} className="mt-1 block w-full rounded-lg border border-[#d9d0ba] bg-white px-3 py-2.5 text-sm text-[#173B2A]"><option value="daily">{bn ? "দৈনিক" : "Daily"}</option><option value="weekly">{bn ? "সাপ্তাহিক" : "Weekly"}</option></select></label>
-        {forecastFrequency === "daily" ? <label className="text-xs font-semibold text-[#526761]">{bn ? "পূর্বাভাসের সময়" : "Forecast horizon"}<select value={forecastHorizon} onChange={e=>setForecastHorizon(e.target.value)} className="mt-1 block w-full rounded-lg border border-[#d9d0ba] bg-white px-3 py-2.5 text-sm text-[#173B2A]"><option value="7">{bn ? "৭ দিন" : "7 days"}</option><option value="30">{bn ? "৩০ দিন" : "30 days"}</option></select></label> : <div className="rounded-lg bg-[#f0eadb] px-3 py-2.5 text-xs text-[#66583c]">{bn ? "সাপ্তাহিক মডেল সর্বোচ্চ ৪ সপ্তাহ দেখায়।" : "Weekly model forecasts up to 4 weeks."}</div>}
-        <button disabled={forecastLoading || !forecastCrop} className="mt-auto inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg bg-[#247A4B] px-4 py-2 text-sm font-bold text-white disabled:opacity-50">{forecastLoading ? <LoaderCircle size={16} className="animate-spin"/> : <TrendingUp size={16}/>} {bn ? "পূর্বাভাস দেখুন" : "View outlook"}</button>
-      </form>
-      {forecastError ? <p role="status" className="mt-4 rounded-xl bg-[#f0eadb] p-4 text-sm leading-6 text-[#66583c]">{forecastError}</p> : null}
-      {forecastResult ? <div className="mt-5 grid gap-4 lg:grid-cols-[.8fr_1.2fr]"><div className="rounded-xl bg-[#E8F2E9] p-4"><p className="text-sm font-semibold text-[#526761]">{bn ? "সর্বশেষ যাচাইকৃত দর" : "Latest verified quote"}</p><strong className="mt-1 block text-2xl text-[#247A4B]">৳{formatPrice(forecastResult.data.latestObservedPrice)} <span className="text-sm font-medium">/ {forecastResult.meta.unit}</span></strong><p className="mt-1 text-xs text-[#526761]">{forecastResult.data.latestObservedOn} · {forecastResult.division} · {forecastResult.meta.priceType} · {forecastFrequency}</p><p className="mt-4 text-xs leading-5 text-[#526761]">{bn ? "ইতিহাস" : "History"}: {forecastResult.meta.historyStart} – {forecastResult.meta.historyEnd} ({forecastResult.meta.observationsUsed} {bn ? "টি রেকর্ড" : "records"})<br/>{bn ? "ব্যাকটেস্ট MAE" : "Backtest MAE"}: ৳{formatPrice(forecastResult.meta.backtest.selected.mae)} / {forecastResult.meta.unit}<br/>{bn ? "নির্বাচিত মডেল" : "Selected model"}: {forecastResult.meta.selectedModel} ({bn ? "Persistence MAE" : "persistence MAE"} ৳{formatPrice(forecastResult.meta.backtest.candidateMetrics.last_observation.mae)})</p><a className="mt-3 inline-block text-xs font-bold text-[#247A4B] underline" href={forecastResult.sourceUrl} target="_blank" rel="noreferrer">{forecastResult.meta.source} · {forecastResult.licence}</a></div><div className="overflow-x-auto rounded-xl border border-[#e6decc] bg-white"><table className="w-full text-left text-sm"><thead className="bg-[#f0eadb] text-[#526761]"><tr><th className="px-3 py-2">{bn ? "তারিখ" : "Date"}</th><th className="px-3 py-2">{bn ? "মাঝারি অনুমান" : "Estimate"}</th><th className="px-3 py-2">{bn ? "সম্ভাব্য পরিসর" : "Model range"}</th></tr></thead><tbody>{forecastResult.data.forecast.map(point=><tr key={point.date} className="border-t border-[#eee8dc]"><td className="px-3 py-2">{point.date}</td><td className="px-3 py-2 font-semibold text-[#247A4B]">৳{formatPrice(point.price)}</td><td className="px-3 py-2">৳{formatPrice(point.lower90)} – ৳{formatPrice(point.upper90)}</td></tr>)}</tbody></table><p className="px-3 py-2 text-xs leading-5 text-[#62736A]">{bn ? "পরিসরটি ব্যাকটেস্টের ভুলের ওপর ভিত্তি করে; আকস্মিক আবহাওয়া, নীতি বা সরবরাহ পরিবর্তন ধরা নাও পড়তে পারে।" : "Range is based on backtest error; sudden weather, policy or supply changes may not be captured."}</p></div></div> : null}
-    </section>
-
-    <section className="mb-8 rounded-2xl border border-[#dfd7c4] bg-[#fbf7ec] p-5 sm:p-6">
-      <div className="flex items-start gap-3"><Calculator className="mt-1 text-[#247A4B]"/><div><h2 className="text-xl font-bold text-[#173B2A]">{bn ? "ফসলভিত্তিক সম্ভাব্য লাভ তুলনা" : "Compare estimated crop margins"}</h2><p className="mt-1 text-sm leading-6 text-[#62736A]">{bn ? "প্রতি ফসলের নিজের মোট খরচ ও প্রত্যাশিত ফলন দিন। একই দরের ধরন ও জায়গার ৩০ দিনের বাজার-পূর্বাভাস দিয়ে সম্ভাব্য নিট আয় তুলনা হবে।" : "Enter your own total cost and expected harvest for each crop. The app compares estimated net returns using the same location and a 30-day forecast for one price type."}</p></div></div>
+      <div className="flex items-start gap-3"><Calculator className="mt-1 text-[#247A4B]"/><div><h2 className="text-xl font-bold text-[#173B2A]">{bn ? "ফসলভিত্তিক সম্ভাব্য লাভ তুলনা" : "Compare estimated crop margins"}</h2><p className="mt-1 text-sm leading-6 text-[#62736A]">{bn ? "বিভাগ বেছে নিয়ে প্রতি ফসলের নিজের খরচ ও ফলন দিন। সার্ভার কেবল একক যাচাইকৃত এলাকা ও উৎস মিলে গেলে ৩০ দিনের মডেল তুলনা করবে; এটি নিশ্চিত লাভ নয়।" : "Choose a division and enter your own cost and yield. The server compares 30-day model outlooks only when each crop resolves to one verified location and source; results are not guaranteed profit."}</p></div></div>
       <label className="mt-4 block max-w-sm text-xs font-semibold text-[#526761]">{bn ? "বিক্রির দর ধরন" : "Sale price basis"}<select value={marginPriceType} onChange={e=>setMarginPriceType(e.target.value)} className="mt-1 block w-full rounded-lg border border-[#d9d0ba] bg-white px-3 py-2.5 text-sm text-[#173B2A]"><option value="wholesale">{bn ? "পাইকারি" : "Wholesale"}</option><option value="producer">{bn ? "উৎপাদক / কৃষক দর" : "Grower / producer"}</option></select></label>
+      <label className="mt-3 block max-w-sm text-xs font-semibold text-[#526761]">{bn ? "বিভাগ" : "Division"}<select required value={forecastDivision} onChange={e=>setForecastDivision(e.target.value)} className="mt-1 block w-full rounded-lg border border-[#d9d0ba] bg-white px-3 py-2.5 text-sm text-[#173B2A]"><option value="">{bn ? "বিভাগ বাছুন" : "Select a division"}</option>{["Dhaka","Chattogram","Khulna","Rajshahi","Barishal","Rangpur","Sylhet","Mymensingh","National"].map(item=><option value={item} key={item}>{item === "National" ? (bn ? "জাতীয়" : "National") : item}</option>)}</select></label>
       <form onSubmit={handleMarginComparison} className="mt-4 space-y-3">
         {marginCrops.map((item, index) => <div key={index} className="grid gap-3 rounded-xl bg-[#f0eadb] p-4 sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1fr_auto]">
           <label className="text-xs font-semibold text-[#526761]">{bn ? "ফসল " + (index + 1) : "Crop " + (index + 1)}<select required value={item.commodity} onChange={e=>setMarginCrops(current=>current.map((crop,i)=>i===index?{...crop,commodity:e.target.value}:crop))} className="mt-1 block w-full rounded-lg border border-[#d9d0ba] bg-white px-3 py-2.5 text-sm text-[#173B2A]"><option value="">{bn ? "ফসল বাছুন" : "Select a crop"}</option>{(sourceCatalog?.crops || []).map((crop) => <option key={crop.commodity.toLowerCase()} value={crop.commodity.toLowerCase()}>{crop.commodity}</option>)}</select></label>
@@ -354,7 +325,7 @@ export default function MarketPage() {
           {marginCrops.length > 1 ? <button type="button" onClick={()=>setMarginCrops(current=>current.filter((_,i)=>i!==index))} className="mt-auto min-h-[40px] rounded-lg border border-[#d9d0ba] px-3 text-sm font-bold text-[#8b5045]">{bn ? "বাদ দিন" : "Remove"}</button> : null}
         </div>)}
         {marginCrops.length < 2 ? <p className="text-xs leading-5 text-[#62736A]">{bn ? "তুলনার আগে অন্তত দুইটি ফসল যোগ করে নিজের খরচ ও প্রত্যাশিত ফলন লিখুন।" : "Add at least two crops and enter your own costs and expected yields before comparing."}</p> : null}
-        <div className="flex flex-wrap gap-3"><button type="button" disabled={marginCrops.length >= 8 || !sourceCatalog?.crops?.length} onClick={()=>setMarginCrops(current=>[...current,{commodity:"",totalCostBdt:"",expectedYieldKg:""}])} className="min-h-[42px] rounded-lg border border-[#0d6865] px-4 text-sm font-bold text-[#247A4B] disabled:opacity-50">{bn ? "+ আরেকটি ফসল" : "+ Add crop"}</button><button disabled={marginLoading || marginCrops.length < 2 || marginCrops.some((item) => !item.commodity || !item.totalCostBdt || !item.expectedYieldKg)} className="inline-flex min-h-[42px] items-center gap-2 rounded-lg bg-[#247A4B] px-4 py-2 text-sm font-bold text-white disabled:opacity-50">{marginLoading ? <LoaderCircle size={16} className="animate-spin"/> : <Calculator size={16}/>} {bn ? "লাভ তুলনা করুন" : "Compare margins"}</button></div>
+        <div className="flex flex-wrap gap-3"><button type="button" disabled={marginCrops.length >= 8 || !sourceCatalog?.crops?.length} onClick={()=>setMarginCrops(current=>[...current,{commodity:"",totalCostBdt:"",expectedYieldKg:""}])} className="min-h-[42px] rounded-lg border border-[#0d6865] px-4 text-sm font-bold text-[#247A4B] disabled:opacity-50">{bn ? "+ আরেকটি ফসল" : "+ Add crop"}</button><button disabled={marginLoading || !forecastDivision || marginCrops.length < 2 || marginCrops.some((item) => !item.commodity || !item.totalCostBdt || !item.expectedYieldKg)} className="inline-flex min-h-[42px] items-center gap-2 rounded-lg bg-[#247A4B] px-4 py-2 text-sm font-bold text-white disabled:opacity-50">{marginLoading ? <LoaderCircle size={16} className="animate-spin"/> : <Calculator size={16}/>} {bn ? "লাভ তুলনা করুন" : "Compare margins"}</button></div>
         {!sourceCatalog?.crops?.length ? <p role="status" className="text-xs leading-5 text-[#62736A]">{sourceCatalogError || (sourceCatalog ? (bn ? "যাচাইকৃত ডেটাসেটে ফসল নেই; ফসলভিত্তিক তুলনা আপাতত করা যাবে না।" : "No crops are available in the verified dataset; crop comparison is unavailable for now.") : (bn ? "যাচাইকৃত ফসলের তালিকা লোড হচ্ছে; তালিকা এলে ফসল যোগ করতে পারবেন।" : "Loading the verified crop catalog. You can add crops when it becomes available."))}</p> : null}
       </form>
       {marginError ? <p role="status" className="mt-4 rounded-xl bg-[#f0eadb] p-4 text-sm leading-6 text-[#66583c]">{marginError}</p> : null}

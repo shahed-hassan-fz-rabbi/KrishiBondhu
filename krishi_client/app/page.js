@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -110,6 +111,19 @@ const featureItems = [
   { icon: ShieldCheck, titleKey: "featureTransparency", descKey: "featureTransparencyDesc", tone: "emerald", href: "/data-sources" },
 ];
 
+/** Featured service cards (part 2). Icon order mirrors the design system; hrefs target existing routes. */
+const featuredCards = [
+  { icon: Store, objKey: "cardMarket", href: "/market" },
+  { icon: TrendingUp, objKey: "cardForecast", href: "/market" },
+  { icon: CloudSun, objKey: "cardWeather", href: "/climate" },
+  { icon: Tractor, objKey: "cardCrops", href: "/crop-rotation" },
+  { icon: MessageSquare, objKey: "cardAssistant", href: "/assistant" },
+  { icon: Globe, objKey: "cardMap", href: "/map" },
+  { icon: Bookmark, objKey: "cardAdvisories", href: "/assistant" },
+  { icon: Tractor, objKey: "cardMyFarm", href: "/my-farm" },
+  { icon: Database, objKey: "cardData", href: "/data-sources" },
+];
+
 const overviewDatasets = [
   {
     name: "NASA POWER",
@@ -201,7 +215,7 @@ const steps = [
 
 export default function LandingPage() {
   const { t, locale } = useLang();
-  const { selectedDistrict, setSelectedDistrict, districts: locationDistricts, detectionStatus } = useLocation();
+  const { selectedDistrict, setSelectedDistrict, districts: locationDistricts } = useLocation();
   const [liveDataSources, setLiveDataSources] = useState(null);
   const [hasLoadedDataSources, setHasLoadedDataSources] = useState(false);
   const [forecast, setForecast] = useState(null);
@@ -247,33 +261,41 @@ export default function LandingPage() {
       fetchVerifiedMarketPriceCatalog(),
     ]).then(async ([statusRes, catalogRes]) => {
       if (isCancelled) return;
-      if (statusRes.status === "fulfilled" && statusRes.value?.success && statusRes.value?.data) {
+      if (statusRes.status === "fulfilled" && statusRes.value?.data) {
         setMarketDataStatus(statusRes.value.data);
       }
-      if (catalogRes.status === "fulfilled" && catalogRes.value?.success && catalogRes.value?.data) {
+      if (catalogRes.status === "fulfilled" && catalogRes.value?.data) {
         const catalog = catalogRes.value.data;
         setMarketCatalog(catalog);
         const series = (catalog.series || []).slice(0, 4);
         const observations = await Promise.allSettled(series.map((item) => fetchMarketPriceHistory({
-          commodity: item.commodity, division: item.division, priceType: item.priceType, frequency: item.frequency, unit: item.unit,
+          commodity: item.commodity,
+          division: item.division,
+          priceType: item.priceType,
+          frequency: item.frequency,
+          unit: item.unit,
         })));
         if (isCancelled) return;
         const bySeries = {};
         let lookupFailed = false;
         observations.forEach((result, index) => {
-          if (result.status !== "fulfilled" || !result.value?.success) { lookupFailed = true; return; }
+          if (result.status !== "fulfilled" || !result.value?.success) {
+            lookupFailed = true;
+            return;
+          }
           const row = result.value?.data?.observations?.at(-1);
-          if (!row) return;
-          const timestamp = new Date(`${row.observedOn}T00:00:00Z`).getTime();
-          const ageDays = Number.isFinite(timestamp) ? Math.max(0, Math.floor((Date.now() - timestamp) / 86_400_000)) : null;
-          bySeries[`${series[index].commodity}|${series[index].division}|${series[index].priceType}|${series[index].unit}`] = { ...row, ageDays };
+          if (row) {
+            const timestamp = new Date(`${row.observedOn}T00:00:00Z`).getTime();
+            const ageDays = Number.isFinite(timestamp) ? Math.max(0, Math.floor((Date.now() - timestamp) / 86_400_000)) : null;
+            bySeries[`${series[index].commodity}|${series[index].division}|${series[index].priceType}|${series[index].unit}`] = { ...row, ageDays };
+          }
         });
         setMarketObservations(bySeries);
         setMarketObservationsStatus(lookupFailed ? "unavailable" : "ready");
-      } else {
+      } else if (catalogRes.status === "fulfilled") {
         setMarketObservationsStatus("unavailable");
       }
-    }).catch(() => { if (!isCancelled) setMarketObservationsStatus("unavailable"); });
+    }).catch(() => {});
     return () => {
       isCancelled = true;
     };
@@ -358,9 +380,13 @@ export default function LandingPage() {
     if (!Array.isArray(days) || days.length === 0) return null;
     const tempsMax = days.map((d) => d.temperatureMaxC).filter(Number.isFinite);
     const tempsMin = days.map((d) => d.temperatureMinC).filter(Number.isFinite);
-    const rainValues = days.map((d) => d.precipitationSumMm == null ? NaN : Number(d.precipitationSumMm)).filter(Number.isFinite);
+    const rainValues = days
+      .map((d) => d.precipitationSumMm == null ? NaN : Number(d.precipitationSumMm))
+      .filter(Number.isFinite);
     const rainTotal = rainValues.length ? rainValues.reduce((sum, value) => sum + value, 0) : null;
-    const rainProbabilities = days.map((d) => d.precipitationProbabilityMax == null ? NaN : Number(d.precipitationProbabilityMax)).filter(Number.isFinite);
+    const rainProbabilities = days
+      .map((d) => d.precipitationProbabilityMax == null ? NaN : Number(d.precipitationProbabilityMax))
+      .filter(Number.isFinite);
     const rainProbMax = rainProbabilities.length ? Math.max(...rainProbabilities) : null;
     const conditionCounts = new Map();
     days.forEach((d) => {
@@ -416,9 +442,11 @@ export default function LandingPage() {
       : (forecast?.extendedForecast || []).slice(0, 7);
     if (days.length === 0) return null;
 
-    const observedRain = days.map((d) => d.precipitationSumMm == null ? NaN : Number(d.precipitationSumMm)).filter(Number.isFinite);
-    const heavyRainDays = days.filter((d) => d.precipitationSumMm != null && Number.isFinite(Number(d.precipitationSumMm)) && Number(d.precipitationSumMm) >= 10).length;
-    const dryWorkableDays = days.filter((d) => d.precipitationSumMm != null && Number.isFinite(Number(d.precipitationSumMm)) && Number(d.precipitationSumMm) < 1).length;
+    const observedRain = days
+      .map((d) => d.precipitationSumMm == null ? NaN : Number(d.precipitationSumMm))
+      .filter(Number.isFinite);
+    const heavyRainDays = days.filter((d) => Number.isFinite(Number(d.precipitationSumMm)) && Number(d.precipitationSumMm) >= 10).length;
+    const dryWorkableDays = days.filter((d) => Number.isFinite(Number(d.precipitationSumMm)) && Number(d.precipitationSumMm) < 1).length;
     const maxGust = Math.max(...days.map((d) => Number(d.windGustsMaxKmH) || 0));
 
     let category;
@@ -453,11 +481,33 @@ export default function LandingPage() {
 
   const formatObservationFreshness = (date, ageDays) => {
     if (!date) return locale === "bn" ? "তারিখ নেই" : "Date unavailable";
-    if (!Number.isFinite(ageDays)) return (locale === "bn" ? "পর্যবেক্ষণ " : "Observed on ") + date;
-    return locale === "bn" ? formatLocalizedNumber(ageDays) + " দিন আগে পর্যবেক্ষিত" : "Observed " + ageDays + " day(s) ago";
+    if (!Number.isFinite(ageDays)) return locale === "bn" ? `পর্যবেক্ষণ ${date}` : `Observed on ${date}`;
+    return locale === "bn" ? `${formatLocalizedNumber(ageDays)} দিন আগে পর্যবেক্ষিত` : `Observed ${ageDays} day${ageDays === 1 ? "" : "s"} ago`;
   };
+
   const currentSoilMoisture = soilMoistureResult.district === selectedDistrict ? soilMoistureResult.data : null;
   const soilMoistureStatus = soilMoistureResult.district === selectedDistrict ? soilMoistureResult.status : "loading";
+
+  const cardData = (objKey) => ({
+    title: t(`landing.${objKey}.title`),
+    desc: t(`landing.${objKey}.desc`),
+    link: locale === "bn" ? t(`landing.${objKey}.linkBn`) : t(`landing.${objKey}.link`),
+  });
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12 }
+    );
+    document.querySelectorAll(".kb-reveal").forEach((el) => observer.observe(el));
+  }, []);
 
   return (
     <div className="kb-story-home flex min-h-screen flex-col">
@@ -467,122 +517,106 @@ export default function LandingPage() {
         {/* ============================================================
             HERO SECTION (Inspired by Mati Kohon composition & storytelling)
             ============================================================ */}
-        <section className="kb-story-hero">
-          <div aria-hidden="true" className="kb-story-pattern" />
+        <section className="kb-hero2" id="home">
+          <div className="kb-hero2-bg" aria-hidden="true">
+            <Image src="/img/kb-hero-field.svg" alt="" width={1280} height={720} className="h-full w-full object-cover" priority />
+          </div>
+          <div className="kb-hero2-gradient" aria-hidden="true" />
+          <div className="kb-hero2-inner">
+            <div className="kb-hero2-copy">
+              <div className="kb-hero2-eyebrow">
+                <Sprout className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>{locale === "bn" ? "বাংলাদেশের কৃষকের জন্য · বাংলা ও ইংরেজিতে" : "Made for Bangladesh's farmers · Bangla & English"}</span>
+              </div>
 
-          <div className="kb-story-copy">
-            <div className="grid gap-10 lg:grid-cols-12 lg:items-center">
-              {/* Left Column: Display typography, farmer-first values & actions */}
-              <div className="text-center lg:col-span-7 lg:text-left">
-                {/* Farmer eyebrow */}
-                <div className="kb-story-eyebrow mb-5 inline-flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold">
-                  <Sprout className="h-4 w-4 text-[#247A4B] dark:text-[#56B870]" />
-                  <span>
-                    {locale === "bn"
-                      ? "বাংলাদেশের কৃষকের জন্য · সম্পূর্ণ বাংলায় ও ইংরেজিতে"
-                      : "Made for Bangladesh’s farmers · Bangla & English"}
-                  </span>
-                </div>
+              <h1 id="home-title" className="kb-hero2-title">
+                <span className="block">{t(`landing.heroHeadlineLine1`)}</span>
+                <span className="kb-hero2-line2 block"><em>{t(`landing.heroHeadlineLine2`)}</em></span>
+              </h1>
 
-                {/* Display Headline */}
-                <h1 className="break-words font-extrabold tracking-tight">
-                  {locale === "bn" ? (
-                    <>
-                      কৃষকের পাশে, প্রতিটি সিদ্ধান্তে।<br />
-                      <em>বীজ থেকে বাজারে সহজ সমাধান।</em>
-                    </>
-                  ) : (
-                    <>
-                      By the farmer's side, in every decision.<br />
-                      <em>From seed to market.</em>
-                    </>
-                  )}
-                </h1>
+              <p className="kb-hero2-desc">{locale === "bn" ? t("landing.heroDescriptionBn") : t("landing.heroDescription")}</p>
 
-                {/* Farmer-friendly description */}
-                <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted lg:mx-0 sm:text-lg">
+              <div className="kb-hero2-actions">
+                <Link href="/market" className="kb-hero2-card kb-hero2-card-primary">
+                  <Store className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span>{locale === "bn" ? t("landing.ctaMarketBn") : t("landing.ctaMarket")}</span>
+                  <ArrowRight className="h-4 w-4 shrink-0 ml-auto" aria-hidden="true" />
+                </Link>
+                <Link href="/crop-rotation" className="kb-hero2-card kb-hero2-card-secondary">
+                  <Sprout className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span>{locale === "bn" ? t("landing.ctaPlanBn") : t("landing.ctaPlan")}</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => document.getElementById("interactive-previews")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                  className="kb-hero2-cta-assistant"
+                  aria-label={locale === "bn" ? "সহকারীকে জিজ্ঞাসা করুন" : "Ask the AI assistant"}
+                >
+                  <MessageSquare className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span>{locale === "bn" ? t("landing.ctaAssistantBn") : t("landing.ctaAssistant")}</span>
+                  <Compass className="ml-auto h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                </button>
+              </div>
+
+              <div className="kb-hero2-proof">
+                <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>
                   {locale === "bn"
-                    ? "বাজারদর, আবহাওয়া ও ফসলের তথ্য জানুন সহজেই। কোন ফসল করবেন তা বাছা থেকে বপন, পরিচর্যা ও বিক্রির পরিকল্পনা—কৃষকের দরকারি তথ্য ও সরঞ্জাম এক জায়গায়, নিজের ভাষায়।"
-                    : "Know market prices, weather forecasts, and crop insights with ease. From choosing a crop and planning sowing to tracking farm work and preparing to sell, bring practical tools and dated information together in one farmer-friendly place."}
-                </p>
-
-                {/* Main CTAs */}
-                <div className="kb-story-actions justify-center lg:justify-start">
-                  <Button href="/market" size="lg" variant="primary" className="kb-story-primary px-7">
-                    <Store className="h-4 w-4 shrink-0" aria-hidden="true" />
-                    <span>{locale === "bn" ? "বাজারদর দেখুন" : "Check market prices"}</span>
-                    <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  </Button>
-
-                  <Button
-                    href="/crop-rotation"
-                    size="lg"
-                    variant="outline"
-                    className="kb-story-secondary px-7"
-                  >
-                    <Sprout className="h-4 w-4 shrink-0 text-[#247A4B] dark:text-[#56B870]" aria-hidden="true" />
-                    <span>{locale === "bn" ? "ফসল পরিকল্পনা করুন" : "Plan a crop"}</span>
-                  </Button>
-                </div>
-
-                {/* Honest proof line */}
-                <p className="kb-story-proof mx-auto max-w-xl lg:mx-0">
-                  <ShieldCheck className="h-4 w-4 text-[#247A4B] dark:text-[#56B870] shrink-0" />
-                  <span>
-                    {locale === "bn"
-                      ? "তথ্য না থাকলে কৃষিবন্ধু তা স্পষ্ট করে—অনুমান করে বাজারদর দেখায় না।"
-                      : "When verified information is missing, KrishiBondhu says so instead of guessing a price."}
-                  </span>
-                </p>
+                    ? "তথ্য না থাকলে কৃষিবন্ধু বিষয় সে বিষয়ে যান হাত লাগানো নয়।"
+                    : "When verified information is missing, KrishiBondhu says so instead of guessing a price."}
+                </span>
               </div>
+            </div>
 
-              {/* Right Column: Character Stage & Location Chip */}
-              <div className="flex justify-center lg:col-span-5">
-                <div className="w-full max-w-[420px] relative">
-                  {/* Reserved Companion Dock (Krishu seedling now, ready for baby dragon Bondhu in Part 6) */}
-                  <FarmCat bn={locale === "bn"} touring={touring} onTour={startTour} />
-
-                  {/* Interactive Location Chip */}
-                  <div className="kb-location-chip">
-                    <MapPin size={16} className="text-[#247A4B] dark:text-[#56B870]" />
-                    <span>
-                      <small>
-                        {detectionStatus === "success"
-                          ? (locale === "bn" ? "শনাক্তকৃত অবস্থান" : "Detected location")
-                          : (locale === "bn" ? "নির্বাচিত জেলা" : "Selected district")}
-                      </small>
-                      <strong>{currentDistrictName}</strong>
-                    </span>
-                    <Check size={16} className="text-[#247A4B] dark:text-[#56B870]" />
-                  </div>
-                </div>
+            {/* Hero right column: Bounded application preview with reserved Bondhu dock */}
+            <div className="kb-hero2-card-stage">
+              <div className="kb-hero2-bondhu-dock" aria-hidden="true">
+                <span className="kb-bondhu-pulse" />
               </div>
+              <div className="kb-hero2-sun" aria-hidden="true" />
             </div>
           </div>
         </section>
 
         {/* ============================================================
+            FEATURED SERVICES (Feature discovery — modern)
+            ============================================================ */}
+        <section className="kb-featured" id="features">
+          <h2 className="kb-featured-eyebrow">{locale === "bn" ? t("landing.featureDiscoveryTitle") : "Core services for your farm"}</h2>
+          <p className="kb-featured-desc">{locale === "bn" ? t("landing.featureDiscoverySub") : "Market, forecasting, weather, crop rotation and planning—designed for Bangladeshi farmers."}</p>
+          <div className="kb-featured-grid">
+            {featuredCards.map((card) => {
+              const data = cardData(card.objKey);
+              return (
+                <a key={card.objKey} href={card.href} className="kb-featured-card">
+                  <span className="kb-featured-icon"><card.icon className="h-6 w-6" strokeWidth={1.7} aria-hidden="true" /></span>
+                  <span className="kb-featured-title-2">{data.title}</span>
+                  <span className="kb-featured-body">{data.desc}</span>
+                  <span className="kb-featured-link">{data.link} <ArrowRight className="h-4 w-4" aria-hidden="true" /></span>
+                </a>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="kb-honesty">{locale === "bn" ? t("landing.honestNoteBn") : t("landing.honestNote")}</section>
+
+        {/* ============================================================
             INTERACTIVE APPLICATION PREVIEWS (Agricultural Tools & Workflows)
             ============================================================ */}
-        <section id="interactive-previews" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6">
+        <section id="interactive-previews" className="kb-reveal mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6">
           <div className="text-center max-w-3xl mx-auto mb-10">
-            <span className="inline-flex items-center gap-2 rounded-full border border-[#247A4B]/30 bg-[#247A4B]/10 px-3.5 py-1 text-xs font-semibold text-[#123D2A] dark:text-[#56B870]">
-              <Sparkles className="h-3.5 w-3.5 text-[#247A4B]" />
-              <span>{locale === "bn" ? "অ্যাপ্লিকেশন প্রিভিউ ও ডেমো" : "Application Previews & Workflows"}</span>
-            </span>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-[#123D2A] dark:text-green-100 sm:text-4xl">
-              {locale === "bn" ? "কৃষিবন্ধুর সেবাসমূহ ও কাজের নমুনা দেখুন" : "Explore Agricultural Tools & Sample Workflows"}
+            <h2 className="text-3xl font-extrabold tracking-tight text-forest dark:text-green-100 sm:text-4xl">
+              {locale === "bn" ? t("landing.previewsTitle") : "Explore Application Previews"}
             </h2>
             <p className="mt-3 text-base text-muted">
-              {locale === "bn"
-                ? "বাজারদর প্রতিবেদন, আবহাওয়া পূর্বাভাস, শস্য পর্যায়ক্রম ও এআই সহকারীর বাস্তব কাজের রূপরেখা ও সচিত্র নমুনা দেখতে ট্যাব পরিবর্তন করুন।"
-                : "Switch tabs below to inspect application tools, live weather forecasts, and illustrative sample demonstrations."}
+              {locale === "bn" ? t("landing.previewsSub") : "Watch market, weather, planning and assistant previews with real data."}
             </p>
           </div>
 
           {/* Interactive Tab Switcher */}
           <div className="flex justify-center mb-8 overflow-x-auto pb-2">
-            <div className="inline-flex p-1.5 rounded-full border border-line bg-surface-2 shadow-inner gap-1">
+            <div className="inline-flex p-1.5 rounded-full border border-line bg-surface-2 shadow-sm gap-1">
               {[
                 { id: "market", labelBn: "বাজারদর ও তথ্য", labelEn: "Market Reports", icon: Store },
                 { id: "weather", labelBn: "আবহাওয়া ও মাটি", labelEn: "Weather & Soil", icon: CloudSun },
@@ -593,10 +627,10 @@ export default function LandingPage() {
                   key={tab.id}
                   type="button"
                   onClick={() => setActivePreviewTab(tab.id)}
-                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer ${
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs sm:text-sm font-bold transition-all duration-200 ease-out cursor-pointer ${
                     activePreviewTab === tab.id
-                      ? "bg-[#247A4B] text-white shadow-md"
-                      : "text-muted hover:text-content hover:bg-surface/80"
+                      ? "bg-forest text-white shadow-md"
+                      : "text-muted hover:text-content hover:bg-surface-2"
                   }`}
                 >
                   <tab.icon className="h-4 w-4" />
@@ -608,11 +642,11 @@ export default function LandingPage() {
 
           {/* Tab Content 1: Market Intelligence Preview */}
           {activePreviewTab === "market" && (
-            <div className="rounded-3xl border border-line bg-surface p-6 sm:p-8 shadow-km-md animate-in fade-in duration-200">
+            <div className="rounded-3xl border border-line bg-surface p-6 sm:p-8 shadow-km-md kb-reveal">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4 mb-6">
                 <div>
                   <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#247A4B]">
-                    <span className="h-2 w-2 rounded-full bg-[#247A4B] animate-pulse" />
+                    <span className="h-2 w-2 rounded-full bg-[#247A4B]" />
                     <span>{locale === "bn" ? "যাচাইকৃত বাজার পর্যবেক্ষণ" : "Verified market observations"}</span>
                   </div>
                   <h3 className="text-xl font-bold text-content mt-1">
@@ -628,13 +662,13 @@ export default function LandingPage() {
               {/* Sample / Verified Commodity Grid */}
               {marketCatalog?.series && marketCatalog.series.length > 0 ? (
                 <>
-                  {marketDataStatus?.latestVerifiedDailyObservation && (
-                    <p className="mb-4 rounded-xl border border-line bg-surface-2/60 p-3 text-xs text-muted">
-                      {locale === "bn" ? "সর্বশেষ যাচাইকৃত দৈনিক পর্যবেক্ষণ: " : "Latest verified daily observation: "}
-                      {marketDataStatus.latestVerifiedDailyObservation.observedOn} · {marketDataStatus.latestVerifiedDailyObservation.source || "DAM"} · {formatObservationFreshness(marketDataStatus.latestVerifiedDailyObservation.observedOn, marketDataStatus.latestVerifiedDailyObservation.ageDays)}
-                      {marketDataStatus.latestVerifiedDailyObservation.stale ? (locale === "bn" ? " · পুরোনো তথ্য" : " · Stale observation") : ""}
-                    </p>
-                  )}
+                {marketDataStatus?.latestVerifiedDailyObservation && (
+                  <p className="mb-4 rounded-xl border border-line bg-surface-2/60 p-3 text-xs text-muted">
+                    {locale === "bn" ? "সর্বশেষ যাচাইকৃত দৈনিক পর্যবেক্ষণ: " : "Latest verified daily observation: "}
+                    {marketDataStatus.latestVerifiedDailyObservation.observedOn} · {marketDataStatus.latestVerifiedDailyObservation.source || "DAM"} · {formatObservationFreshness(marketDataStatus.latestVerifiedDailyObservation.observedOn, marketDataStatus.latestVerifiedDailyObservation.ageDays)}
+                    {marketDataStatus.latestVerifiedDailyObservation.stale ? (locale === "bn" ? " · পুরোনো তথ্য" : " · Stale observation") : ""}
+                  </p>
+                )}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   {marketCatalog.series.slice(0, 4).map((item) => (
                     <div key={`${item.commodity}-${item.division}`} className="rounded-2xl border border-line bg-surface-2/60 p-4 hover:border-emerald/40 transition-colors">
@@ -648,9 +682,15 @@ export default function LandingPage() {
                         const observation = marketObservations[`${item.commodity}|${item.division}|${item.priceType}|${item.unit}`];
                         return observation ? (
                           <div className="mt-2 rounded-lg border border-line bg-surface p-2.5">
-                            <p className="text-sm font-bold text-content">৳{observation.priceMin === observation.priceMax ? observation.priceMin : `${observation.priceMin}–${observation.priceMax}`} / {observation.unit}</p>
-                            <p className="mt-1 text-[11px] text-muted">{(locale === "bn" ? "ধরন: " : "Price type: ")}{observation.priceType} · {(locale === "bn" ? "তারিখ: " : "Observed: ")}{observation.observedOn}</p>
-                            <p className="text-[11px] text-muted">{(locale === "bn" ? "উৎস: " : "Source: ")}{observation.source || item.sources?.[0] || "DAM"} · {formatObservationFreshness(observation.observedOn, observation.ageDays)}</p>
+                            <p className="text-sm font-bold text-content">
+                              ৳{observation.priceMin === observation.priceMax ? observation.priceMin : `${observation.priceMin}–${observation.priceMax}`} / {observation.unit}
+                            </p>
+                            <p className="mt-1 text-[11px] text-muted">
+                              {(locale === "bn" ? "ধরন: " : "Price type: ")}{observation.priceType} · {(locale === "bn" ? "তারিখ: " : "Observed: ")}{observation.observedOn}
+                            </p>
+                            <p className="text-[11px] text-muted">
+                              {(locale === "bn" ? "উৎস: " : "Source: ")}{observation.source || item.sources?.[0] || "DAM"} · {formatObservationFreshness(observation.observedOn, observation.ageDays)}
+                            </p>
                           </div>
                         ) : (
                           <p className="mt-2 rounded-lg border border-dashed border-line p-2.5 text-xs text-muted">
@@ -674,7 +714,9 @@ export default function LandingPage() {
                       </div>
                       <div className="mt-2 flex items-baseline justify-between text-[10px] text-muted">
                         <span>{locale === "bn" ? "পর্যবেক্ষণ সংখ্যা" : "Observations"}: {formatLocalizedNumber(item.records || 0)}</span>
-                        <span>{locale === "bn" ? "উৎস" : "Source"}: {item.sources?.[0] || "—"}</span>
+                        <span>
+                          {locale === "bn" ? "উৎস" : "Source"}: {item.sources?.[0] || "—"}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -733,7 +775,7 @@ export default function LandingPage() {
 
           {/* Tab Content 2: Weather & Soil Preview */}
           {activePreviewTab === "weather" && (
-            <div className="rounded-3xl border border-line bg-surface p-6 sm:p-8 shadow-km-md animate-in fade-in duration-200">
+            <div className="rounded-3xl border border-line bg-surface p-6 sm:p-8 shadow-km-md kb-reveal">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4 mb-6">
                 <div>
                   <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#247A4B]">
@@ -813,7 +855,7 @@ export default function LandingPage() {
                           : `Date: ${currentSoilMoisture.dateLabel || "Unavailable"} · 0–5 cm surface regional proxy`)
                       : (locale === "bn"
                           ? soilMoistureStatus === "loading" ? "স্যাটেলাইট তথ্য লোড হচ্ছে" : "এই এলাকার জন্য SMAP পর্যবেক্ষণ অনুপলব্ধ"
-                          : soilMoistureStatus === "loading" ? "Loading satellite observation" : "No SMAP observation is available for this area") }
+                          : soilMoistureStatus === "loading" ? "Loading satellite observation" : "No SMAP observation is available for this area")}
                   </p>
                 </div>
               </div>
@@ -827,7 +869,7 @@ export default function LandingPage() {
 
           {/* Tab Content 3: Crop Planning Preview */}
           {activePreviewTab === "planner" && (
-            <div className="rounded-3xl border border-line bg-surface p-6 sm:p-8 shadow-km-md animate-in fade-in duration-200">
+            <div className="rounded-3xl border border-line bg-surface p-6 sm:p-8 shadow-km-md kb-reveal">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4 mb-6">
                 <div>
                   <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#247A4B]">
@@ -912,7 +954,7 @@ export default function LandingPage() {
 
           {/* Tab Content 4: AI Assistant Preview */}
           {activePreviewTab === "assistant" && (
-            <div className="rounded-3xl border border-line bg-surface p-6 sm:p-8 shadow-km-md animate-in fade-in duration-200">
+            <div className="rounded-3xl border border-line bg-surface p-6 sm:p-8 shadow-km-md kb-reveal">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4 mb-6">
                 <div>
                   <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#247A4B]">
@@ -1187,44 +1229,26 @@ export default function LandingPage() {
         {/* ============================================================
             4-STEP DECISION PATH (AUDIT CONTRACT PRESERVED)
             ============================================================ */}
-        <section id="how-it-works" aria-labelledby="how-it-works-title" className="scroll-mt-20 border-t border-line bg-gradient-to-b from-surface to-emerald/5 px-4 py-14 dark:from-bg dark:to-emerald/5 sm:px-6 sm:py-16">
+        <section id="how-it-works" aria-labelledby="how-it-works-title" className="scroll-mt-20 border-t border-line bg-surface px-4 py-14 dark:bg-bg sm:px-6 sm:py-16">
           <div className="mx-auto max-w-6xl">
             <div className="mx-auto max-w-2xl text-center">
-              <h2 id="how-it-works-title" className="text-3xl font-bold tracking-tight text-forest dark:text-emerald-300 sm:text-4xl">{t("landing.sectionHow")}</h2>
-              <p className="mt-3 text-base leading-relaxed text-muted">{t("landing.howSimple.intro")}</p>
+              <h2 id="how-it-works-title" className="text-3xl font-bold tracking-tight text-forest dark:text-emerald-300 sm:text-4xl">{t("landing.howStepsTitle")}</h2>
+              <p className="mt-3 text-base leading-relaxed text-muted">{t("landing.howStepsSub")}</p>
             </div>
-            {/* Localization namespace contract: t(`landing.${s.titleKey}`) t(`landing.${s.descKey}`) */}
-            <ol className="mt-9 grid gap-5 sm:grid-cols-2 lg:grid-cols-4" aria-label={t("landing.sectionHow")}>
+            <ol className="kb-steps-modern mt-9" aria-label={t("landing.sectionHow")}>
               {steps.map((step, index) => {
-                const tones = [
-                  { card: "border-green-300 from-green-100 to-lime-50 dark:border-green-800 dark:from-green-950/50 dark:to-surface", icon: "bg-green-200/70 text-green-800 dark:bg-green-800/40 dark:text-green-300" },
-                  { card: "border-amber-300 from-amber-100 to-yellow-50 dark:border-amber-800 dark:from-amber-950/50 dark:to-surface", icon: "bg-amber-200/70 text-amber-800 dark:bg-amber-800/40 dark:text-amber-300" },
-                  { card: "border-sky-300 from-sky-100 to-cyan-50 dark:border-sky-800 dark:from-sky-950/50 dark:to-surface", icon: "bg-sky-200/70 text-sky-800 dark:bg-sky-800/40 dark:text-sky-300" },
-                  { card: "border-violet-300 from-violet-100 to-indigo-50 dark:border-violet-800 dark:from-violet-950/50 dark:to-surface", icon: "bg-violet-200/70 text-violet-800 dark:bg-violet-800/40 dark:text-violet-300" },
-                ];
-                const tone = tones[index];
+                const stepWord = ["One", "Two", "Three", "Four"][index];
                 return (
-                  <li key={step.n} className={`relative isolate flex h-full flex-col rounded-3xl border bg-gradient-to-br p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md motion-reduce:transform-none ${tone.card}`}>
-                    <div className="flex items-center gap-2 text-xs font-semibold text-forest dark:text-emerald-200">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-forest text-sm font-bold text-white">{new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-US").format(index + 1)}</span>
-                      {t("landing.howStepLabel")}
-                    </div>
-                    <div className="relative mt-5 flex h-24 items-center justify-center" aria-hidden="true">
-                      <div className="absolute bottom-1 h-4 w-32 rounded-[50%] bg-forest/10 dark:bg-white/10" />
-                      <span className={`relative flex h-20 w-20 -rotate-6 items-center justify-center rounded-[1.6rem] border border-white/70 shadow-md ${tone.icon}`}>
-                        <step.icon className="h-12 w-12 rotate-6" strokeWidth={1.6} />
-                      </span>
-                      <span className="absolute right-5 top-0 h-3 w-3 rounded-full bg-white/80" />
-                      <span className="absolute left-6 bottom-5 h-2 w-2 rounded-full bg-forest/20" />
-                    </div>
-                    <h3 className="mt-4 text-lg font-bold leading-snug text-content">{t(`landing.howSimple.title${index + 1}`)}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-muted">{t(`landing.howSimple.body${index + 1}`)}</p>
-                    {index < 3 && <span className="absolute -right-4 top-1/2 z-10 hidden h-8 w-8 items-center justify-center rounded-full border border-line bg-surface text-emerald shadow-sm lg:flex"><ArrowRight className="h-4 w-4" aria-hidden="true" /></span>}
+                  <li key={step.n} className="kb-step-modern">
+                    <span className="kb-step-modern-num">{index + 1}</span>
+                    <span className="kb-step-modern-icon"><step.icon className="h-7 w-7" strokeWidth={1.7} aria-hidden="true" /></span>
+                    <h3 className="kb-step-modern-title">{t(`landing.step${stepWord}Title`)}</h3>
+                    <p className="kb-step-modern-body">{t(`landing.step${stepWord}Desc`)}</p>
                   </li>
                 );
               })}
             </ol>
-            <div className="relative mt-7 flex flex-col gap-5 overflow-hidden rounded-3xl bg-gradient-to-r from-[#073d2a] via-[#0d5a3d] to-[#16804f] p-6 text-white shadow-lg sm:p-7 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-7 flex flex-col gap-5 overflow-hidden rounded-3xl bg-gradient-to-r from-[#123D2A] via-[#2D534E] to-[#56B870] p-6 text-white shadow-lg sm:p-7 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-lg font-bold">{t("landing.howSimple.ctaTitle")}</h3>
                 <p className="mt-1 text-sm text-green-100">{t("landing.howSimple.ctaBody")}</p>

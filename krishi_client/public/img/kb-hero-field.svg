@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" preserveAspectRatio="xMidYMid meet">
+  <ellipse cx="320" cy="369" rx="190" ry="4" fill="#4C664F" opacity=".3" />
+  <rect x="0" y="352" width="640" height="16" fill="#2D4E3A" />
+  <!-- rolling hills with gentle soil -->
+  <path d="M0 290 Q160 310 200 260 Q240 272 280 240 Q330 250 380 220 Q430 240 480 235 Q540 265 600 250 L600 352 Z" fill="#E8F2E9" />
+  <path d="M0 300 Q180 325 240 258 Q290 270 340 246 Q410 262 460 242 Q530 275 590 258 L590 352 Z" fill="#A8D2B4" opacity=".7" />
+  <path d="M0 308 Q210 340 260 272 Q320 286 370 264 Q450 294 520 278 L520 352 Z" fill="#247A4B" />
+  <!-- sun -->
+  <circle cx="470" cy="64" r="30" fill="#D99631" />
+  <path d="M440 64 H500 M467 86 Q475 74 487 86 M482 102 Q487 90 494 100 M480 96 Q492 100 490 86 Q495 90 482 90" stroke="#D99631" stroke-width="4" stroke-linecap="round" fill="none" />
+  <path d="M470 54 L473.8 61 L481 63 L475.2 68.5 L477.4 76 L470 72.2 L462.6 76 L464.8 68.5 L459 63 L466.2 61 Z" fill="#D99631" />
+  <!-- crop stems in the field -->
+  <g fill="#F2F0E2">
+    <circle cx="55" cy="248" r="4.5" />
+    <circle cx="130" cy="215" r="4.5" />
+    <circle cx="220" cy="270" r="4.5" />
+    <circle cx="300" cy="238" r="4.5" />
+    <circle cx="390" cy="258" r="4.5" />
+    <circle cx="470" cy="268" r="4.5" />
+    <circle cx="560" cy="222" r="4.5" />
+  </g>
+  <!-- mustard yellow flowers -->
+  <g fill="#D99631">
+    <circle cx="58" cy="252" r="4" />
+    <circle cx="142" cy="222" r="4" />
+    <circle cx="228" cy="278" r="4" />
+    <circle cx="310" cy="248" r="4" />
+    <circle cx="400" cy="266" r="4" />
+    <circle cx="480" cy="274" r="4" />
+    <circle cx="565" cy="230" r="4" />
+  </g>
+  <!-- rice sprouts -->
+  <g fill="#247A4B">
+    <circle cx="76" cy="284" r="4" />
+    <circle cx="102" cy="264" r="4" />
+    <circle cx="84" cy="248" r="4" />
+    <!-- wheat -->
+  </g>
+  <g fill="#AC8052">
+    <ellipse cx="350" cy="216" rx="3" ry="7" />
+    <ellipse cx="375" cy="205" rx="3" ry="7" />
+    <ellipse cx="400" cy="225" rx="3" ry="7" />
+    <ellipse cx="425" cy="210" rx="3" ry="7" />
+    <ellipse cx="450" cy="228" rx="3" ry="7" />
+  </g>
+  <!-- misty bubbles in the field -->
+  <circle cx="300" cy="330" r="7" fill="#EDE6DA" opacity=".5" />
+  <circle cx="320" cy="315" r="8" fill="#EDE6DA" opacity=".45" />
+  <circle cx="340" cy="345" r="7" fill="#EDE6DA" opacity=".5" />
+  <!-- gentle ground ruler for charts -->
+  <g fill="#8A7048">
+    <rect x="30" y="330" width="120" height="5" rx="2" />
+    <rect x="160" y="332" width="110" height="5" rx="2" />
+    <rect x="290" y="335" width="90" height="5" rx="2" />
+  </g>
+</svg>
