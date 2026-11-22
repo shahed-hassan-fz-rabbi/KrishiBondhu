@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, ChevronDown, Compass, Headphones, Map, MessageCircle, Pause, Play, SkipForward, X } from "lucide-react";
 import { BondhuMascot } from "@/components/mascot/BondhuMascot.js";
@@ -9,6 +9,7 @@ import { BONDHU_TOUR_STEPS, findEligibleTourStepIndex, getTourStepIndexForRoute,
 import { useAuth } from "@/contexts/AuthContext.js";
 import { useLang } from "@/lib/i18n/LanguageContext.js";
 import { useVoiceOutput } from "@/hooks/useVoiceOutput.js";
+import { placeCompanionBubble } from "@/components/mascot/companionLayout.js";
 
 const PLACES = [
   { href: "/crop-calendar", en: "Crop calendar", bn: "ফসল ক্যালেন্ডার" },
@@ -67,7 +68,7 @@ function pageTip(pathname, bn) {
     : { title: "Your farming dashboard", text: "Review your district and recent agricultural context. Use the shortcuts below to continue to crop planning, weather, market or My Farm." };
   return bn
     ? { title: "আমি বন্ধু, আপনার কৃষি সঙ্গী", text: "ফসলের ক্যালেন্ডার থেকে বাজারদর—যেখানে যেতে চান বলুন। আমি সেই পাতায় নিয়ে গিয়ে কীভাবে ব্যবহার করবেন দেখাব।" }
-    : { title: "I’m Bondhu, your farm guide", text: "Tell me where you want to go—from crop calendars to market prices. I’ll take you there and explain how to use the page." };
+    : { title: "I’m Bondhu, your farm guide", text: "I can show you around or take you straight to a farm page. Start with a quick tour if you like." };
 }
 
 export function MiniGuide() {
@@ -78,6 +79,7 @@ export function MiniGuide() {
   const isAuthenticated = Boolean(user);
   const bn = locale === "bn";
   const [open, setOpen] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const [tourMode, setTourMode] = useState(false);
   const [tourIndex, setTourIndex] = useState(0);
   const [flying, setFlying] = useState(false);
@@ -90,6 +92,7 @@ export function MiniGuide() {
   const { animationEnabled, hidden, muted } = preferences;
   const [paused, setPaused] = useState(false);
   const [assistantState, setAssistantState] = useState("idle");
+  const [pokeState, setPokeState] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [sleeping, setSleeping] = useState(false);
   const {
@@ -105,13 +108,18 @@ export function MiniGuide() {
   const tourStep = BONDHU_TOUR_STEPS[tourIndex] || null;
   const eligibleTourSteps = BONDHU_TOUR_STEPS.filter((step) => isAuthenticated || !step.requiresAuth);
   const visibleTourIndex = eligibleTourSteps.findIndex((step) => step.id === tourStep?.id);
-  const characterState = tourMode && tourPaused ? "idle" : flying ? "flying" : isDragging ? "dragging" : tourMode && isTourVoiceSpeaking && !isTourVoicePaused ? "talking" : tourMode ? "happy" : sleeping ? "sleeping" : assistantState;
+  const characterState = tourMode && tourPaused ? "idle" : flying ? "flying" : isDragging ? "dragging" : tourMode && isTourVoiceSpeaking && !isTourVoicePaused ? "talking" : tourMode || pokeState ? "happy" : hovered ? "listening" : sleeping ? "sleeping" : assistantState;
   const [position, setPosition] = useState(null);
+  const [bubblePosition, setBubblePosition] = useState(null);
   const dragRef = useRef(null);
+  const launcherRef = useRef(null);
+  const bubbleRef = useRef(null);
+  const bubbleHoveredRef = useRef(false);
   const draggedRef = useRef(false);
   const startTourRef = useRef(null);
   const timerRef = useRef(null);
   const flightTimerRef = useRef(null);
+  const pokeTimerRef = useRef(null);
   const targetObserverRef = useRef(null);
   const tourRunRef = useRef(false);
   const lastTargetXRef = useRef(null);
@@ -133,6 +141,7 @@ export function MiniGuide() {
   useEffect(() => () => {
     window.clearTimeout(timerRef.current);
     window.clearTimeout(flightTimerRef.current);
+    window.clearTimeout(pokeTimerRef.current);
     targetObserverRef.current?.disconnect();
     stopTourVoice();
   }, [stopTourVoice]);
@@ -157,6 +166,31 @@ export function MiniGuide() {
   }, [muted, stopTourVoice]);
 
   useEffect(() => {
+    if (pathname !== "/" || hidden || authLoading) return undefined;
+    const key = "krishibondhu.bondhu.welcome-seen";
+    try { if (window.localStorage.getItem(key)) return undefined; } catch { return undefined; }
+    const timer = window.setTimeout(() => {
+      setOpen(true);
+      try { window.localStorage.setItem(key, "1"); } catch { /* the greeting is optional */ }
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [authLoading, hidden, pathname]);
+
+  useEffect(() => {
+    if (!open || tourMode) return undefined;
+    let timer;
+    const dismissWhenIdle = () => {
+      if (bubbleHoveredRef.current || bubbleRef.current?.contains(document.activeElement)) {
+        timer = window.setTimeout(dismissWhenIdle, 1500);
+        return;
+      }
+      setOpen(false);
+    };
+    timer = window.setTimeout(dismissWhenIdle, 14_000);
+    return () => window.clearTimeout(timer);
+  }, [open, tourMode, pathname, bn, finished]);
+
+  useEffect(() => {
     if (open || tourMode || flying || isDragging || assistantState !== "idle" || hidden || !animationEnabled) return undefined;
     const timer = window.setTimeout(() => setSleeping(true), 45_000);
     return () => window.clearTimeout(timer);
@@ -172,12 +206,60 @@ export function MiniGuide() {
   const currentPosition = position || savedPosition;
   const launcherBounds = () => {
     const compact = window.innerWidth <= 760;
-    return { width: compact ? 70 : 170, height: compact ? 82 : 182, right: compact ? 5 : 20, bottom: compact ? 68 : 20 };
+    return { width: compact ? 104 : 170, height: compact ? 122 : 182, right: compact ? 8 : 20, bottom: compact ? 76 : 20 };
   };
   const defaultPosition = () => {
     const bounds = launcherBounds();
     return { x: window.innerWidth - bounds.width - bounds.right, y: window.innerHeight - bounds.height - bounds.bottom };
   };
+
+  useLayoutEffect(() => {
+    if (!open || !launcherRef.current || !bubbleRef.current) {
+      setBubblePosition(null);
+      return undefined;
+    }
+    let frame = 0;
+    const update = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        const launcher = launcherRef.current?.getBoundingClientRect();
+        const bubble = bubbleRef.current?.getBoundingClientRect();
+        if (!launcher || !bubble) return;
+        const stickyHeader = document.querySelector("[data-app-header], .kb-app-header, .kb-topbar");
+        const headerBottom = stickyHeader && ["sticky", "fixed"].includes(getComputedStyle(stickyHeader).position)
+          ? Math.max(0, stickyHeader.getBoundingClientRect().bottom)
+          : 0;
+        const target = tourMode && targetRect ? {
+          left: targetRect.left - 8,
+          right: targetRect.left + targetRect.width + 8,
+          top: targetRect.top - 8,
+          bottom: targetRect.top + targetRect.height + 8,
+        } : null;
+        const next = placeCompanionBubble({
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
+          launcher,
+          bubble,
+          target,
+          headerBottom,
+          preferredSide: window.innerWidth <= 760 ? "above" : null,
+        });
+        setBubblePosition((current) => current && current.left === next.left && current.top === next.top && current.side === next.side ? current : next);
+      });
+    };
+    update();
+    window.addEventListener("resize", update, { passive: true });
+    window.addEventListener("scroll", update, { capture: true, passive: true });
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(update);
+    observer?.observe(bubbleRef.current);
+    observer?.observe(launcherRef.current);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+      observer?.disconnect();
+    };
+  }, [open, position, targetRect, tourMode, tourPaused, pathname, bn, finished, tourIndex]);
 
   const startDrag = (event) => {
     if (event.button !== 0) return;
@@ -206,6 +288,21 @@ export function MiniGuide() {
     if (position) savePreferences(position);
   };
 
+  const tapCompanion = (event) => {
+    if (draggedRef.current) {
+      draggedRef.current = false;
+      event.preventDefault();
+      return;
+    }
+    setSleeping(false);
+    if (tourMode) setOpen(true);
+    else setOpen((value) => !value);
+    if (hidden) savePreferences({ hidden: false });
+    setPokeState("happy");
+    window.clearTimeout(pokeTimerRef.current);
+    pokeTimerRef.current = window.setTimeout(() => setPokeState(""), 1150);
+  };
+
   const moveWithKeyboard = (event) => {
     const offsets = { ArrowUp: [0, -24], ArrowDown: [0, 24], ArrowLeft: [-24, 0], ArrowRight: [24, 0] };
     const offset = offsets[event.key];
@@ -219,6 +316,26 @@ export function MiniGuide() {
     setPosition(next);
     savePreferences(next);
   };
+
+  useEffect(() => {
+    const resize = () => {
+      const base = position || (Number.isFinite(preferences.x) && Number.isFinite(preferences.y)
+        ? { x: preferences.x, y: preferences.y }
+        : null);
+      if (!base) return;
+      const bounds = launcherBounds();
+      const next = {
+        x: Math.max(8, Math.min(Math.max(8, window.innerWidth - bounds.width - 8), base.x)),
+        y: Math.max(8, Math.min(Math.max(8, window.innerHeight - bounds.height - 8), base.y)),
+      };
+      if (next.x !== base.x || next.y !== base.y) {
+        setPosition(next);
+        savePreferences(next);
+      }
+    };
+    window.addEventListener("resize", resize, { passive: true });
+    return () => window.removeEventListener("resize", resize);
+  }, [position, preferences.x, preferences.y]);
 
   const startTour = useCallback((restart = false) => {
     const contextualIndex = getTourStepIndexForRoute(pathname);
@@ -282,10 +399,20 @@ export function MiniGuide() {
     else speakTourVoice(bn ? tourStep.bn : tourStep.en, { id: "bondhu-tour-" + tourStep.id, preferredLang: bn ? "bn-BD" : "en-US" });
   };
 
-  const closeGuide = () => {
+  const closeGuide = useCallback(() => {
     if (tourMode) cancelTour();
     setOpen(false);
-  };
+    window.requestAnimationFrame(() => launcherRef.current?.focus({ preventScroll: true }));
+  }, [cancelTour, tourMode]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") closeGuide();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [closeGuide, open]);
 
   useEffect(() => {
     if (!tourMode || paused || authLoading || !tourStep) return undefined;
@@ -366,43 +493,46 @@ export function MiniGuide() {
   const launcherStyle = currentPosition ? { left: currentPosition.x, top: currentPosition.y, right: "auto", bottom: "auto" } : undefined;
   const tourPosition = tourMode && targetRect ? {
     left: (() => {
+      if (window.innerWidth <= 760) return Math.max(8, window.innerWidth - 98);
       const size = window.innerWidth < 640 ? 92 : 132;
       const rightSide = targetRect.left + targetRect.width + 8;
       const leftSide = targetRect.left - size - 8;
       return rightSide + size <= window.innerWidth - 8 ? rightSide : leftSide >= 8 ? leftSide : Math.max(8, window.innerWidth - size - 8);
     })(),
-      top: Math.min(Math.max(72, window.innerHeight - (window.innerWidth < 640 ? 190 : 212)), Math.max(72, targetRect.top)),
+      top: window.innerWidth <= 760
+        ? Math.max(72, window.innerHeight - 250 - 100 - 12)
+        : Math.min(Math.max(72, window.innerHeight - 212), Math.max(72, targetRect.top)),
     right: "auto",
     bottom: "auto",
   } : launcherStyle;
-  const tourBubbleStyle = tourMode ? targetRect ? (() => {
-    const width = Math.min(365, window.innerWidth - 24);
-    const left = Math.min(window.innerWidth - width - 12, Math.max(12, targetRect.left + targetRect.width / 2 - width / 2));
-    const below = targetRect.top + targetRect.height + 14;
-    const top = below + 245 < window.innerHeight - 12 ? below : Math.max(12, targetRect.top - 250);
-    return { left, top, right: "auto", bottom: "auto", width };
-  })() : { left: 12, top: 12, right: "auto", bottom: "auto", width: Math.min(365, typeof window === "undefined" ? 340 : window.innerWidth - 24) } : undefined;
+  const compactTourSheet = tourMode && typeof window !== "undefined" && window.innerWidth <= 760;
+  const speechStyle = bubblePosition && !compactTourSheet ? { left: bubblePosition.left, top: bubblePosition.top, width: bubblePosition.width, right: "auto", bottom: "auto" } : undefined;
 
   return <>
     {tourMode && targetRect && pathname === tourStep?.route && <svg className="kb-tour-spotlight" aria-hidden="true" focusable="false" viewBox={"0 0 " + targetRect.viewportWidth + " " + targetRect.viewportHeight} preserveAspectRatio="none"><path fillRule="evenodd" d={"M0 0H" + targetRect.viewportWidth + "V" + targetRect.viewportHeight + "H0Z M" + (targetRect.left - 8) + " " + (targetRect.top - 8) + "H" + (targetRect.left + targetRect.width + 8) + "V" + (targetRect.top + targetRect.height + 8) + "H" + (targetRect.left - 8) + "Z"} /></svg>}
     {tourMode && targetRect && pathname === tourStep?.route && <div className="kb-tour-outline" aria-hidden="true" style={{ left: targetRect.left - 6, top: targetRect.top - 6, width: targetRect.width + 12, height: targetRect.height + 12 }} />}
   <div className={"kb-mini-guide" + (tourMode ? " is-tour-active" : "")} style={tourPosition}>
-    {open && <section className={"kb-mini-panel" + (tourMode ? " is-tour-panel" : "")} style={tourBubbleStyle} role="dialog" aria-label={bn ? "বন্ধুর কৃষি নির্দেশনা" : "Bondhu’s farm guide"} aria-describedby={tourMode ? "bondhu-tour-description" : undefined}>
-      <header className="kb-mini-panel-head"><span className="kb-mini-avatar" aria-hidden="true"><span className="kb-bondhu-monogram">B</span></span><div><strong>বন্ধু <span>· BONDHU</span></strong><small>{bn ? "আপনার মাঠের সঙ্গী" : "Your field guide"}</small></div><button type="button" aria-label={bn ? "বন্ধ করুন" : "Close"} onClick={closeGuide} className="kb-mini-close"><X size={17}/></button></header>
-      <div className="kb-mini-panel-body">
-        {tourMode && <p className="kb-mini-step" aria-live="polite">{bn ? `ধাপ ${visibleTourIndex + 1} / ${eligibleTourSteps.length}` : `STEP ${visibleTourIndex + 1} OF ${eligibleTourSteps.length}`}</p>}
+    {open && <section ref={bubbleRef} className={`kb-mini-bubble${tourMode ? " is-tour-bubble" : ""}`} data-side={bubblePosition?.side || "above"} style={speechStyle} role="dialog" aria-label={bn ? "বন্ধুর কৃষি নির্দেশনা" : "Bondhu’s farm guide"} aria-describedby={tourMode ? "bondhu-tour-description" : undefined} onPointerEnter={() => { bubbleHoveredRef.current = true; }} onPointerLeave={() => { bubbleHoveredRef.current = false; }}>
+      <header className="kb-mini-bubble-head"><div className="kb-mini-kicker">{tourMode ? (bn ? `ধাপ ${visibleTourIndex + 1} / ${eligibleTourSteps.length}` : `STEP ${visibleTourIndex + 1} OF ${eligibleTourSteps.length}`) : (bn ? "বন্ধু · আপনার মাঠের সঙ্গী" : "BONDHU · YOUR FIELD GUIDE")}</div><button type="button" aria-label={bn ? "বন্ধ করুন" : "Close"} onClick={closeGuide} className="kb-mini-close"><X size={17}/></button></header>
+      <div className="kb-mini-bubble-body">
         {tourMode ? <><h2>{bn ? "বন্ধুর সাথে ঘুরে দেখুন" : "Explore with Bondhu"}</h2><p id="bondhu-tour-description" className="kb-mini-tour-description" aria-live="polite">{bn ? tourStep?.bn : tourStep?.en}</p>{tourNotice && <p className="kb-mini-tour-notice" role="status">{tourNotice}</p>}{tourVoiceError && <p className="kb-mini-tour-notice" role="status">{bn ? "কণ্ঠে শোনা যাচ্ছে না। লেখা পড়ে এগিয়ে যান।" : "Voice playback is unavailable. Continue with the captions."}</p>}</> : finished ? <><h2>{bn ? "ঘুরে দেখা শেষ!" : "Tour complete"}</h2><p>{bn ? "যেকোনো সময় আবার ঘুরে দেখতে পারেন।" : "You can replay the tour any time."}</p></> : <><h2>{tip.title}</h2><p>{tip.text}</p></>}
-        {tourMode ? <div className="kb-mini-tour-actions"><button type="button" onClick={() => { const previous = findEligibleTourStepIndex(tourIndex - 1, isAuthenticated, BONDHU_TOUR_STEPS, -1); if (previous >= 0) { stopTourVoice(); setTourIndex(previous); savePreferences({ tourProgress: previous }); navigateTo(TOUR_STOPS[previous]); } }} disabled={paused || findEligibleTourStepIndex(tourIndex - 1, isAuthenticated, BONDHU_TOUR_STEPS, -1) < 0} className="kb-mini-quiet" aria-label={bn ? "আগের ধাপ" : "Previous step"}><ArrowLeft size={15}/>{bn ? "আগে" : "Previous"}</button><button type="button" onClick={nextStop} disabled={paused} className="kb-mini-primary">{tourIndex >= BONDHU_TOUR_STEPS.length-1 ? (bn ? "শেষ করুন" : "Finish") : (bn ? "পরের ধাপ" : "Next")}<ArrowRight size={15}/></button><button type="button" onClick={toggleTourPause} className="kb-mini-quiet" aria-label={paused ? (bn ? "আবার চালান" : "Resume tour") : (bn ? "বিরতি" : "Pause tour")}>{paused ? <Play size={15}/> : <Pause size={15}/>}<span className="sr-only">{paused ? (bn ? "চালান" : "Resume") : (bn ? "বিরতি" : "Pause")}</span></button><button type="button" onClick={readTourStep} disabled={muted || !isTourVoiceSupported} className="kb-mini-quiet" aria-label={isTourVoiceSpeaking ? (bn ? "কণ্ঠ থামান" : "Stop speaking") : (bn ? "এই ধাপ শুনুন" : "Listen to this step")}><Headphones size={15}/></button><button type="button" onClick={cancelTour} className="kb-mini-quiet"><SkipForward size={15}/>{bn ? "বাদ" : "Skip"}</button><button type="button" onClick={() => startTour(true)} className="kb-mini-quiet">{bn ? "আবার" : "Replay"}</button></div> : <div className="kb-mini-tour-actions"><button type="button" onClick={startTour} className="kb-mini-primary kb-mini-start">{bn ? "বন্ধুর সাথে ঘুরে দেখুন" : finished ? "Replay tour" : preferences.tourProgress != null ? "Resume guided tour" : "Take a guided tour"}<Compass size={15}/></button></div>}
-        {!tourMode && <details className="kb-mini-places"><summary><Map size={15}/>{bn ? "যেখানে যেতে চান" : "Take me somewhere"}<ChevronDown size={15}/></summary><nav aria-label={bn ? "পাতা বেছে নিন" : "Choose a page"}>{places.map((place)=><button type="button" key={place.href} onClick={()=>{cancelTour();setFinished(false);navigateTo(place.href);}} aria-current={pathname===place.href?"page":undefined}>{place[bn?"bn":"en"]}<ArrowRight size={13}/></button>)}</nav></details>}
-        <a className="kb-mini-ask" href="/assistant" onClick={(event)=>{event.preventDefault();cancelTour();setFinished(false);navigateTo("/assistant");}}><MessageCircle size={14}/>{bn ? "ফসল নিয়ে প্রশ্ন আছে? সহকারীকে জিজ্ঞেস করুন" : "Have a crop question? Ask the farm assistant"}</a>
-        <div className="kb-mini-preferences">
-          <button type="button" role="switch" aria-checked={animationEnabled} onClick={() => { setSleeping(false); savePreferences({ animationEnabled: !animationEnabled }); }}>{animationEnabled ? (bn ? "অ্যানিমেশন বন্ধ করুন" : "Turn animation off") : (bn ? "অ্যানিমেশন চালু করুন" : "Turn animation on")}</button>
-          <button type="button" role="switch" aria-checked={muted} onClick={() => savePreferences({ muted: !muted })}>{muted ? (bn ? "কণ্ঠ চালু করুন" : "Unmute voice") : (bn ? "কণ্ঠ বন্ধ করুন" : "Mute voice")}</button>
-          <button type="button" onClick={() => { setOpen(false); savePreferences({ hidden: true }); }}>{bn ? "বন্ধুকে ছোট করুন" : "Hide Bondhu"}</button>
-        </div>
+        {tourMode ? <div className="kb-mini-tour-actions"><button type="button" onClick={() => { const previous = findEligibleTourStepIndex(tourIndex - 1, isAuthenticated, BONDHU_TOUR_STEPS, -1); if (previous >= 0) { stopTourVoice(); setTourIndex(previous); savePreferences({ tourProgress: previous }); navigateTo(TOUR_STOPS[previous]); } }} disabled={paused || findEligibleTourStepIndex(tourIndex - 1, isAuthenticated, BONDHU_TOUR_STEPS, -1) < 0} className="kb-mini-quiet" aria-label={bn ? "আগের ধাপ" : "Previous step"}><ArrowLeft size={15}/>{bn ? "আগে" : "Previous"}</button><button type="button" onClick={nextStop} disabled={paused} className="kb-mini-primary">{tourIndex >= BONDHU_TOUR_STEPS.length-1 ? (bn ? "শেষ করুন" : "Finish") : (bn ? "পরের ধাপ" : "Next")}<ArrowRight size={15}/></button><button type="button" onClick={toggleTourPause} className="kb-mini-quiet" aria-label={paused ? (bn ? "আবার চালান" : "Resume tour") : (bn ? "বিরতি" : "Pause tour")}>{paused ? <Play size={15}/> : <Pause size={15}/>}<span className="sr-only">{paused ? (bn ? "চালান" : "Resume") : (bn ? "বিরতি" : "Pause")}</span></button><button type="button" onClick={readTourStep} disabled={muted || !isTourVoiceSupported} className="kb-mini-quiet" aria-label={isTourVoiceSpeaking ? (bn ? "কণ্ঠ থামান" : "Stop speaking") : (bn ? "এই ধাপ শুনুন" : "Listen to this step")}><Headphones size={15}/></button><button type="button" onClick={cancelTour} className="kb-mini-quiet"><SkipForward size={15}/>{bn ? "বাদ" : "Skip"}</button><button type="button" onClick={() => startTour(true)} className="kb-mini-quiet">{bn ? "আবার" : "Replay"}</button></div> : <>
+          {!finished && <button type="button" onClick={startTour} className="kb-mini-primary kb-mini-start">{bn ? "বন্ধুর সাথে ঘুরে দেখুন" : preferences.tourProgress != null ? "Resume guided tour" : "Take a guided tour"}<Compass size={15}/></button>}
+          <a className="kb-mini-ask" href="/assistant" onClick={(event)=>{event.preventDefault();setOpen(false);setFinished(false);navigateTo("/assistant");}}><MessageCircle size={14}/>{bn ? "কৃষি সহকারীর সাথে কথা বলুন" : "Open the farm assistant"}</a>
+          <details className="kb-mini-more"><summary>{bn ? "আরও বিকল্প" : "More options"}<ChevronDown size={14}/></summary>
+            <div className="kb-mini-more-body">
+              <details className="kb-mini-places"><summary><Map size={15}/>{bn ? "একটি পাতা দেখান" : "Choose a page"}<ChevronDown size={15}/></summary><nav aria-label={bn ? "পাতা বেছে নিন" : "Choose a page"}>{places.map((place)=><button type="button" key={place.href} onClick={()=>{cancelTour();setFinished(false);setOpen(false);navigateTo(place.href);}} aria-current={pathname===place.href?"page":undefined}>{place[bn?"bn":"en"]}<ArrowRight size={13}/></button>)}</nav></details>
+              <div className="kb-mini-preferences">
+                <button type="button" role="switch" aria-checked={animationEnabled} onClick={() => { setSleeping(false); savePreferences({ animationEnabled: !animationEnabled }); }}>{animationEnabled ? (bn ? "অ্যানিমেশন" : "Motion on") : (bn ? "অ্যানিমেশন বন্ধ" : "Motion off")}</button>
+                <button type="button" role="switch" aria-checked={muted} onClick={() => savePreferences({ muted: !muted })}>{muted ? (bn ? "কণ্ঠ বন্ধ" : "Voice muted") : (bn ? "কণ্ঠ চালু" : "Voice on")}</button>
+                <button type="button" onClick={() => { setOpen(false); savePreferences({ hidden: true }); }}>{bn ? "লুকান" : "Hide"}</button>
+              </div>
+            </div>
+          </details>
+        </>}
       </div>
     </section>}
-    <button type="button" className={`kb-mini-launcher ${flying ? "is-flying" : ""} ${hidden ? "is-hidden" : ""}`} onPointerDown={startDrag} onPointerMove={drag} onPointerUp={endDrag} onPointerCancel={endDrag} onKeyDown={moveWithKeyboard} onClick={(event)=>{if(draggedRef.current){draggedRef.current=false;event.preventDefault();return;}setSleeping(false);setOpen((value)=>!value);if(hidden){savePreferences({hidden:false});}}} aria-expanded={open} aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight" aria-label={bn ? (hidden ? "বন্ধুকে দেখান" : "বন্ধুর কাছে সাহায্য চান") : (hidden ? "Show Bondhu" : "Ask Bondhu for help")}>
+    <button ref={launcherRef} type="button" className={`kb-mini-launcher ${flying ? "is-flying" : ""} ${hidden ? "is-hidden" : ""}`} onPointerEnter={() => setHovered(true)} onPointerLeave={() => setHovered(false)} onPointerDown={startDrag} onPointerMove={drag} onPointerUp={endDrag} onPointerCancel={endDrag} onKeyDown={moveWithKeyboard} onClick={tapCompanion} aria-expanded={open} aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight" aria-label={bn ? (hidden ? "বন্ধুকে দেখান" : "বন্ধুর কাছে সাহায্য চান") : (hidden ? "Show Bondhu" : "Ask Bondhu for help")}>
       <BondhuMascot active={!hidden && animationEnabled} className="kb-mini-face" state={characterState} facing={facing} label={bn ? "বন্ধু, কৃষকের সহায়ক ড্রাগন" : "Bondhu, a friendly farmer companion"}/>{(hidden || tourMode) && <span>{hidden ? (bn ? "বন্ধুকে দেখান" : "Show Bondhu") : "Bondhu"}</span>}
     </button>
   </div>

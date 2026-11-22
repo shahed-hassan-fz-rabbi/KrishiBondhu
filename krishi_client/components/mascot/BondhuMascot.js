@@ -41,6 +41,14 @@ export function BondhuMascot({ className = "", state = "idle", facing = 1, activ
     let animationStart = 0;
     let nextBlinkAt = 0;
     let blinkUntil = 0;
+    const gazeTarget = { x: 0, y: 0 };
+    const onPointerMove = (event) => {
+      if (!host) return;
+      const rect = host.getBoundingClientRect();
+      gazeTarget.x = Math.max(-1, Math.min(1, (event.clientX - (rect.left + rect.width / 2)) / Math.max(1, window.innerWidth * 0.6)));
+      gazeTarget.y = Math.max(-1, Math.min(1, ((rect.top + rect.height / 2) - event.clientY) / Math.max(1, window.innerHeight * 0.6)));
+    };
+    const onPointerOut = (event) => { if (!event.relatedTarget) { gazeTarget.x = 0; gazeTarget.y = 0; } };
 
     const cleanup = () => {
       if (disposed) return;
@@ -48,6 +56,8 @@ export function BondhuMascot({ className = "", state = "idle", facing = 1, activ
       observer?.disconnect();
       if (resizeFallback) window.removeEventListener("resize", resizeFallback);
       mediaQuery?.removeEventListener?.("change", onMotionPreference);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerout", onPointerOut);
       document.removeEventListener("visibilitychange", onVisibility);
       renderer?.domElement.removeEventListener("webglcontextlost", onContextLost);
       renderer?.domElement.removeEventListener("webglcontextrestored", onContextRestored);
@@ -81,6 +91,12 @@ export function BondhuMascot({ className = "", state = "idle", facing = 1, activ
       root.rotation.y += ((pose.state === "flying" ? facingRef.current * 0.24 : 0) - root.rotation.y) * 0.1;
       parts.body.scale.y = 1 + breath;
       parts.head.rotation.z += (pose.headTilt - parts.head.rotation.z) * 0.14;
+      parts.head.rotation.x += ((-gazeTarget.y * 0.075) - parts.head.rotation.x) * 0.075;
+      parts.head.rotation.y += ((gazeTarget.x * 0.13) - parts.head.rotation.y) * 0.075;
+      parts.gaze.forEach((gaze) => {
+        gaze.position.x += (gazeTarget.x * 0.035 - gaze.position.x) * 0.18;
+        gaze.position.y += (gazeTarget.y * 0.028 - gaze.position.y) * 0.18;
+      });
       parts.tail.rotation.y += (pose.tailSway - parts.tail.rotation.y) * 0.12;
       parts.wings.forEach((wing, index) => {
         const direction = index === 0 ? -1 : 1;
@@ -168,6 +184,8 @@ export function BondhuMascot({ className = "", state = "idle", facing = 1, activ
         scene.add(model.root);
         rendererHostRef.current?.appendChild(renderer.domElement);
         sceneRef.current = { renderer, scene, camera, model, applyPose };
+        window.addEventListener("pointermove", onPointerMove, { passive: true });
+        window.addEventListener("pointerout", onPointerOut, { passive: true });
         animationStart = performance.now();
         if (typeof ResizeObserver !== "undefined") {
           observer = new ResizeObserver(resize);

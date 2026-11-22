@@ -2,16 +2,16 @@
 export function createBondhuModel(THREE) {
   const root = new THREE.Group();
   root.name = "Bondhu";
-  const parts = { root, eyes: [], wings: [], arms: [], mouth: null, tail: null };
+  const parts = { root, eyes: [], gaze: [], wings: [], arms: [], mouth: null, tail: null };
 
-  const green = new THREE.MeshPhysicalMaterial({ color: 0x278c55, roughness: 0.3, metalness: 0, clearcoat: 0.62, clearcoatRoughness: 0.23 });
-  const greenLight = new THREE.MeshPhysicalMaterial({ color: 0x54b873, roughness: 0.34, clearcoat: 0.48, clearcoatRoughness: 0.27 });
+  const green = new THREE.MeshPhysicalMaterial({ color: 0x328658, roughness: 0.58, metalness: 0, clearcoat: 0.08, clearcoatRoughness: 0.48 });
+  const greenLight = new THREE.MeshPhysicalMaterial({ color: 0x61aa75, roughness: 0.62, clearcoat: 0.06, clearcoatRoughness: 0.5 });
   const greenDeep = new THREE.MeshStandardMaterial({ color: 0x176447, roughness: 0.48 });
-  const scaleGreen = new THREE.MeshPhysicalMaterial({ color: 0x71cb84, roughness: 0.42, clearcoat: 0.2 });
-  const belly = new THREE.MeshPhysicalMaterial({ color: 0xf2dfb4, roughness: 0.63, clearcoat: 0.16 });
+  const scaleGreen = new THREE.MeshPhysicalMaterial({ color: 0x79ba82, roughness: 0.64, clearcoat: 0.04 });
+  const belly = new THREE.MeshPhysicalMaterial({ color: 0xf2dfb4, roughness: 0.7, clearcoat: 0.04 });
   const bellyLight = new THREE.MeshStandardMaterial({ color: 0xffedcc, roughness: 0.62 });
-  const sclera = new THREE.MeshPhysicalMaterial({ color: 0xfffdf6, roughness: 0.18, clearcoat: 0.7 });
-  const iris = new THREE.MeshPhysicalMaterial({ color: 0x316a58, roughness: 0.25, clearcoat: 0.4 });
+  const sclera = new THREE.MeshPhysicalMaterial({ color: 0xfffdf6, roughness: 0.34, clearcoat: 0.12 });
+  const iris = new THREE.MeshPhysicalMaterial({ color: 0x316a58, roughness: 0.38, clearcoat: 0.08 });
   const pupil = new THREE.MeshStandardMaterial({ color: 0x132d29, roughness: 0.22 });
   const shine = new THREE.MeshBasicMaterial({ color: 0xffffff });
   const mouthMat = new THREE.MeshStandardMaterial({ color: 0x723f45, roughness: 0.7 });
@@ -84,10 +84,14 @@ export function createBondhuModel(THREE) {
     eye.position.set(direction * 0.285, 0.105, 0.545);
     head.add(eye);
     ball(sclera, [0.205, 0.245, 0.125], [0, 0, 0], eye);
-    ball(iris, [0.097, 0.132, 0.058], [0.018, -0.008, 0.108], eye);
-    ball(pupil, [0.056, 0.091, 0.039], [0.022, -0.012, 0.153], eye);
-    ball(shine, [0.035, 0.043, 0.02], [-0.005, 0.045, 0.184], eye);
+    const gaze = new THREE.Group();
+    gaze.position.set(0, 0, 0);
+    eye.add(gaze);
+    ball(iris, [0.097, 0.132, 0.058], [0.018, -0.008, 0.108], gaze);
+    ball(pupil, [0.056, 0.091, 0.039], [0.022, -0.012, 0.153], gaze);
+    ball(shine, [0.035, 0.043, 0.02], [-0.005, 0.045, 0.184], gaze);
     parts.eyes.push(eye);
+    parts.gaze.push(gaze);
   }
   // Curved smile and an unobtrusive mouth that opens only while Bondhu is talking.
   tube([[-0.15, -0.39, 0.64], [0, -0.47, 0.71], [0.15, -0.39, 0.64]], 0.018, greenDeep, head, 16);
@@ -146,7 +150,7 @@ export function createBondhuModel(THREE) {
 
   // Flexible curved tail, with a rounded leaf-shaped tip.
   const tail = new THREE.Group();
-  tail.position.set(0.02, -0.46, -0.36);
+  tail.position.set(0.12, -0.46, -0.32);
   root.add(tail);
   tube([[0, 0, 0], [0.28, -0.12, -0.12], [0.59, 0.02, -0.25], [0.78, 0.31, -0.3]], 0.12, green, tail, 24);
   ball(greenLight, [0.14, 0.16, 0.12], [0.78, 0.31, -0.3], tail);
