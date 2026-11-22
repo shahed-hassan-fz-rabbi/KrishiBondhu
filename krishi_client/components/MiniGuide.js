@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowRight, ChevronDown, Compass, Map, MessageCircle, X } from "lucide-react";
-import { KrishuMascot } from "@/components/mascot/KrishuMascot.js";
+import { BondhuMascot } from "@/components/mascot/BondhuMascot.js";
 import { saveMascotPreferences, useMascotPreferences } from "@/components/mascot/mascotStore.js";
 import { useAuth } from "@/contexts/AuthContext.js";
 import { useLang } from "@/lib/i18n/LanguageContext.js";
@@ -65,8 +65,8 @@ function pageTip(pathname, bn) {
     ? { title: "আপনার কৃষি ড্যাশবোর্ড", text: "জেলা ও সাম্প্রতিক কৃষি তথ্য দেখুন। বিস্তারিত ফসল পরিকল্পনা, আবহাওয়া, বাজার বা খামারের কাজে যেতে নিচের পথগুলো ব্যবহার করুন।" }
     : { title: "Your farming dashboard", text: "Review your district and recent agricultural context. Use the shortcuts below to continue to crop planning, weather, market or My Farm." };
   return bn
-    ? { title: "আমি মিনি, আপনার কৃষি সঙ্গী", text: "ফসলের ক্যালেন্ডার থেকে বাজারদর—যেখানে যেতে চান বলুন। আমি সেই পাতায় নিয়ে গিয়ে কীভাবে ব্যবহার করবেন দেখাব।" }
-    : { title: "I’m Mini, your farm guide", text: "Tell me where you want to go—from crop calendars to market prices. I’ll take you there and explain how to use the page." };
+    ? { title: "আমি বন্ধু, আপনার কৃষি সঙ্গী", text: "ফসলের ক্যালেন্ডার থেকে বাজারদর—যেখানে যেতে চান বলুন। আমি সেই পাতায় নিয়ে গিয়ে কীভাবে ব্যবহার করবেন দেখাব।" }
+    : { title: "I’m Bondhu, your farm guide", text: "Tell me where you want to go—from crop calendars to market prices. I’ll take you there and explain how to use the page." };
 }
 
 export function MiniGuide() {
@@ -84,6 +84,9 @@ export function MiniGuide() {
   const { animationEnabled, hidden, muted } = preferences;
   const [paused, setPaused] = useState(false);
   const [assistantState, setAssistantState] = useState("idle");
+  const [isDragging, setIsDragging] = useState(false);
+  const [sleeping, setSleeping] = useState(false);
+  const characterState = flying ? "flying" : isDragging ? "dragging" : tourMode ? "happy" : sleeping ? "sleeping" : assistantState;
   const [position, setPosition] = useState(null);
   const dragRef = useRef(null);
   const draggedRef = useRef(false);
@@ -95,6 +98,7 @@ export function MiniGuide() {
     : PLACES;
 
   const navigateTo = useCallback((href) => {
+    setSleeping(false);
     setFlying(true);
     window.clearTimeout(timerRef.current);
     timerRef.current = window.setTimeout(() => {
@@ -112,10 +116,19 @@ export function MiniGuide() {
   }, []);
 
   useEffect(() => {
-    const updateAssistantState = (event) => setAssistantState(event.detail?.state || "idle");
+    const updateAssistantState = (event) => {
+      setAssistantState(event.detail?.state || "idle");
+      setSleeping(false);
+    };
     window.addEventListener("krishi:assistant-status", updateAssistantState);
     return () => window.removeEventListener("krishi:assistant-status", updateAssistantState);
   }, []);
+
+  useEffect(() => {
+    if (open || tourMode || flying || isDragging || assistantState !== "idle" || hidden || !animationEnabled) return undefined;
+    const timer = window.setTimeout(() => setSleeping(true), 45_000);
+    return () => window.clearTimeout(timer);
+  }, [open, tourMode, flying, isDragging, assistantState, hidden, animationEnabled]);
 
   const savePreferences = (updates) => {
     saveMascotPreferences(updates);
@@ -128,6 +141,8 @@ export function MiniGuide() {
 
   const startDrag = (event) => {
     if (event.button !== 0) return;
+    setSleeping(false);
+    setIsDragging(true);
     dragRef.current = { pointerId: event.pointerId, offsetX: event.clientX - (currentPosition?.x ?? window.innerWidth - 160), offsetY: event.clientY - (currentPosition?.y ?? window.innerHeight - 90) };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
@@ -143,7 +158,20 @@ export function MiniGuide() {
 
   const endDrag = () => {
     dragRef.current = null;
+    setIsDragging(false);
     if (position) savePreferences(position);
+  };
+
+  const moveWithKeyboard = (event) => {
+    const offsets = { ArrowUp: [0, -24], ArrowDown: [0, 24], ArrowLeft: [-24, 0], ArrowRight: [24, 0] };
+    const offset = offsets[event.key];
+    if (!offset) return;
+    event.preventDefault();
+    const base = currentPosition || { x: window.innerWidth - 160, y: window.innerHeight - 90 };
+    const maxX = Math.max(8, window.innerWidth - Math.min(365, window.innerWidth - 20));
+    const next = { x: Math.max(8, Math.min(maxX, base.x + offset[0])), y: Math.max(8, Math.min(window.innerHeight - 80, base.y + offset[1])) };
+    setPosition(next);
+    savePreferences(next);
   };
 
   const startTour = useCallback((restart = false) => {
@@ -178,23 +206,23 @@ export function MiniGuide() {
   const launcherStyle = currentPosition ? { left: currentPosition.x, top: currentPosition.y, right: "auto", bottom: "auto" } : undefined;
 
   return <div className="kb-mini-guide" style={launcherStyle}>
-    {open && <section className="kb-mini-panel" role="dialog" aria-label={bn ? "মিনির কৃষি নির্দেশনা" : "Mini’s farm guide"}>
-      <header className="kb-mini-panel-head"><span className="kb-mini-avatar"><KrishuMascot active={pathname !== "/" && !hidden && animationEnabled} className="kb-mini-face" state={flying ? "flying" : tourMode ? "greeting" : assistantState}/></span><div><strong>{bn ? "কৃষু" : "Krishu"}</strong><small>{bn ? "আপনার মাঠের সঙ্গী" : "Your field guide"}</small></div><button type="button" aria-label={bn ? "বন্ধ করুন" : "Close"} onClick={()=>setOpen(false)} className="kb-mini-close"><X size={17}/></button></header>
+    {open && <section className="kb-mini-panel" role="dialog" aria-label={bn ? "বন্ধুর কৃষি নির্দেশনা" : "Bondhu’s farm guide"}>
+      <header className="kb-mini-panel-head"><span className="kb-mini-avatar" aria-hidden="true"><span className="kb-bondhu-monogram">B</span></span><div><strong>বন্ধু <span>· BONDHU</span></strong><small>{bn ? "আপনার মাঠের সঙ্গী" : "Your field guide"}</small></div><button type="button" aria-label={bn ? "বন্ধ করুন" : "Close"} onClick={()=>setOpen(false)} className="kb-mini-close"><X size={17}/></button></header>
       <div className="kb-mini-panel-body">
         {tourMode && <p className="kb-mini-step">{bn ? `পরিচিতি ${tourIndex+1} / ${TOUR_STOPS.length}` : `TOUR STOP ${tourIndex+1} OF ${TOUR_STOPS.length}`}</p>}
         {finished ? <><h2>{bn ? "ভালো হয়েছে—এখন নিজে ঘুরে দেখুন!" : "You’re ready to explore!"}</h2><p>{bn ? "যেকোনো সময় মিনি খুলে এই পাতার নির্দেশনা বা অন্য জায়গার পথ নিতে পারবেন।" : "Open Mini any time for help on this page or a shortcut to another part of KrishiBondhu."}</p></> : <><h2>{tip.title}</h2><p>{tip.text}</p></>}
-        {tourMode ? <div className="kb-mini-tour-actions"><button type="button" onClick={() => { const previous = Math.max(0, tourIndex - 1); setTourIndex(previous); navigateTo(TOUR_STOPS[previous]); }} disabled={tourIndex === 0 || paused} className="kb-mini-quiet">{bn ? "আগের জায়গা" : "Previous"}</button><button type="button" onClick={nextStop} disabled={paused} className="kb-mini-primary">{tourIndex === TOUR_STOPS.length-1 ? (bn ? "পরিচিতি শেষ" : "Finish tour") : (bn ? "পরের জায়গা" : "Next place")}<ArrowRight size={15}/></button><button type="button" onClick={() => setPaused((value) => !value)} className="kb-mini-quiet">{paused ? (bn ? "আবার শুরু" : "Resume") : (bn ? "বিরতি" : "Pause")}</button><button type="button" onClick={startTour} className="kb-mini-quiet">{bn ? "আবার শুরু" : "Restart"}</button><button type="button" onClick={cancelTour} className="kb-mini-quiet">{bn ? "এখন থাক" : "Skip tour"}</button></div> : <button type="button" onClick={startTour} className="kb-mini-primary kb-mini-start">{bn ? "কৃষুর সাথে ঘুরে দেখুন" : "Take a guided tour"}<Compass size={15}/></button>}
+        {tourMode ? <div className="kb-mini-tour-actions"><button type="button" onClick={() => { const previous = Math.max(0, tourIndex - 1); setTourIndex(previous); navigateTo(TOUR_STOPS[previous]); }} disabled={tourIndex === 0 || paused} className="kb-mini-quiet">{bn ? "আগের জায়গা" : "Previous"}</button><button type="button" onClick={nextStop} disabled={paused} className="kb-mini-primary">{tourIndex === TOUR_STOPS.length-1 ? (bn ? "পরিচিতি শেষ" : "Finish tour") : (bn ? "পরের জায়গা" : "Next place")}<ArrowRight size={15}/></button><button type="button" onClick={() => setPaused((value) => !value)} className="kb-mini-quiet">{paused ? (bn ? "আবার শুরু" : "Resume") : (bn ? "বিরতি" : "Pause")}</button><button type="button" onClick={startTour} className="kb-mini-quiet">{bn ? "আবার শুরু" : "Restart"}</button><button type="button" onClick={cancelTour} className="kb-mini-quiet">{bn ? "এখন থাক" : "Skip tour"}</button></div> : <button type="button" onClick={startTour} className="kb-mini-primary kb-mini-start">{bn ? "বন্ধুর সাথে ঘুরে দেখুন" : "Take a guided tour with Bondhu"}<Compass size={15}/></button>}
         <details className="kb-mini-places"><summary><Map size={15}/>{bn ? "যেখানে যেতে চান" : "Take me somewhere"}<ChevronDown size={15}/></summary><nav aria-label={bn ? "পাতা বেছে নিন" : "Choose a page"}>{places.map((place)=><button type="button" key={place.href} onClick={()=>{cancelTour();setFinished(false);navigateTo(place.href);}} aria-current={pathname===place.href?"page":undefined}>{place[bn?"bn":"en"]}<ArrowRight size={13}/></button>)}</nav></details>
         <a className="kb-mini-ask" href="/assistant" onClick={(event)=>{event.preventDefault();cancelTour();setFinished(false);navigateTo("/assistant");}}><MessageCircle size={14}/>{bn ? "ফসল নিয়ে প্রশ্ন আছে? সহকারীকে জিজ্ঞেস করুন" : "Have a crop question? Ask the farm assistant"}</a>
         <div className="kb-mini-preferences">
-          <button type="button" role="switch" aria-checked={animationEnabled} onClick={() => savePreferences({ animationEnabled: !animationEnabled })}>{animationEnabled ? (bn ? "অ্যানিমেশন বন্ধ করুন" : "Turn animation off") : (bn ? "অ্যানিমেশন চালু করুন" : "Turn animation on")}</button>
+          <button type="button" role="switch" aria-checked={animationEnabled} onClick={() => { setSleeping(false); savePreferences({ animationEnabled: !animationEnabled }); }}>{animationEnabled ? (bn ? "অ্যানিমেশন বন্ধ করুন" : "Turn animation off") : (bn ? "অ্যানিমেশন চালু করুন" : "Turn animation on")}</button>
           <button type="button" role="switch" aria-checked={muted} onClick={() => savePreferences({ muted: !muted })}>{muted ? (bn ? "কণ্ঠ চালু করুন" : "Unmute voice") : (bn ? "কণ্ঠ বন্ধ করুন" : "Mute voice")}</button>
-          <button type="button" onClick={() => { setOpen(false); savePreferences({ hidden: true }); }}>{bn ? "কৃষুকে ছোট করুন" : "Hide Krishu"}</button>
+          <button type="button" onClick={() => { setOpen(false); savePreferences({ hidden: true }); }}>{bn ? "বন্ধুকে ছোট করুন" : "Hide Bondhu"}</button>
         </div>
       </div>
     </section>}
-    <button type="button" className={`kb-mini-launcher ${flying ? "is-flying" : ""} ${hidden ? "is-hidden" : ""}`} onPointerDown={startDrag} onPointerMove={drag} onPointerUp={endDrag} onPointerCancel={endDrag} onClick={(event)=>{if(draggedRef.current){draggedRef.current=false;event.preventDefault();return;}setOpen((value)=>!value);if(hidden){savePreferences({hidden:false});}}} aria-expanded={open} aria-label={bn ? "কৃষুর কাছে সাহায্য চান" : "Ask Krishu for help"}>
-      <KrishuMascot active={pathname !== "/" && !hidden && animationEnabled} className="kb-mini-face" state={flying ? "flying" : tourMode ? "greeting" : assistantState}/><span>{hidden ? (bn ? "কৃষুকে দেখান" : "Show Krishu") : (open ? (bn ? "বন্ধ" : "Close") : (bn ? "কৃষু" : "Krishu"))}</span>
+    <button type="button" className={`kb-mini-launcher ${flying ? "is-flying" : ""} ${hidden ? "is-hidden" : ""}`} onPointerDown={startDrag} onPointerMove={drag} onPointerUp={endDrag} onPointerCancel={endDrag} onKeyDown={moveWithKeyboard} onClick={(event)=>{if(draggedRef.current){draggedRef.current=false;event.preventDefault();return;}setSleeping(false);setOpen((value)=>!value);if(hidden){savePreferences({hidden:false});}}} aria-expanded={open} aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight" aria-label={bn ? (hidden ? "বন্ধুকে দেখান" : "বন্ধুর কাছে সাহায্য চান") : (hidden ? "Show Bondhu" : "Ask Bondhu for help")}>
+      <BondhuMascot active={!hidden && animationEnabled} className="kb-mini-face" state={characterState} label={bn ? "বন্ধু, কৃষকের সহায়ক ড্রাগন" : "Bondhu, a friendly farmer companion"}/><span>{hidden ? (bn ? "বন্ধুকে দেখান" : "Show Bondhu") : (open ? (bn ? "বন্ধ" : "Close") : (bn ? "বন্ধু" : "Bondhu"))}</span>
     </button>
   </div>;
 }

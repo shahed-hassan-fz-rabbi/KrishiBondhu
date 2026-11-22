@@ -438,14 +438,15 @@
 .kb-mini-guide[style] { position:fixed; z-index:85; }
 .kb-mini-launcher { touch-action:none; }
 .kb-mini-launcher.is-hidden { min-height:44px; padding:4px 12px; background:#f9f5e9; color:#155447; border-color:#b4c9a9; }
-.kb-krishu-canvas { position:relative; display:block; width:100%; height:100%; overflow:hidden; pointer-events:none; }
-.kb-krishu-canvas canvas { display:block; width:100%; height:100%; }
-.kb-krishu-fallback { display:block; width:100%; height:100%; }
-.kb-mini-launcher .kb-krishu-canvas { flex:0 0 auto; width:49px; height:49px; border-radius:50%; background:#fffaf0; }
-.kb-mini-launcher.is-hidden .kb-krishu-canvas { display:none; }
-.kb-mini-avatar .kb-krishu-canvas { width:38px; height:38px; }
-.kb-farm-cat.kb-krishu-canvas { position:relative; z-index:2; width:min(75%,365px); height:390px; margin-top:12px; filter:drop-shadow(0 15px 9px #483b2b26); }
-.kb-farm-cat.kb-krishu-canvas canvas { width:100%; height:100%; }
+.kb-bondhu-canvas { position:relative; display:block; width:100%; height:100%; overflow:hidden; pointer-events:none; }
+.kb-bondhu-renderer { position:absolute; inset:0; }
+.kb-bondhu-canvas canvas { display:block; width:100%; height:100%; }
+.kb-bondhu-canvas.is-fallback canvas { display:none; }
+.kb-bondhu-fallback { display:block; width:100%; height:100%; }
+.kb-mini-launcher .kb-bondhu-canvas { flex:0 0 auto; width:49px; height:49px; border-radius:50%; background:#fffaf0; }
+.kb-mini-launcher.is-hidden .kb-bondhu-canvas { display:none; }
+.kb-mini-avatar .kb-bondhu-canvas { width:38px; height:38px; }
+.kb-bondhu-monogram { display:grid; width:38px; height:38px; place-items:center; border-radius:11px; background:#247A4B; color:#fffaf0; font-size:18px; font-weight:800; }
 .kb-cat-actions { position:absolute; z-index:3; top:calc(7% + 128px); right:-1%; display:grid; gap:7px; width:min(235px,65%); }
 .kb-cat-actions button,.kb-cat-actions a { display:inline-flex; min-height:36px; align-items:center; justify-content:center; border:1px solid #efe6d5; border-radius:11px; background:#fffaf0; padding:7px 10px; color:#24584a; font:inherit; font-size:11px; font-weight:700; line-height:1.3; text-align:center; text-decoration:none; cursor:pointer; }
 .kb-cat-actions button:hover,.kb-cat-actions a:hover { background:#eef5e8; }
@@ -981,7 +982,6 @@
 }
 
 @media(max-width:640px) {
-  .kb-farm-cat.kb-krishu-canvas { height:260px; width:74%; margin-top:28px; }
   .kb-cat-actions { top:46%; right:-1%; width:min(175px,57%); }
   .kb-cat-actions button,.kb-cat-actions a { min-height:32px; font-size:10px; }
 }

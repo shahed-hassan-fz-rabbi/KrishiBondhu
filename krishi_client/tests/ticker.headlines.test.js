@@ -63,8 +63,9 @@ describe("TV News Agricultural Breaking News Ticker Suite", () => {
     const pageJs = fs.readFileSync(path.resolve(__dirname, "../app/page.js"), "utf8");
 
     assert.ok(pageJs.includes('className="kb-story-hero"') || pageJs.includes('className="kb-hero2"'), "Farmer hero section stays present");
-    assert.ok(pageJs.includes("function FarmCat"), "Mini remains the farmer's guide");
-    assert.ok(pageJs.includes("pointermove"), "Mini follows pointer direction");
+    const guideJs = fs.readFileSync(path.resolve(__dirname, "../components/MiniGuide.js"), "utf8");
+    assert.ok(!pageJs.includes("function FarmCat"), "The homepage does not contain a duplicate legacy mascot");
+    assert.ok(guideJs.includes("<BondhuMascot"), "The shared MiniGuide renders Bondhu");
     assert.ok(pageJs.includes('href="/market"'), "Primary action opens market information");
     assert.ok(pageJs.includes('href="/crop-rotation"'), "Secondary action opens crop planning");
     assert.ok(pageJs.includes("From seed to market") || pageJs.includes('t(`landing.heroHeadlineLine2`)'), "Hero keeps the localized seed-to-market product framing");

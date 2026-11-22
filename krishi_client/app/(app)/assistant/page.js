@@ -1,6 +1,7 @@
 "use client";
 import { PrivateAccess } from "@/components/auth/PrivateAccess.js";
 import { BRAND_LOGO_SRC } from "@/lib/branding.js";
+import { isMascotVoiceMuted } from "@/components/mascot/mascotStore.js";
 
 import { useCallback, useEffect, useRef, useState, Suspense } from "react";
 import Image from "next/image";
@@ -259,26 +260,22 @@ function AssistantContent() {
 
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
-    const state = isListening || inputValue.trim()
+    const state = isListening
       ? "listening"
-      : isLoading
-        ? "thinking"
-        : isTtsSpeaking
+      : isLoading || isTtsSpeaking
           ? "talking"
           : error
             ? "concerned"
             : lastMessage?.sender === "assistant" ? "happy" : "idle";
     window.dispatchEvent(new CustomEvent("krishi:assistant-status", { detail: { state } }));
-  }, [error, inputValue, isListening, isLoading, isTtsSpeaking, messages]);
+  }, [error, isListening, isLoading, isTtsSpeaking, messages]);
 
   useEffect(() => () => {
     window.dispatchEvent(new CustomEvent("krishi:assistant-status", { detail: { state: "idle" } }));
   }, []);
 
   const handleSpeakMessage = (msg) => {
-    try {
-      if (JSON.parse(window.localStorage.getItem("krishibondhu.krishu.preferences") || "{}").muted === true) return;
-    } catch { /* speech still works if optional preference storage is unavailable */ }
+    if (isMascotVoiceMuted()) return;
     setTtsTargetId(msg.id);
     // Speak in the language of this answer, regardless of the app's UI language.
     speakTts(msg.text, { id: msg.id });

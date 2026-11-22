@@ -62,45 +62,6 @@ import { Button } from "@/components/ui/Button.js";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card.js";
 import { useLang } from "@/lib/i18n/LanguageContext.js";
 import { useLocation } from "@/contexts/LocationContext.js";
-import { KrishuMascot } from "@/components/mascot/KrishuMascot.js";
-import { useMascotPreferences } from "@/components/mascot/mascotStore.js";
-
-function FarmCat({ bn, touring, onTour }) {
-  const preferences = useMascotPreferences();
-  // Krishu's Three.js scene follows pointermove events and keeps its eyes in the scene.
-  return (
-    <figure className={`kb-cat-scene ${touring ? "kb-tour-flight" : ""}`} aria-label={bn ? "কৃষু, আপনার কৃষি সঙ্গী" : "Meet Krishu, your farming companion"}>
-      <div className="kb-farm-backdrop" aria-hidden="true">
-        <span className="kb-farm-sun" />
-        <span className="kb-farm-row kb-farm-row-one" />
-        <span className="kb-farm-row kb-farm-row-two" />
-        <span className="kb-farm-row kb-farm-row-three" />
-      </div>
-      <div className="kb-cat-orbit" aria-hidden="true"><span /><span /><span /></div>
-      <button type="button" onClick={onTour} className="kb-cat-speech cursor-pointer">
-        <span className="kb-speech-dot" />
-        {bn ? "স্বাগতম! আমি কৃষু। কৃষিবন্ধুর সেবাগুলো ঘুরে দেখতে এখানে চাপ দিন।" : "Welcome! I’m Krishu. Tap here and I’ll show you around."}
-        <i />
-      </button>
-      <div className="kb-cat-actions">
-        <button type="button" onClick={onTour} className="cursor-pointer">{bn ? "আমাকে ঘুরিয়ে দেখাও" : "Show me around"}</button>
-        <Link href="/assistant">{bn ? "কৃষুর সাথে কথা বলব" : "Talk with Krishu"}</Link>
-      </div>
-      {!preferences.hidden && (
-        <KrishuMascot
-          active={preferences.animationEnabled}
-          className="kb-farm-cat"
-          state={touring ? "celebrating" : "idle"}
-          label={bn ? "সবুজ চারাগাছ কৃষু" : "Krishu, a friendly green seedling"}
-        />
-      )}
-      <div className="kb-cat-name">
-        <span>কৃষু <b>· KRISHU</b></span>
-        <small>{bn ? "বাংলাদেশের কৃষকের সহযাত্রী" : "Here for Bangladesh’s farmers"}</small>
-      </div>
-    </figure>
-  );
-}
 
 const featureItems = [
   { icon: Store, titleKey: "featureRainfall", descKey: "featureRainfallDesc", tone: "climate", href: "/market" },
@@ -226,16 +187,7 @@ export default function LandingPage() {
   const [marketObservationsStatus, setMarketObservationsStatus] = useState("loading");
   const [soilMoistureResult, setSoilMoistureResult] = useState({ district: null, status: "loading", data: null });
 
-  const [touring, setTouring] = useState(false);
   const [activePreviewTab, setActivePreviewTab] = useState("market"); // "market" | "weather" | "planner" | "assistant"
-
-  const startTour = () => {
-    setTouring(true);
-    window.setTimeout(() => {
-      document.getElementById("interactive-previews")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 450);
-    window.setTimeout(() => setTouring(false), 2000);
-  };
 
   useEffect(() => {
     let isMounted = true;

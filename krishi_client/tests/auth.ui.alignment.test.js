@@ -9,14 +9,15 @@ const __dirname = path.dirname(__filename);
 const clientDir = path.resolve(__dirname, "..");
 
 describe("Auth UI Alignment & Google OAuth UX Suite", () => {
-  it("Authentication uses its own farmer artwork and the home uses animated Mini", () => {
+  it("Authentication keeps its farmer artwork while the shared guide owns Bondhu", () => {
     const publicImagesDir = path.join(clientDir, "public", "images");
     const imageFiles = fs.readdirSync(publicImagesDir);
     const homeSrc = fs.readFileSync(path.join(clientDir, "app", "page.js"), "utf8");
 
     assert.strictEqual(imageFiles.includes("auth-farmer.png"), true);
-    assert.strictEqual(homeSrc.includes("function FarmCat"), true);
-    assert.strictEqual(homeSrc.includes("pointermove"), true);
+    const guideSrc = fs.readFileSync(path.join(clientDir, "components", "MiniGuide.js"), "utf8");
+    assert.strictEqual(homeSrc.includes("function FarmCat"), false);
+    assert.strictEqual(guideSrc.includes("<BondhuMascot"), true);
 
     // Verify login and register pages have NO reference to hero assets
     const loginSrc = fs.readFileSync(path.join(clientDir, "app", "login", "page.js"), "utf8");

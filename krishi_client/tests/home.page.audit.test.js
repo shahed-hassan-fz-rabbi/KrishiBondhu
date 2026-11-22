@@ -74,8 +74,8 @@ test("homepage POWER coverage is sourced and disclosed as historical data", () =
 test("farmer-first hero introduces Mini and links to real market and planning tools", () => {
   const page = read("../app/page.js");
   assert.match(page, /kb-story-hero|kb-hero2/);
-  assert.match(page, /function FarmCat/);
-  assert.match(page, /pointermove/);
+  assert.doesNotMatch(page, /function FarmCat/);
+  assert.match(read("../components/MiniGuide.js"), /<BondhuMascot/);
   assert.match(page, /href="\/market"/);
   assert.match(page, /href="\/crop-rotation"/);
   assert.match(page, /kb-story-proof|kb-hero2-proof/);
