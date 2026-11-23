@@ -30,6 +30,7 @@ import { useLang } from "@/lib/i18n/LanguageContext.js";
 import { useAuth } from "@/contexts/AuthContext.js";
 import { fetchCropPlanningRecommendations, createFarm, fetchFarms, createOfficerReviewRequest, createSavedAdvisory } from "@/services/api.js";
 import { getBangladeshDateKey } from "@/lib/bangladeshDate.js";
+import { localizeCropPlanningMessage, localizeSowingPeriod } from "@/lib/cropPlanningLocale.js";
 import WeatherIntelligenceSection from "@/components/dashboard/WeatherIntelligenceSection.js";
 import { dispatchFarmNotificationUpdate } from "@/lib/farmNotificationEvents.js";
 import {
@@ -194,7 +195,7 @@ function CropPlanningPageContent() {
     const supportedDistrict = DISTRICTS.some((item) => item.code === farm.location?.districtCode);
     if (!supportedDistrict) {
       setSelectedFarmId("");
-      setError(lang === "bn" ? "এই ক্ষেতের জেলার জন্য পরিকল্পনা সমর্থিত নয়।" : "Crop planning is not supported for this field's district.");
+      setError(lang === "bn" ? "এই মাঠের জেলার জন্য পরিকল্পনা সমর্থিত নয়।" : "Crop planning is not supported for this field's district.");
       return;
     }
     setFormData((prev) => ({
@@ -273,11 +274,11 @@ function CropPlanningPageContent() {
     const cropName = lang === "bn" ? crop.cropNameBn : crop.cropNameEn;
     const context = results?.query || {};
     const body = [
-      `${lang === "bn" ? "বপনের সময়" : "Planting window"}: ${crop.sowingPeriod}`,
+      `${lang === "bn" ? "বপনের সময়" : "Planting window"}: ${localizeSowingPeriod(crop.sowingPeriod, lang)}`,
       `${lang === "bn" ? "মোট মেয়াদ" : "Duration"}: ${crop.totalDurationDays} ${lang === "bn" ? "দিন" : "days"}`,
-      `${lang === "bn" ? "পানির চাহিদা" : "Water requirement"}: ~${crop.waterRequirementMmTotal} mm`,
-      crop.reasons?.length ? `${lang === "bn" ? "উপযোগিতার কারণ" : "Reasons"}:\n${crop.reasons.map((reason) => `• ${reason}`).join("\n")}` : "",
-      crop.constraints?.length ? `${lang === "bn" ? "মাঠপর্যায়ের সতর্কতা" : "Field considerations"}:\n${crop.constraints.map((item) => `• ${item}`).join("\n")}` : "",
+      `${lang === "bn" ? "পানির চাহিদা" : "Water requirement"}: ~${crop.waterRequirementMmTotal} ${lang === "bn" ? "মিমি" : "mm"}`,
+      crop.reasons?.length ? `${lang === "bn" ? "উপযোগিতার কারণ" : "Reasons"}:\n${crop.reasons.map((reason) => `• ${localizeCropPlanningMessage(reason, crop, lang)}`).join("\n")}` : "",
+      crop.constraints?.length ? `${lang === "bn" ? "মাঠপর্যায়ের সতর্কতা" : "Field considerations"}:\n${crop.constraints.map((item) => `• ${localizeCropPlanningMessage(item, crop, lang)}`).join("\n")}` : "",
       crop.sourceReferences?.publisher ? `${lang === "bn" ? "তথ্যসূত্র" : "Source"}: ${crop.sourceReferences.publisher}${crop.sourceReferences.title ? ` — ${crop.sourceReferences.title}` : ""}` : "",
       crop.sourceReferences?.url || "",
     ].filter(Boolean).join("\n\n");
@@ -315,11 +316,11 @@ function CropPlanningPageContent() {
         cropCode: crop.cropCode,
         cropName: lang === "bn" ? crop.cropNameBn : crop.cropNameEn,
         suitabilityCategory: crop.suitabilityCategory,
-        sowingPeriod: crop.sowingPeriod,
+        sowingPeriod: localizeSowingPeriod(crop.sowingPeriod, lang),
         totalDurationDays: crop.totalDurationDays,
         waterRequirementMmTotal: crop.waterRequirementMmTotal,
-        reasons: crop.reasons,
-        constraints: crop.constraints,
+        reasons: crop.reasons.map((reason) => localizeCropPlanningMessage(reason, crop, lang)),
+        constraints: crop.constraints.map((item) => localizeCropPlanningMessage(item, crop, lang)),
       },
     });
     if (result.success) {
@@ -351,7 +352,7 @@ function CropPlanningPageContent() {
 
   const handleConfirmCreateFarm = async () => {
     if (!setupFarmName.trim()) {
-      setCreateError(lang === "bn" ? "ক্ষেতের নাম আবশ্যক।" : "Field name is required.");
+      setCreateError(lang === "bn" ? "মাঠের নাম আবশ্যক।" : "Field name is required.");
       return;
     }
 
@@ -407,7 +408,7 @@ function CropPlanningPageContent() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 py-2">
+    <div className="kb-crop-planning-backdrop mx-auto max-w-5xl space-y-8 rounded-3xl px-2 py-3 sm:px-4 sm:py-5">
       {/* Top Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <Link
@@ -426,7 +427,7 @@ function CropPlanningPageContent() {
       {user && (
         <div className="rounded-2xl border border-line bg-surface p-4 shadow-km-sm sm:flex sm:items-center sm:gap-4">
           <label htmlFor="planning-field" className="mb-2 block text-sm font-medium text-content sm:mb-0">
-            {lang === "bn" ? "সংরক্ষিত ক্ষেতের তথ্য ব্যবহার করুন" : "Plan for a saved field"}
+            {lang === "bn" ? "সংরক্ষিত মাঠের তথ্য ব্যবহার করুন" : "Plan for a saved field"}
           </label>
           <select
             id="planning-field"
@@ -435,16 +436,16 @@ function CropPlanningPageContent() {
             onChange={(event) => selectFarm(event.target.value)}
             className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-content sm:max-w-md"
           >
-            <option value="">{farmsLoading ? (lang === "bn" ? "ক্ষেত লোড হচ্ছে…" : "Loading fields…") : (lang === "bn" ? "ম্যানুয়ালি জমির তথ্য দিন" : "Enter a field profile manually")}</option>
+            <option value="">{farmsLoading ? (lang === "bn" ? "মাঠ লোড হচ্ছে…" : "Loading fields…") : (lang === "bn" ? "ম্যানুয়ালি জমির তথ্য দিন" : "Enter a field profile manually")}</option>
             {availableFarms.map((farm) => <option key={farm._id} value={farm._id}>{farm.farmName} · {farm.location?.upazila}, {farm.location?.district}</option>)}
           </select>
-          {activeSelectedFarmId && <p className="mt-2 text-xs text-muted sm:mt-0">{lang === "bn" ? "সংরক্ষিত ক্ষেতের অবস্থান ও জমির তথ্য দিয়ে সুপারিশ তৈরি হবে। তথ্য সম্পাদনা করলে পরিকল্পনাটি ক্ষেত থেকে আলাদা হবে।" : "Recommendations use this field’s saved profile. Editing profile fields detaches the plan from the field."}</p>}
+          {activeSelectedFarmId && <p className="mt-2 text-xs text-muted sm:mt-0">{lang === "bn" ? "সংরক্ষিত মাঠের অবস্থান ও জমির তথ্য দিয়ে সুপারিশ তৈরি হবে। তথ্য সম্পাদনা করলে পরিকল্পনাটি মাঠ থেকে আলাদা হবে।" : "Recommendations use this field’s saved profile. Editing profile fields detaches the plan from the field."}</p>}
         </div>
       )}
 
       {user && !farmsLoading && farmsLoadError && (
         <div role="status" className="flex flex-col gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 sm:flex-row sm:items-center sm:justify-between dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
-          <span>{lang === "bn" ? "সংরক্ষিত ক্ষেতগুলো লোড হয়নি; আপনি চাইলে তথ্য হাতে লিখতে পারেন।" : "Saved fields could not be loaded; you can still enter a profile manually."}</span>
+          <span>{lang === "bn" ? "সংরক্ষিত মাঠগুলো লোড হয়নি; আপনি চাইলে তথ্য হাতে লিখতে পারেন।" : "Saved fields could not be loaded; you can still enter a profile manually."}</span>
           <button type="button" onClick={() => loadSavedFarms(currentUserId)} className="min-h-9 rounded-lg border border-amber-400 px-3 py-2 text-xs font-semibold hover:bg-amber-100 dark:border-amber-800 dark:hover:bg-amber-950/60">
             {lang === "bn" ? "আবার চেষ্টা করুন" : "Retry"}
           </button>
@@ -877,7 +878,7 @@ function CropPlanningPageContent() {
                           {t("myFarm.planning.plantingWindow")}
                         </span>
                         <span className="mt-0.5 block text-xs font-bold text-stone-900 dark:text-content">
-                          {crop.sowingPeriod}
+                          {localizeSowingPeriod(crop.sowingPeriod, lang)}
                         </span>
                       </div>
                       <div>
@@ -893,7 +894,7 @@ function CropPlanningPageContent() {
                           {t("myFarm.planning.waterDemand")}
                         </span>
                         <span className="mt-0.5 block text-xs font-bold text-stone-900 dark:text-content">
-                          ~{crop.waterRequirementMmTotal} mm
+                          ~{crop.waterRequirementMmTotal} {lang === "bn" ? "মিমি" : "mm"}
                         </span>
                       </div>
                     </div>
@@ -911,7 +912,7 @@ function CropPlanningPageContent() {
                               className="flex items-start gap-1.5 text-xs text-stone-700 dark:text-muted"
                             >
                               <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                              <span>{r}</span>
+                              <span>{localizeCropPlanningMessage(r, crop, lang)}</span>
                             </li>
                           ))}
                         </ul>
@@ -931,7 +932,7 @@ function CropPlanningPageContent() {
                               className="flex items-start gap-1.5 text-xs text-amber-900 dark:text-amber-200"
                             >
                               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-                              <span>{c}</span>
+                              <span>{localizeCropPlanningMessage(c, crop, lang)}</span>
                             </li>
                           ))}
                         </ul>

@@ -618,7 +618,7 @@ export function PublicFooter() {
                 </li>
                 <li>
                   <Link href="/my-farm" className="transition-colors hover:text-[#c2e994] hover:underline underline-offset-4">
-                    {locale === "bn" ? "আমার ক্ষেত পরিচর্যা" : "My Field Planner"}
+                    {locale === "bn" ? "আমার মাঠ পরিচর্যা" : "My Field Planner"}
                   </Link>
                 </li>
               </ul>

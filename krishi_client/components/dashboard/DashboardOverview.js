@@ -21,7 +21,7 @@ import { useLang } from "@/lib/i18n/LanguageContext.js";
 import { useAuth } from "@/contexts/AuthContext.js";
 
 const actions = [
-  { href: "/my-farm", icon: Sprout, en: "My field", bn: "আমার ক্ষেত", detailEn: "Review your field records", detailBn: "ক্ষেতের তথ্য ও কাজ দেখুন" },
+  { href: "/my-farm", icon: Sprout, en: "My field", bn: "আমার মাঠ", detailEn: "Review your field records", detailBn: "মাঠের তথ্য ও কাজ দেখুন" },
   { href: "/assistant", icon: MessageCircle, en: "Ask the assistant", bn: "সহকারীর পরামর্শ নিন", detailEn: "Continue with an agricultural question", detailBn: "কৃষি বিষয়ে প্রশ্ন করুন" },
   { href: "/market", icon: Store, en: "Market information", bn: "বাজার তথ্য", detailEn: "Browse available market records", detailBn: "বাজারদর ও লাভ হিসাব দেখুন" },
   { href: "/saved-advisories", icon: Bookmark, en: "Saved advisories", bn: "সংরক্ষিত পরামর্শ", detailEn: "Return to saved guidance", detailBn: "সংরক্ষিত পরামর্শ দেখুন" },
@@ -68,7 +68,7 @@ export default function DashboardOverview({
 
 
   return (
-    <div className="mx-auto w-full max-w-[1240px] space-y-6 pb-6">
+    <div className="kb-dashboard-backdrop mx-auto w-full max-w-[1240px] space-y-6 rounded-3xl px-2 py-3 pb-6 sm:px-4 sm:py-5">
       {/* Source-catalog observation dates are provenance, not a claim of live data. */}
       <section className="kb-freshness-strip flex flex-col gap-2 rounded-xl border border-line border-l-4 border-l-emerald bg-surface px-4 py-3 text-sm text-muted shadow-sm sm:flex-row sm:items-center sm:justify-between" role="region" aria-label={isBn ? "তথ্যের পর্যবেক্ষণ তারিখ" : "Data observation coverage"}>
         <div className="min-w-0">
@@ -92,8 +92,8 @@ export default function DashboardOverview({
           </div>
           <aside className="rounded-xl border border-line bg-surface-2/60 p-4 sm:p-5">
             <p className="text-xs font-bold uppercase tracking-[0.12em] text-muted">{isBn ? "পরিকল্পনার প্রেক্ষাপট" : "PLANNING CONTEXT"}</p>
-            <p className="mt-2 text-sm leading-6 text-content">{isBn ? "এই সারাংশে স্বয়ংক্রিয়ভাবে মৌসুম বা জমির অবস্থা নির্ধারণ করা হয় না। ফসল ক্যালেন্ডার ও আমার ক্ষেত থেকে আপনার পরিকল্পনা বেছে নিন।" : "This overview does not infer a season or field condition. Choose a crop cycle in the calendar and manage field details in My Field."}</p>
-            <Link href="/my-farm" className="mt-3 inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-emerald hover:underline">{isBn ? "আমার ক্ষেত খুলুন" : "Open My Field"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
+            <p className="mt-2 text-sm leading-6 text-content">{isBn ? "এই সারাংশে স্বয়ংক্রিয়ভাবে মৌসুম বা জমির অবস্থা নির্ধারণ করা হয় না। ফসল ক্যালেন্ডার ও আমার মাঠ থেকে আপনার পরিকল্পনা বেছে নিন।" : "This overview does not infer a season or field condition. Choose a crop cycle in the calendar and manage field details in My Field."}</p>
+            <Link href="/my-farm" className="mt-3 inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-emerald hover:underline">{isBn ? "আমার মাঠ খুলুন" : "Open My Field"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
           </aside>
         </div>
       </section>

@@ -17,7 +17,7 @@ const PLACES = [
   { href: "/my-farm/plan", en: "Plan a crop", bn: "ফসল পরিকল্পনা" },
   { href: "/my-farm/reviews", en: "Officer review", bn: "কর্মকর্তার পর্যালোচনা" },
   { href: "/handoff", en: "Aman to mustard", bn: "আমন থেকে সরিষা" },
-  { href: "/my-farm", en: "My Field", bn: "আমার ক্ষেত" },
+  { href: "/my-farm", en: "My Field", bn: "আমার মাঠ" },
   { href: "/market", en: "Market & costs", bn: "বাজার ও খরচ" },
   { href: "/climate", en: "Weather & climate", bn: "আবহাওয়া ও জলবায়ু" },
   { href: "/assistant", en: "Field assistant", bn: "কৃষি সহকারী" },
@@ -172,7 +172,7 @@ function pageTip(pathname, bn) {
     ? { title: "কর্মকর্তার মতামত ও পর্যালোচনা", text: "আপনার প্রেরিত ফসল পরিকল্পনায় স্থানীয় উপসহকারী কৃষি কর্মকর্তার মূল্যায়িত পরামর্শ ও মাঠের বাস্তবসম্মত নির্দেশনা এখানে দেখতে পারবেন।" }
     : { title: "Extension Officer Advisory", text: "Track personalized reviews and field recommendations submitted by your local agricultural extension officer for your submitted crop plan." };
   if (pathname?.startsWith("/my-farm")) return bn
-    ? { title: "আমার ক্ষেত ব্যবস্থাপনা", text: "নতুন ক্ষেত বা প্লট যুক্ত করুন, চলমান ফসলের পরিচর্যা ও সেচের কাজের তালিকা ট্র্যাক করুন। জরুরি আবহাওয়া ও রোগবালাই সংক্রান্ত নোটিফিকেশন পেতে সেটিংস থেকে SMS চালু রাখুন।" }
+    ? { title: "আমার মাঠ ব্যবস্থাপনা", text: "নতুন মাঠ বা প্লট যুক্ত করুন, চলমান ফসলের পরিচর্যা ও সেচের কাজের তালিকা ট্র্যাক করুন। জরুরি আবহাওয়া ও রোগবালাই সংক্রান্ত নোটিফিকেশন পেতে সেটিংস থেকে SMS চালু রাখুন।" }
     : { title: "Field Management & Operations", text: "Register your field plots, track seasonal crop lifecycles, and monitor weekly field tasks. Keep SMS alerts enabled in settings for urgent local weather advisories." };
   if (pathname === "/market") return bn
     ? { title: "দৈনিক বাজারদর ও মার্জিন বিশ্লেষণ", text: "কৃষি বিপণন অধিদপ্তরের (DAM) দৈনিক পাইকারি ও খুচরা দর পর্যবেক্ষণ করুন। নিজের উৎপাদন খরচ বাদ দিয়ে প্রত্যাশিত লাভ ও ফসল বিক্রির সেরা সময় নির্ধারণ করুন।" }

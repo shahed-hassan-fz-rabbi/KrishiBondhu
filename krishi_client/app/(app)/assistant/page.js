@@ -680,11 +680,11 @@ function AssistantContent() {
     },
     {
       id: "field-tasks",
-      title: isBn ? "আমার ক্ষেতের কাজ" : "My field tasks",
+      title: isBn ? "আমার মাঠের কাজ" : "My field tasks",
       subtitle: isBn
         ? "ফসল পরিচর্যা ও পরের কাজের তালিকা বুঝতে সাহায্য নিন"
         : "Get help understanding crop care and upcoming tasks",
-      query: `আমার ${districtLabelBn} জেলার ক্ষেতের ফসল পরিচর্যার পরের গুরুত্বপূর্ণ কাজগুলো কীভাবে সাজাব? আমার ক্ষেতের তথ্য না থাকলে কী তথ্য দরকার তা জিজ্ঞাসা করো।`,
+      query: `আমার ${districtLabelBn} জেলার মাঠের ফসল পরিচর্যার পরের গুরুত্বপূর্ণ কাজগুলো কীভাবে সাজাব? আমার মাঠের তথ্য না থাকলে কী তথ্য দরকার তা জিজ্ঞাসা করো।`,
       icon: Calendar,
       iconColor: "text-teal-700 dark:text-teal-400",
       bgColor: "bg-teal-50 dark:bg-teal-950/60 border border-teal-100 dark:border-teal-900/40",
@@ -801,7 +801,7 @@ function AssistantContent() {
                       ) : null}
                     </div>
                     <p className="text-[11px] text-content-muted mt-0.5 truncate">
-                      {activeFarm.location?.upazila}, {activeFarm.location?.district} • {isBn ? "প্রশ্নগুলো এই ক্ষেতের বাস্তব উপাত্তের ভিত্তিতে উত্তর দেওয়া হবে" : "AI will answer grounded in this field's records"}
+                      {activeFarm.location?.upazila}, {activeFarm.location?.district} • {isBn ? "প্রশ্নগুলো এই মাঠের বাস্তব উপাত্তের ভিত্তিতে উত্তর দেওয়া হবে" : "AI will answer grounded in this field's records"}
                     </p>
                   </div>
                 </div>
@@ -867,7 +867,7 @@ function AssistantContent() {
                       {[
                         {
                           title: isBn ? "বকেয়া ও আসন্ন কৃষি কাজ" : "Due & Upcoming Tasks",
-                          query: "আমার ক্ষেতে কী কী কৃষিকাজ বাকি আছে?",
+                          query: "আমার মাঠে কী কী কৃষিকাজ বাকি আছে?",
                           icon: ListTodo,
                           color: "text-amber-600 bg-amber-500/15",
                         },
@@ -879,7 +879,7 @@ function AssistantContent() {
                         },
                         {
                           title: isBn ? "মাটি ও পানির তথ্য" : "Soil and water context",
-                          query: "আমার ক্ষেতের মাটি ও পানির জন্য কী যাচাইকৃত এলাকার তথ্য পাওয়া যায়? পর্যবেক্ষণের তারিখ ও সীমাবদ্ধতা বলো।",
+                          query: "আমার মাঠের মাটি ও পানির জন্য কী যাচাইকৃত এলাকার তথ্য পাওয়া যায়? পর্যবেক্ষণের তারিখ ও সীমাবদ্ধতা বলো।",
                           icon: Droplets,
                           color: "text-blue-600 bg-blue-500/15",
                         },
@@ -1139,7 +1139,7 @@ function AssistantContent() {
                 </div>
                 <div className="flex items-center gap-2.5 rounded-2xl bg-surface border border-line px-4 py-2.5 shadow-2xs h-10">
                   <span className="text-xs text-muted font-medium">
-                    {isBn ? "ক্ষেতের তথ্য বিশ্লেষণ হচ্ছে..." : "Reviewing available field information..."}
+                    {isBn ? "মাঠের তথ্য বিশ্লেষণ হচ্ছে..." : "Reviewing available field information..."}
                   </span>
                   <div className="flex items-center gap-1.5 h-3">
                     <span className="h-2 w-2 rounded-full bg-emerald animate-pulse" />
@@ -1303,11 +1303,11 @@ function AssistantContent() {
             </div>
           ) : null}
           {isAuthenticated && isFarmsLoading ? (
-            <span role="status" className="text-[11px] text-content-muted">{isBn ? "ক্ষেত লোড হচ্ছে…" : "Loading fields…"}</span>
+            <span role="status" className="text-[11px] text-content-muted">{isBn ? "মাঠ লোড হচ্ছে…" : "Loading fields…"}</span>
           ) : null}
           {isAuthenticated && farmsLoadError ? (
             <button type="button" onClick={() => setFarmReloadCount((count) => count + 1)} className="text-[11px] text-rose-700 dark:text-rose-300 underline">
-              {isBn ? "ক্ষেত লোড হয়নি · আবার চেষ্টা" : "Fields unavailable · Retry"}
+              {isBn ? "মাঠ লোড হয়নি · আবার চেষ্টা" : "Fields unavailable · Retry"}
             </button>
           ) : null}
 
