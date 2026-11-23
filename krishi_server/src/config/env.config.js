@@ -32,6 +32,11 @@ export const env = {
   smsProvider: process.env.SMS_PROVIDER || "",
   sslSmsApiToken: process.env.SSL_SMS_API_TOKEN || "",
   sslSmsSid: process.env.SSL_SMS_SID || "",
+  // Notification SMS gateway (BulkSMSBD). Live sending is opt-in via SMS_LIVE=1.
+  bulkSmsApiKey: process.env.BULKSMSBD_API_KEY || "",
+  bulkSmsSenderId: process.env.BULKSMSBD_SENDER_ID || "",
+  bulkSmsEndpoint: process.env.BULKSMSBD_ENDPOINT || "https://bulksmsbd.net/api/smsapi",
+  smsLive: process.env.SMS_LIVE === "1",
   get googleClientId() {
     return (process.env.GOOGLE_CLIENT_ID || "").trim();
   },

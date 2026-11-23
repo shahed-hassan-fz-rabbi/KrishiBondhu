@@ -15,18 +15,32 @@ import { hasSmsConsent, maskPhone, smsParts } from "./smsPreferences.js";
  * explicit configuration; until then `getSmsMode()` always returns "dry_run".
  */
 let gatewayAdapter = null;
+// Registration and activation are separate: an adapter may be present for
+// diagnostics while sending stays disabled. Part 2 keeps live OFF by default.
+let liveEnabled = false;
 
-export function registerSmsGateway(adapter) {
+/**
+ * @param adapter  Provider adapter exposing send()
+ * @param options.live  Explicitly activate real sending (default true keeps the
+ *                      Part 1 contract for direct in-process adapters).
+ */
+export function registerSmsGateway(adapter, { live = true } = {}) {
   if (adapter && typeof adapter.send !== "function") throw new Error("SMS gateway adapter must expose send()");
   gatewayAdapter = adapter || null;
+  liveEnabled = Boolean(gatewayAdapter) && live === true;
 }
 
 export function getSmsMode() {
-  return gatewayAdapter ? "live" : "dry_run";
+  return gatewayAdapter && liveEnabled ? "live" : "dry_run";
+}
+
+export function isSmsLiveEnabled() {
+  return getSmsMode() === "live";
 }
 
 export function resetSmsGatewayForTests() {
   gatewayAdapter = null;
+  liveEnabled = false;
 }
 
 function createLogEntry({ userId, category, phone, dedupeKey, status, mode, parts, attempts, nextRetryAt, lastError, metadata }) {
@@ -127,21 +141,22 @@ export async function sendSms({
     return { status: "skipped", dryRun: true, provider: entry.provider, parts, log, reason: "duplicate" };
   }
 
-  // 3. Part 1: no live provider is registered -> dry run only.
-  if (!gatewayAdapter) {
+  // 3. DRY RUN is the default. Even with an adapter registered (diagnostics),
+  //    no provider call is made unless live mode was explicitly enabled.
+  if (mode !== "live") {
     const entry = createLogEntry({
       ...base,
       status: "dry_run",
       mode: "dry_run",
       attempts: 1,
       nextRetryAt: null,
-      metadata: { note: "Part 1 foundation: no SMS is sent", to: maskPhone(user?.phone) },
+      metadata: { note: "Dry run: no SMS is sent", to: maskPhone(user?.phone), provider: gatewayAdapter?.name || "dry-run" },
     });
     const log = await persistLog(entry, logger);
-    return { status: "dry_run", dryRun: true, provider: "dry-run", parts, log };
+    return { status: "dry_run", dryRun: true, provider: gatewayAdapter?.name || "dry-run", parts, log };
   }
 
-  // 4. Registered adapter path (reserved for a future part; not used yet).
+  // 4. Live adapter path (only reached with explicit SMS_LIVE activation).
   try {
     const result = await gatewayAdapter.send({ to: user.phone, text, category, dedupeKey });
     const ok = result?.ok === true;
