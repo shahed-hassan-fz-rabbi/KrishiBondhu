@@ -32,15 +32,51 @@ function getServerOfflineSnapshot() {
   return false;
 }
 
-// Helper component to smoothly pan/zoom to district center
+// Helper component to smoothly pan/zoom to district center.
+// Leaflet's internal panes are not ready until `whenReady`; calling fitBounds/flyTo
+// before that throws "Cannot read properties of undefined (reading '_leaflet_pos')".
+function isValidLatLng(value) {
+  return Array.isArray(value) && value.length >= 2
+    && Number.isFinite(value[0]) && Number.isFinite(value[1]);
+}
+
 function MapController({ center, zoom, bounds }) {
   const map = useMap();
   useEffect(() => {
-    if (bounds) {
-      map.fitBounds(bounds, { padding: [30, 30], maxZoom: 11 });
-    } else if (center) {
-      map.flyTo(center, zoom || 10, { duration: 1.2 });
-    }
+    let cancelled = false;
+    const targetZoom = Number.isFinite(zoom) ? zoom : 10;
+    const hasBounds = Array.isArray(bounds) && bounds.length === 2
+      && isValidLatLng(bounds[0]) && isValidLatLng(bounds[1]);
+    const hasCenter = isValidLatLng(center);
+
+    const apply = () => {
+      if (cancelled) return;
+      // Ensure the container has real dimensions before calculating bounds/panning.
+      try { map.invalidateSize({ animate: false }); } catch { /* map not ready */ }
+      try {
+        if (hasBounds) {
+          map.fitBounds([bounds[0], bounds[1]], { padding: [30, 30], maxZoom: 11 });
+        } else if (hasCenter) {
+          map.flyTo(center, targetZoom, { duration: 1.2 });
+        }
+      } catch (error) {
+        console.warn("[DistrictGisMap] Could not set initial view:", error);
+      }
+    };
+
+    // `whenReady` fires after the map and its panes are initialised. If the map is
+    // already ready it still invokes the callback (but async), so defer with rAF
+    // to avoid touching panes during the layout effect phase.
+    let frame = 0;
+    const whenReady = typeof map.whenReady === "function" ? map.whenReady.bind(map) : (cb) => cb();
+    whenReady(() => {
+      frame = window.requestAnimationFrame(apply);
+    });
+
+    return () => {
+      cancelled = true;
+      if (frame) window.cancelAnimationFrame(frame);
+    };
   }, [center, zoom, bounds, map]);
   return null;
 }
@@ -126,14 +162,16 @@ export default function DistrictGisMap({
   const center = districtMeta?.center || [23.46186, 91.18503];
   const zoom = districtMeta?.zoom || 10;
 
-  // Calculate GeoJSON bounds
+  // Calculate GeoJSON bounds (only when every bbox value is a valid coordinate)
   let mapBounds = null;
-  if (districtMeta?.bbox) {
+  if (Array.isArray(districtMeta?.bbox) && districtMeta.bbox.length === 4) {
     const [minLon, minLat, maxLon, maxLat] = districtMeta.bbox;
-    mapBounds = [
-      [minLat, minLon],
-      [maxLat, maxLon],
-    ];
+    if ([minLon, minLat, maxLon, maxLat].every((value) => Number.isFinite(value))) {
+      mapBounds = [
+        [minLat, minLon],
+        [maxLat, maxLon],
+      ];
+    }
   }
 
   // Boundary styling
