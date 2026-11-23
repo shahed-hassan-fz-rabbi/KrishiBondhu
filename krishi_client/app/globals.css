@@ -394,6 +394,7 @@
 
 /* Mini stays available across the public and signed-in app as a farmer guide. */
 .kb-mini-guide { position:fixed; z-index:85; right:20px; bottom:20px; display:flex; align-items:flex-end; flex-direction:column; gap:12px; pointer-events:none; }
+.kb-mini-guide.is-flying { transition:left 1.35s cubic-bezier(.22,.61,.36,1),top 1.35s cubic-bezier(.22,.61,.36,1); will-change:left,top; }
 .kb-mini-guide button,.kb-mini-guide a,.kb-mini-guide summary { pointer-events:auto; }
 .kb-mini-launcher { position:relative; display:flex; width:160px; height:176px; flex:none; align-items:center; justify-content:center; border:0; border-radius:0; background:transparent; padding:0; color:inherit; box-shadow:none; font:inherit; font-size:0; line-height:1; cursor:grab; pointer-events:auto!important; transition:transform .22s ease; }
 .kb-mini-launcher:hover { transform:translateY(-4px); box-shadow:none; }
@@ -401,8 +402,8 @@
 .kb-mini-face { display:block; width:150px; height:166px; overflow:visible; }
 .kb-mini-launcher .kb-mini-face { width:150px; height:166px; border-radius:0; background:transparent; filter:none; }
 .kb-mini-eyes { transform:translate(var(--mini-look-x,0),var(--mini-look-y,0)); transition:transform .09s linear; }
-.kb-mini-launcher.is-flying .kb-mini-face { animation:kb-mini-flight .4s cubic-bezier(.2,.75,.25,1) both; }
-@keyframes kb-mini-flight { 0% { transform:translate(0,0) rotate(0); } 40% { transform:translate(-10px,-14px) rotate(-13deg); } 100% { transform:translate(0,0) rotate(0); } }
+.kb-mini-launcher.is-flying .kb-mini-face { animation:kb-mini-flight 1.35s cubic-bezier(.22,.61,.36,1) both; }
+@keyframes kb-mini-flight { 0% { transform:translate(0,0) rotate(0) scale(1); } 18% { transform:translate(-3px,-9px) rotate(-4deg) scale(1.015); } 52% { transform:translate(1px,-23px) rotate(2deg) scale(1.025); } 82% { transform:translate(2px,-11px) rotate(3deg) scale(1.01); } 100% { transform:translate(0,0) rotate(0) scale(1); } }
 .kb-mini-panel { width:min(365px,calc(100vw - 32px)); max-height:min(76vh,670px); overflow-y:auto; overscroll-behavior:contain; border:1px solid #e5dcc9; border-radius:22px; background:#fffaf0; color:#173B2A; box-shadow:0 20px 65px #243c332b; pointer-events:auto; animation:kb-mini-appear .2s ease-out both; }
 .kb-mini-guide:not(.is-tour-active) .kb-mini-panel { position:fixed; right:20px; bottom:100px; }
 @keyframes kb-mini-appear { from { opacity:0; transform:translateY(9px) scale(.98); } to { opacity:1; transform:translateY(0) scale(1); } }
@@ -461,7 +462,7 @@
 .kb-tour-spotlight { position:fixed; inset:0; z-index:80; width:100vw; height:100dvh; overflow:visible; pointer-events:none; }
 .kb-tour-spotlight path { fill:rgba(8,24,16,.72); }
 .kb-tour-outline { position:fixed; z-index:81; border:2px solid #d5ea92; border-radius:14px; box-shadow:0 0 0 3px #174b3440,0 0 26px #d5ea9266; pointer-events:none; transition:left .18s ease,top .18s ease,width .18s ease,height .18s ease; }
-.kb-mini-guide.is-tour-active { align-items:flex-start; transition:left .62s cubic-bezier(.2,.75,.25,1),top .62s cubic-bezier(.2,.75,.25,1); }
+.kb-mini-guide.is-tour-active { align-items:flex-start; transition:left 1.35s cubic-bezier(.22,.61,.36,1),top 1.35s cubic-bezier(.22,.61,.36,1); }
 .kb-mini-guide.is-tour-active .kb-mini-launcher.is-flying { transform:scale(1.05) rotate(-4deg); }
 .kb-mini-panel.is-tour-panel { position:fixed; z-index:88; max-height:min(70vh,560px); overflow-y:auto; }
 .kb-mini-tour-description { margin:0; color:#40594a; font-size:13px; line-height:1.7; }
@@ -469,6 +470,7 @@
 .kb-mini-tour-actions button { min-height:40px; }
 /* Bondhu speaks in a small, adaptive bubble; the existing assistant remains a separate route. */
 .kb-mini-bubble { position:fixed; z-index:88; right:20px; bottom:118px; width:min(320px,calc(100vw - 24px)); max-height:min(58vh,440px); overflow:auto; overscroll-behavior:contain; border:1px solid #d9d3c4; border-radius:18px; background:#fffdf7f5; color:#173b2a; box-shadow:0 14px 42px #20392d26; pointer-events:auto; animation:kb-mini-appear .18s ease-out both; backdrop-filter:blur(12px); }
+.kb-mini-bubble.is-greeting { width:min(248px,calc(100vw - 24px)); max-height:130px; overflow:visible; border-radius:15px; }
 .kb-mini-bubble::after { position:absolute; width:12px; height:12px; border:inherit; border-width:0 1px 1px 0; background:#fffdf7; content:""; transform:rotate(45deg); }
 .kb-mini-bubble[data-side="above"]::after { right:30px; bottom:-7px; }
 .kb-mini-bubble[data-side="below"]::after { top:-7px; right:30px; transform:rotate(225deg); }
@@ -481,6 +483,7 @@
 .kb-mini-bubble-body { padding:3px 15px 14px; }
 .kb-mini-bubble-body h2 { margin:0 0 6px; color:#173b2a; font-size:16px; line-height:1.3; letter-spacing:-.025em; }
 .kb-mini-bubble-body>p:not(.kb-mini-step) { margin:0; color:#52675b; font-size:12px; line-height:1.65; }
+.kb-mini-greeting-copy { font-size:11px!important; line-height:1.45!important; }
 .kb-mini-audio-bar { display:flex; align-items:center; gap:8px; margin-top:8px; }
 .kb-mini-voice-btn { display:inline-flex; align-items:center; gap:6px; min-height:30px; padding:3px 10px; border-radius:8px; border:1px solid #b8dac7; background:#eef8f2; color:#176447; font-size:11px; font-weight:700; cursor:pointer; transition:all .15s ease; }
 .kb-mini-voice-btn:hover { background:#dcf2e4; border-color:#8ccb9e; }
@@ -504,7 +507,7 @@
 .kb-mini-more-body { padding-top:3px; }
 .kb-mini-preferences { gap:5px; margin-top:7px; }
 .kb-mini-preferences button { min-height:29px; padding:0 7px; font-size:9px; }
-.kb-mini-guide.is-tour-active { align-items:flex-start; transition:left .62s cubic-bezier(.2,.75,.25,1),top .62s cubic-bezier(.2,.75,.25,1); }
+.kb-mini-guide.is-tour-active { align-items:flex-start; transition:left 1.35s cubic-bezier(.22,.61,.36,1),top 1.35s cubic-bezier(.22,.61,.36,1); }
 .kb-mini-guide.is-tour-active .kb-mini-launcher.is-flying { transform:scale(1.05) rotate(-4deg); }
 .dark .kb-mini-bubble { border-color:#35554d; background:#173b35f5; color:#f6f0e4; }
 .dark .kb-mini-bubble::after { background:#173b35; }
@@ -553,6 +556,7 @@
   .kb-tour-outline { border-radius:11px; }
   .kb-mini-places nav { max-height:175px; }
   .kb-mini-bubble { right:11px; bottom:calc(154px + env(safe-area-inset-bottom)); width:min(320px,calc(100vw - 22px)); max-height:min(58dvh,440px); border-radius:16px; }
+  .kb-mini-bubble.is-greeting { width:min(232px,calc(100vw - 22px)); max-height:100px; border-radius:14px; }
   .kb-mini-bubble.is-tour-bubble { left:12px; right:12px; top:auto; bottom:calc(52px + env(safe-area-inset-bottom)); width:auto; max-height:min(43dvh,290px); border-radius:16px; }
   .kb-mini-bubble-head { padding:7px 8px 0 12px; }
   .kb-mini-bubble-body { padding:3px 12px 12px; }
@@ -560,9 +564,12 @@
   .kb-mini-tour-actions { gap:3px; }
   .kb-mini-tour-actions button { min-height:36px; }
 }
+@media(min-width:761px) and (max-width:1023px) {
+  .kb-mini-guide { bottom:calc(76px + env(safe-area-inset-bottom)); }
+}
 @media(prefers-reduced-motion:reduce) {
   .kb-mini-launcher,.kb-mini-panel,.kb-mini-bubble,.kb-mini-launcher .kb-mini-face { animation:none!important; transition:none!important; }
-  .kb-mini-guide.is-tour-active,.kb-tour-outline { animation:none!important; transition:none!important; }
+  .kb-mini-guide.is-tour-active,.kb-mini-guide.is-flying,.kb-tour-outline { animation:none!important; transition:none!important; }
   .kb-mini-eyes { transition:none; }
 }
 
@@ -1167,21 +1174,8 @@
   overflow-x: hidden;
 }
 .kb-hero2-copy { max-width: 720px; }
-.kb-hero2-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 14px;
-  border-radius: 999px;
-  background: rgba(10,49,31,0.72);
-  border: 1px solid rgba(231,255,238,0.4);
-  color: #f2fff6;
-  font-size: 12px;
-  font-weight: 750;
-  letter-spacing: 0.05em;
-}
 .kb-hero2 h1 {
-  margin: 18px 0 14px;
+  margin: 0 0 14px;
   font-size: clamp(30px,4.5vw,48px);
   line-height: 1.16;
   font-weight: 800;
@@ -1616,54 +1610,9 @@
 .kb-hero2-desc { max-width: 560px; }
 .kb-hero2-card-stage {
   min-height: 420px;
-  justify-content: flex-start;
-  padding: 12px 8px 198px;
+  justify-content: center;
+  padding: 0;
 }
-.kb-hero-path-card {
-  z-index: 1;
-  width: min(100%, 440px);
-  border: 1px solid rgba(18,61,42,0.12);
-  border-radius: 20px;
-  background: rgba(255,253,247,0.96);
-  padding: 16px 18px 12px;
-  box-shadow: 0 8px 26px rgba(67,57,34,0.09), 0 1px 3px rgba(18,61,42,0.04);
-}
-.kb-hero-path-eyebrow {
-  margin: 0 0 8px;
-  color: #62736a;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-}
-.kb-hero-path-link {
-  display: grid;
-  grid-template-columns: 30px minmax(0,1fr) 16px;
-  align-items: center;
-  gap: 10px;
-  min-height: 54px;
-  padding: 7px 2px;
-  color: #173b2a;
-  text-decoration: none;
-}
-.kb-hero-path-link + .kb-hero-path-link { border-top: 1px solid rgba(18,61,42,.08); }
-.kb-hero-path-number {
-  display: grid;
-  width: 28px;
-  height: 28px;
-  place-items: center;
-  border-radius: 9px;
-  background: rgba(36,122,75,.1);
-  color: #247a4b;
-  font-size: 10px;
-  font-weight: 800;
-}
-.kb-hero-path-link strong, .kb-hero-path-link small { display: block; }
-.kb-hero-path-link strong { font-size: 12px; font-weight: 750; }
-.kb-hero-path-link small { margin-top: 2px; color: #62736a; font-size: 10px; line-height: 1.45; }
-.kb-hero-path-link > svg { color: #247a4b; transition: transform .18s ease; }
-.kb-hero-path-link:hover > svg { transform: translateX(3px); }
-.kb-hero-path-link:focus-visible { outline: 2px solid #247a4b; outline-offset: 2px; border-radius: 8px; }
 .kb-flow-intro { grid-column: 1 / -1; max-width: 680px; margin: 0 auto 6px; text-align: center; }
 .kb-flow-intro p { margin: 0; color: #247a4b; font-size: 10px; font-weight: 800; letter-spacing: .14em; }
 .kb-flow-intro h2 { margin: 7px 0; color: #173b2a; font-size: clamp(23px,3vw,32px); font-weight: 800; line-height: 1.2; text-wrap: balance; }
@@ -1674,8 +1623,7 @@
 .kb-flow-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 .kb-featured { padding-top: 52px; }
 @media (max-width: 780px) {
-  .kb-hero2-card-stage { min-height: 170px; padding: 0; }
-  .kb-hero-path-card { display: none; }
+  .kb-hero2-card-stage { min-height: 180px; padding: 0; }
   .kb-hero2 h1 { font-size: clamp(30px, 7vw, 40px); }
   .kb-featured { padding-top: 40px; }
 }

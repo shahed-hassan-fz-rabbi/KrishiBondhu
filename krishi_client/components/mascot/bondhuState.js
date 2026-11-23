@@ -35,7 +35,7 @@ export function getBondhuPose(state, time, reducedMotion = false) {
     case "sleeping":
       return { state: normalized, bob: sin(t * 1.2) * 0.012, headTilt: 0.16, bodySway: sin(t * 1.2) * 0.012, tailSway: sin(t * 0.7) * 0.025, wingFlap: 0, armWave: 0, mouthOpen: 0, eyeOpen: 0.05 };
     case "flying":
-      return { state: normalized, bob: sin(t * 4) * 0.06, headTilt: -0.08 + sin(t * 3) * 0.035, bodySway: sin(t * 4) * 0.035, tailSway: sin(t * 4.5) * 0.2, wingFlap: sin(t * 17) * 0.62, armWave: sin(t * 8) * 0.08, mouthOpen: 0, eyeOpen: 1 };
+      return { state: normalized, bob: sin(t * 2.2) * 0.055, headTilt: -0.07 + sin(t * 1.8) * 0.03, bodySway: sin(t * 2.4) * 0.026, tailSway: sin(t * 2.8) * 0.15, wingFlap: sin(t * 8) * 0.48, armWave: sin(t * 4) * 0.055, mouthOpen: 0, eyeOpen: 1 };
     case "dragging":
       return { state: normalized, bob: 0, headTilt: -0.1, bodySway: 0, tailSway: 0.08, wingFlap: 0.08, armWave: 0, mouthOpen: 0, eyeOpen: 1 };
     default:

@@ -487,15 +487,8 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Hero right column: Agricultural snapshot & reserved Bondhu stage anchor */}
-          <div className="kb-hero2-card-stage" id="landingBondhuStage">
-            <div className="kb-hero-path-card">
-              <p className="kb-hero-path-eyebrow">{locale === "bn" ? "যেখান থেকে শুরু করবেন" : "A clear place to start"}</p>
-              <Link href="/market" className="kb-hero-path-link"><span className="kb-hero-path-number">01</span><span><strong>{locale === "bn" ? "বাজারের প্রতিবেদন" : "Market reports"}</strong><small>{locale === "bn" ? "পাওয়া তথ্যের তারিখ ও উৎস" : "Dates and sources where available"}</small></span><ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
-              <Link href="/climate" className="kb-hero-path-link"><span className="kb-hero-path-number">02</span><span><strong>{locale === "bn" ? "আবহাওয়া ও জলবায়ু" : "Weather & climate"}</strong><small>{locale === "bn" ? "পূর্বাভাস ও ঐতিহাসিক তথ্য আলাদা" : "Forecast and historical context"}</small></span><ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
-              <Link href="/crop-rotation" className="kb-hero-path-link"><span className="kb-hero-path-number">03</span><span><strong>{locale === "bn" ? "ফসল পরিকল্পনা" : "Crop planning"}</strong><small>{locale === "bn" ? "নিজের জমির তথ্য দিয়ে পরিকল্পনা করুন" : "Build a plan around your field details"}</small></span><ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
-            </div>
-            </div>
+            {/* Empty hero stage gives Bondhu a measured first-visit landing area. */}
+            <div className="kb-hero2-card-stage" id="landingBondhuStage" data-bondhu-anchor="home-hero" aria-hidden="true" />
           </div>
         </section>
 

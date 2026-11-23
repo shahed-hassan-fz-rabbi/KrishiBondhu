@@ -25,6 +25,7 @@ const PLACES = [
   { href: "/settings", en: "Account & alerts", bn: "অ্যাকাউন্ট ও সতর্কতা" },
 ];
 const TOUR_STOPS = BONDHU_TOUR_STEPS.map((step) => step.route);
+let pendingRouteFlight = null;
 
 function measureCompanionObstacles() {
   const main = document.querySelector("main");
@@ -43,7 +44,7 @@ function measureCompanionObstacles() {
       const colored = style.backgroundColor !== "transparent" && style.backgroundColor !== "rgba(0, 0, 0, 0)";
       return rounded && (bordered || colored);
     })
-    .map((element) => ({ element, rect: element.getBoundingClientRect() }))
+    .map((element) => ({ element, rect: element.getBoundingClientRect(), protected: element.hasAttribute("data-bondhu-no-fly") }))
     .filter(({ rect }) => rect.width >= 100 && rect.height >= 76 && rect.bottom > 0 && rect.top < height)
     .sort((a, b) => (b.rect.width * b.rect.height) - (a.rect.width * a.rect.height));
   const known = new Set(boundaries.map(({ element }) => element));
@@ -57,7 +58,7 @@ function measureCompanionObstacles() {
   boundaries.sort((a, b) => (b.rect.width * b.rect.height) - (a.rect.width * a.rect.height));
   const obstacles = [];
   for (const { element, rect, protected: isProtected } of boundaries) {
-    if (boundaries.some((candidate) => candidate.element !== element && candidate.element.contains(element) && obstacles.some((obstacle) => obstacle.element === candidate.element))) continue;
+    if (!isProtected && boundaries.some((candidate) => candidate.element !== element && candidate.element.contains(element) && obstacles.some((obstacle) => obstacle.element === candidate.element))) continue;
     const gap = 10;
     obstacles.push({
       element,
@@ -248,6 +249,7 @@ export function MiniGuide() {
   const startTourRef = useRef(null);
   const timerRef = useRef(null);
   const flightTimerRef = useRef(null);
+  const tourLandingRef = useRef(null);
   const pokeTimerRef = useRef(null);
   const targetObserverRef = useRef(null);
   const tourRunRef = useRef(false);
@@ -267,13 +269,9 @@ export function MiniGuide() {
     window.clearTimeout(flightTimerRef.current);
     flightTimerRef.current = window.setTimeout(() => setFlying(false), 2800);
   }, [animationEnabled]);
-  const finishFlight = useCallback(() => {
-    window.clearTimeout(flightTimerRef.current);
-    setFlying(false);
-  }, []);
-
   const navigateTo = useCallback((href) => {
     setSleeping(false);
+    pendingRouteFlight = { expiresAt: Date.now() + 2800 };
     beginFlight();
     window.clearTimeout(timerRef.current);
     timerRef.current = window.setTimeout(() => {
@@ -288,6 +286,24 @@ export function MiniGuide() {
     targetObserverRef.current?.disconnect();
     stopTourVoice();
   }, [stopTourVoice]);
+
+  useEffect(() => {
+    const flight = pendingRouteFlight;
+    if (!flight) return undefined;
+    const remaining = flight.expiresAt - Date.now();
+    if (remaining <= 0) {
+      pendingRouteFlight = null;
+      return undefined;
+    }
+    const frame = window.requestAnimationFrame(() => {
+      setFlying(true);
+      flightTimerRef.current = window.setTimeout(() => {
+        setFlying(false);
+        if (pendingRouteFlight === flight) pendingRouteFlight = null;
+      }, remaining);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   useEffect(() => {
     const onStartTour = (event) => startTourRef.current?.(event.detail?.restart === true);
@@ -391,24 +407,20 @@ export function MiniGuide() {
       const size = launcherBounds();
       const safeArea = measureCompanionSafeArea();
       const obstacles = measureCompanionObstacles();
-      const candidatePositions = [];
-      if (window.innerWidth > 780) {
-        const stage = document.querySelector("#home .kb-hero2-card-stage");
-        const stageRect = stage?.getBoundingClientRect();
-        const content = stage?.querySelector(".kb-hero-path-card, article, [role=region]");
-        const contentRect = content?.getBoundingClientRect();
-        const freeBelowContent = stageRect && contentRect ? stageRect.bottom - Math.max(contentRect.bottom, stageRect.top) : 0;
-        if (stageRect && stageRect.bottom > safeArea.top && stageRect.top < safeArea.bottom && freeBelowContent >= size.height + 12) {
-          candidatePositions.push({
-            x: stageRect.left + (stageRect.width - size.width) / 2,
-            y: stageRect.bottom - size.height - 8,
-          });
+      const stage = pathname === "/" ? document.querySelector('#home [data-bondhu-anchor="home-hero"]') : null;
+      const stageRect = stage?.getBoundingClientRect();
+      const heroAnchorPosition = stageRect && stageRect.width >= size.width && stageRect.height >= size.height
+        && stageRect.bottom > safeArea.top && stageRect.top < safeArea.bottom
+        ? {
+          x: stageRect.right - size.width - Math.max(8, Math.round(stageRect.width * 0.06)),
+          y: stageRect.top + (stageRect.height - size.height) / 2,
         }
-      }
+        : null;
       // Never persist a saved position that is obstructed or off-screen; fall
       // back to a measured safe location and remember it instead.
       const validSaved = savedPosition ? validateCompanionPosition({ position: savedPosition, viewportWidth: window.innerWidth, viewportHeight: window.innerHeight, size, obstacles, safeArea, bottomNavHeight }) : null;
-      const preferredPositions = [position, validSaved, contentPosition].filter(Boolean);
+      const firstVisitHeroPosition = !position && !validSaved && !contentPosition ? heroAnchorPosition : null;
+      const preferredPositions = [position, validSaved, contentPosition, firstVisitHeroPosition].filter(Boolean);
       const candidate = chooseCompanionPosition({
         viewportWidth: window.innerWidth,
         viewportHeight: window.innerHeight,
@@ -416,12 +428,12 @@ export function MiniGuide() {
         collisionBounds: { x: 0, y: 0, width: size.width, height: size.height },
         obstacles,
         preferredPositions,
-        candidatePositions,
         safeArea,
         bottomNavHeight,
       });
       const safe = validSaved ?? candidate;
-      const currentPosition = position || contentPosition || savedPosition;
+      const currentBounds = launcherRef.current?.getBoundingClientRect();
+      const currentPosition = position || contentPosition || savedPosition || (currentBounds ? { x: currentBounds.left, y: currentBounds.top } : null);
       if (currentPosition && Math.hypot(currentPosition.x - safe.x, currentPosition.y - safe.y) > 24) beginFlight();
       if (position && (position.x !== safe.x || position.y !== safe.y)) {
         setPosition(safe);
@@ -460,13 +472,22 @@ export function MiniGuide() {
   }, [pathname, preferences.x, preferences.y, savedPosition, position, contentPosition, tourMode, hidden, isDragging, bottomNavHeight, beginFlight]);
 
   useLayoutEffect(() => {
-    if (!tourMode || !targetRect) {
-      setTourLandingPosition(null);
-      return;
-    }
-    const next = findSafeTourLanding(targetRect, bottomNavHeight);
-    setTourLandingPosition((current) => current && Math.abs(current.x - next.x) < 1 && Math.abs(current.y - next.y) < 1 ? current : next);
-  }, [tourMode, targetRect, bottomNavHeight]);
+    if (!tourMode || !targetRect) return undefined;
+    let frame = 0;
+    const settleTimer = window.setTimeout(() => {
+      frame = window.requestAnimationFrame(() => {
+      const next = findSafeTourLanding(targetRect, bottomNavHeight);
+      const previous = tourLandingRef.current;
+      if (previous && Math.hypot(previous.x - next.x, previous.y - next.y) > 24) beginFlight();
+      tourLandingRef.current = next;
+      setTourLandingPosition((current) => current && Math.abs(current.x - next.x) < 1 && Math.abs(current.y - next.y) < 1 ? current : next);
+      });
+    }, 320);
+    return () => {
+      window.clearTimeout(settleTimer);
+      window.cancelAnimationFrame(frame);
+    };
+  }, [tourMode, targetRect, bottomNavHeight, beginFlight]);
 
   useLayoutEffect(() => {
     if (!open || !launcherRef.current || !bubbleRef.current) {
@@ -762,14 +783,11 @@ export function MiniGuide() {
   <div
     className={"kb-mini-guide" + (tourMode ? " is-tour-active" : "") + (flying ? " is-flying" : "")}
     style={tourPosition}
-    onTransitionEnd={(event) => {
-      if (event.target === event.currentTarget && (event.propertyName === "left" || event.propertyName === "top")) finishFlight();
-    }}
   >
-    {open && <section ref={bubbleRef} className={`kb-mini-bubble${tourMode ? " is-tour-bubble" : ""}`} data-side={bubblePosition?.side || "above"} style={speechStyle} role="dialog" aria-label={bn ? "বন্ধুর কৃষি নির্দেশনা" : "Bondhu’s farm guide"} aria-describedby={tourMode ? "bondhu-tour-description" : undefined} onPointerEnter={() => { bubbleHoveredRef.current = true; }} onPointerLeave={() => { bubbleHoveredRef.current = false; }}>
+    {open && <section ref={bubbleRef} className={`kb-mini-bubble${tourMode ? " is-tour-bubble" : ""}${greeting && !tourMode ? " is-greeting" : ""}`} data-side={bubblePosition?.side || "above"} style={speechStyle} role="dialog" aria-label={bn ? "বন্ধুর কৃষি নির্দেশনা" : "Bondhu’s farm guide"} aria-describedby={tourMode ? "bondhu-tour-description" : undefined} onPointerEnter={() => { bubbleHoveredRef.current = true; }} onPointerLeave={() => { bubbleHoveredRef.current = false; }}>
       <header className="kb-mini-bubble-head"><div className="kb-mini-kicker">{tourMode ? (bn ? `ধাপ ${visibleTourIndex + 1} / ${eligibleTourSteps.length}` : `STEP ${visibleTourIndex + 1} OF ${eligibleTourSteps.length}`) : (bn ? "বন্ধু · আপনার মাঠের সঙ্গী" : "BONDHU · YOUR FIELD GUIDE")}</div><button type="button" aria-label={bn ? "বন্ধ করুন" : "Close"} onClick={closeGuide} className="kb-mini-close"><X size={17}/></button></header>
       <div className="kb-mini-bubble-body">
-        {tourMode ? <>
+        {greeting && !tourMode ? <p className="kb-mini-greeting-copy">{bn ? "হ্যালো! আমি বন্ধু—কৃষির কাজে পাশে আছি।" : "Hi! I’m Bondhu. I’m here to help with farming."}</p> : tourMode ? <>
           <h2>{bn ? "বন্ধুর সাথে ঘুরে দেখুন" : "Explore with Bondhu"}</h2>
           <p id="bondhu-tour-description" className="kb-mini-tour-description" aria-live="polite">{bn ? tourStep?.bn : tourStep?.en}</p>
           {tourNotice && <p className="kb-mini-tour-notice" role="status">{tourNotice}</p>}
@@ -794,7 +812,7 @@ export function MiniGuide() {
             </button>
           </div>
         </>}
-        {tourMode ? <div className="kb-mini-tour-actions"><button type="button" onClick={() => { const previous = findEligibleTourStepIndex(tourIndex - 1, isAuthenticated, BONDHU_TOUR_STEPS, -1); if (previous >= 0) { stopTourVoice(); setTourIndex(previous); savePreferences({ tourProgress: previous }); navigateTo(TOUR_STOPS[previous]); } }} disabled={paused || findEligibleTourStepIndex(tourIndex - 1, isAuthenticated, BONDHU_TOUR_STEPS, -1) < 0} className="kb-mini-quiet" aria-label={bn ? "আগের ধাপ" : "Previous step"}><ArrowLeft size={15}/>{bn ? "আগে" : "Previous"}</button><button type="button" onClick={nextStop} disabled={paused} className="kb-mini-primary">{tourIndex >= BONDHU_TOUR_STEPS.length-1 ? (bn ? "শেষ করুন" : "Finish") : (bn ? "পরের ধাপ" : "Next")}<ArrowRight size={15}/></button><button type="button" onClick={toggleTourPause} className="kb-mini-quiet" aria-label={paused ? (bn ? "আবার চালান" : "Resume tour") : (bn ? "বিরতি" : "Pause tour")}>{paused ? <Play size={15}/> : <Pause size={15}/>}<span className="sr-only">{paused ? (bn ? "চালান" : "Resume") : (bn ? "বিরতি" : "Pause")}</span></button><button type="button" onClick={readTourStep} disabled={muted || !isTourVoiceSupported} className={`kb-mini-quiet kb-mini-listen-btn ${isTourVoiceSpeaking && tourMode ? "is-speaking" : ""}`} aria-label={isTourVoiceSpeaking ? (bn ? "কণ্ঠ থামান" : "Stop speaking") : (bn ? "এই ধাপ শুনুন" : "Listen to this step")} title={isTourVoiceSpeaking ? (bn ? "কণ্ঠ থামান" : "Stop speaking") : (bn ? "এই ধাপ শুনুন" : "Listen to this step")}>{isTourVoiceSpeaking && tourMode ? <VolumeX size={15}/> : <Volume2 size={15}/>}<span>{isTourVoiceSpeaking && tourMode ? (bn ? "থামান" : "Stop") : (bn ? "শুনুন" : "Listen")}</span></button><button type="button" onClick={cancelTour} className="kb-mini-quiet"><SkipForward size={15}/>{bn ? "বাদ" : "Skip"}</button><button type="button" onClick={() => startTour(true)} className="kb-mini-quiet">{bn ? "আবার" : "Replay"}</button></div> : <>
+        {(!greeting || tourMode) && (tourMode ? <div className="kb-mini-tour-actions"><button type="button" onClick={() => { const previous = findEligibleTourStepIndex(tourIndex - 1, isAuthenticated, BONDHU_TOUR_STEPS, -1); if (previous >= 0) { stopTourVoice(); setTourIndex(previous); savePreferences({ tourProgress: previous }); navigateTo(TOUR_STOPS[previous]); } }} disabled={paused || findEligibleTourStepIndex(tourIndex - 1, isAuthenticated, BONDHU_TOUR_STEPS, -1) < 0} className="kb-mini-quiet" aria-label={bn ? "আগের ধাপ" : "Previous step"}><ArrowLeft size={15}/>{bn ? "আগে" : "Previous"}</button><button type="button" onClick={nextStop} disabled={paused} className="kb-mini-primary">{tourIndex >= BONDHU_TOUR_STEPS.length-1 ? (bn ? "শেষ করুন" : "Finish") : (bn ? "পরের ধাপ" : "Next")}<ArrowRight size={15}/></button><button type="button" onClick={toggleTourPause} className="kb-mini-quiet" aria-label={paused ? (bn ? "আবার চালান" : "Resume tour") : (bn ? "বিরতি" : "Pause tour")}>{paused ? <Play size={15}/> : <Pause size={15}/>}<span className="sr-only">{paused ? (bn ? "চালান" : "Resume") : (bn ? "বিরতি" : "Pause")}</span></button><button type="button" onClick={readTourStep} disabled={muted || !isTourVoiceSupported} className={`kb-mini-quiet kb-mini-listen-btn ${isTourVoiceSpeaking && tourMode ? "is-speaking" : ""}`} aria-label={isTourVoiceSpeaking ? (bn ? "কণ্ঠ থামান" : "Stop speaking") : (bn ? "এই ধাপ শুনুন" : "Listen to this step")} title={isTourVoiceSpeaking ? (bn ? "কণ্ঠ থামান" : "Stop speaking") : (bn ? "এই ধাপ শুনুন" : "Listen to this step")}>{isTourVoiceSpeaking && tourMode ? <VolumeX size={15}/> : <Volume2 size={15}/>}<span>{isTourVoiceSpeaking && tourMode ? (bn ? "থামান" : "Stop") : (bn ? "শুনুন" : "Listen")}</span></button><button type="button" onClick={cancelTour} className="kb-mini-quiet"><SkipForward size={15}/>{bn ? "বাদ" : "Skip"}</button><button type="button" onClick={() => startTour(true)} className="kb-mini-quiet">{bn ? "আবার" : "Replay"}</button></div> : <>
           {!finished && <button type="button" onClick={startTour} className="kb-mini-primary kb-mini-start">{bn ? "বন্ধুর সাথে ঘুরে দেখুন" : preferences.tourProgress != null ? "Resume guided tour" : "Take a guided tour"}<Compass size={15}/></button>}
           <a className="kb-mini-ask" href="/assistant" onClick={(event)=>{event.preventDefault();setOpen(false);setFinished(false);navigateTo("/assistant");}}><MessageCircle size={14}/>{bn ? "কৃষি সহকারীর সাথে কথা বলুন" : "Open the farm assistant"}</a>
           <details className="kb-mini-more"><summary>{bn ? "আরও বিকল্প" : "More options"}<ChevronDown size={14}/></summary>
@@ -807,7 +825,7 @@ export function MiniGuide() {
               </div>
             </div>
           </details>
-        </>}
+        </>)}
       </div>
     </section>}
     <button ref={launcherRef} type="button" className={`kb-mini-launcher ${flying ? "is-flying" : ""} ${hidden ? "is-hidden" : ""}`} onPointerEnter={() => setHovered(true)} onPointerLeave={() => setHovered(false)} onPointerDown={startDrag} onPointerMove={drag} onPointerUp={endDrag} onPointerCancel={endDrag} onKeyDown={moveWithKeyboard} onClick={tapCompanion} aria-expanded={open} aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight" aria-label={bn ? (hidden ? "বন্ধুকে দেখান" : "বন্ধুর কাছে সাহায্য চান") : (hidden ? "Show Bondhu" : "Ask Bondhu for help")}>

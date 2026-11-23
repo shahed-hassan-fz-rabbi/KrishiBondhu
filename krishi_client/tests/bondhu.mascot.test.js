@@ -39,6 +39,40 @@ test("the real Three.js model uses continuous sculpted forms and animated eyelid
   assert.match(renderer, /Math\.exp\(-rate \* delta\)/, "animation easing is frame-rate aware");
 });
 
+test("Bondhu flies between safe locations and never lands in navigation, footer, or marked no-fly regions", async () => {
+  const guide = read("components", "MiniGuide.js");
+  const css = read("app", "globals.css");
+  const renderer = read("components", "mascot", "BondhuMascot.js");
+  const { chooseCompanionPosition } = await import("../components/mascot/companionLayout.js");
+  const obstacles = [
+    { left: 0, right: 900, top: 0, bottom: 72, weight: 10 },
+    { left: 0, right: 900, top: 620, bottom: 700, weight: 10 },
+    { left: 330, right: 570, top: 220, bottom: 430, weight: 10 },
+  ];
+  const landing = chooseCompanionPosition({
+    viewportWidth: 900,
+    viewportHeight: 700,
+    size: { width: 160, height: 176 },
+    obstacles,
+  });
+  const dragon = { left: landing.x, right: landing.x + 160, top: landing.y, bottom: landing.y + 176 };
+  for (const obstacle of obstacles) {
+    assert.ok(dragon.right <= obstacle.left || dragon.left >= obstacle.right || dragon.bottom <= obstacle.top || dragon.top >= obstacle.bottom);
+  }
+  assert.match(guide, /header, nav, footer, \[role="banner"\], \[role="contentinfo"\], \[data-bondhu-no-fly\]/);
+  assert.match(guide, /function findSafeTourLanding/);
+  assert.match(guide, /tourLandingRef\.current/);
+  assert.match(guide, /}, 320\)/);
+  assert.match(guide, /let pendingRouteFlight = null/);
+  assert.match(guide, /pendingRouteFlight = \{ expiresAt: Date\.now\(\) \+ 2800 \}/);
+  assert.match(guide, /currentBounds = launcherRef\.current\?\.getBoundingClientRect\(\)/);
+  assert.match(guide, /setTimeout\(\(\) => setFlying\(false\), 2800\)/);
+  assert.match(css, /kb-mini-guide\.is-flying \{ transition:left 1\.35s/);
+  assert.match(css, /@media\(min-width:761px\) and \(max-width:1023px\)/);
+  assert.match(css, /kb-mini-flight 1\.35s/);
+  assert.match(renderer, /seconds - flightTransitionAt\) \/ 0\.9/);
+});
+
 test("existing mascot preferences migrate without losing position, visibility or voice settings", async () => {
   const { parseMascotPreferences } = await import("../components/mascot/mascotStore.js");
   assert.deepEqual(parseMascotPreferences(null, JSON.stringify({ animationEnabled: false, hidden: true, muted: true, x: 21, y: 77 })), {

@@ -100,7 +100,7 @@ export function BondhuMascot({ className = "", state = "idle", facing = 1, activ
         flightTransitionAt = seconds;
         flightTransitionDirection = flying ? 1 : -1;
       }
-      const transition = Math.max(0, 1 - (seconds - flightTransitionAt) / 0.52);
+      const transition = Math.max(0, 1 - (seconds - flightTransitionAt) / 0.9);
       const flightLift = reduced ? 0 : flightTransitionDirection * transition * 0.16;
       const breathRate = pose.state === "sleeping" ? 0.8 : pose.state === "talking" ? 3.2 : 1.5;
       const breath = reduced ? 0 : Math.sin(seconds * breathRate) * (pose.state === "sleeping" ? 0.006 : 0.012);
@@ -227,6 +227,9 @@ export function BondhuMascot({ className = "", state = "idle", facing = 1, activ
         const fill = new THREE.DirectionalLight(0xe4fff1, 0.35);
         fill.position.set(3, 2, 4);
         scene.add(fill);
+        const softFront = new THREE.DirectionalLight(0xf0fff4, 0.42);
+        softFront.position.set(0.5, 1.5, 5);
+        scene.add(softFront);
         const rim = new THREE.DirectionalLight(0x8de5aa, 0.55);
         rim.position.set(3, 1, -3);
         scene.add(rim);

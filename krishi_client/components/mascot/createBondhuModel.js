@@ -5,13 +5,16 @@ export function createBondhuModel(THREE) {
   const parts = { root, eyes: [], lids: [], gaze: [], wings: [], arms: [], mouth: null, tail: null, ears: [], spines: [] };
 
   const green = new THREE.MeshPhysicalMaterial({ color: 0x287847, vertexColors: true, roughness: 0.82, metalness: 0.01, clearcoat: 0.025, clearcoatRoughness: 0.88, sheen: 0.18, sheenColor: 0x78b98a });
-  const greenLight = new THREE.MeshStandardMaterial({ color: 0x4f955f, roughness: 0.82 });
+  // Lift the sRGB palette after decoding so the softly lit skin reads bright green, not near-black.
+  green.color.lerp(new THREE.Color(0x49a764), 0.4);
+  const greenLight = new THREE.MeshStandardMaterial({ color: 0x5ea76c, roughness: 0.82 });
   const headSkin = new THREE.MeshStandardMaterial({ color: 0x32864c, vertexColors: true, roughness: 0.84 });
+  headSkin.color.lerp(new THREE.Color(0x54b570), 0.32);
   const greenDeep = new THREE.MeshStandardMaterial({ color: 0x245c43, roughness: 0.82 });
   const scaleGreen = new THREE.MeshStandardMaterial({ color: 0x5c9b67, roughness: 0.86 });
-  const belly = new THREE.MeshStandardMaterial({ color: 0xf3e4c2, roughness: 0.84 });
+  const belly = new THREE.MeshStandardMaterial({ color: 0xf6ebce, roughness: 0.84 });
   const sclera = new THREE.MeshStandardMaterial({ color: 0xfffdf7, roughness: 0.28 });
-  const iris = new THREE.MeshStandardMaterial({ color: 0x2d7557, roughness: 0.38 });
+  const iris = new THREE.MeshStandardMaterial({ color: 0x78a94e, roughness: 0.38 });
   const pupil = new THREE.MeshStandardMaterial({ color: 0x11211d, roughness: 0.25 });
   const shine = new THREE.MeshBasicMaterial({ color: 0xffffff });
   const mouthMat = new THREE.MeshStandardMaterial({ color: 0x693e43, roughness: 0.8 });
@@ -50,6 +53,7 @@ export function createBondhuModel(THREE) {
         if (colorize) {
           const variation = 0.965 + 0.025 * Math.sin(u * Math.PI * 12 + v * Math.PI * 5) + 0.018 * Math.cos(v * Math.PI * 17);
           shade.setRGB(0.9 * variation, 0.94 * variation, 0.9 * variation);
+          shade.multiplyScalar(1.1);
           colors.push(shade.r, shade.g, shade.b);
         }
         if (row < rows && col < columns) {
@@ -102,9 +106,9 @@ export function createBondhuModel(THREE) {
   const hp = headGeometry.attributes.position;
   for (let i = 0; i < hp.count; i += 1) {
     let x = hp.getX(i), y = hp.getY(i), z = hp.getZ(i);
-    const cheek = 1 + 0.085 * Math.exp(-(((Math.abs(x) - 0.55) / 0.25) ** 2) - (((y + 0.2) / 0.28) ** 2));
-    x *= 0.79 * cheek;
-    y *= 0.69 * (1 + 0.06 * smooth(-0.7, 0.35, y));
+    const cheek = 1 + 0.075 * Math.exp(-(((Math.abs(x) - 0.55) / 0.25) ** 2) - (((y + 0.2) / 0.28) ** 2));
+    x *= 0.74 * cheek;
+    y *= 0.72 * (1 + 0.06 * smooth(-0.7, 0.35, y));
     z *= 0.61;
     const muzzle = Math.exp(-((x / 0.34) ** 2) - (((y + 0.2) / 0.22) ** 2));
     if (z > 0) z += 0.22 * muzzle * smooth(0, 0.3, z);
@@ -116,6 +120,7 @@ export function createBondhuModel(THREE) {
     const variation = 0.98 + 0.018 * Math.sin(y * 25 + z * 18) + 0.012 * Math.cos(y * 34 - z * 9);
     headColors.push(0.92 * variation, 0.95 * variation, 0.92 * variation);
   }
+  for (let i = 0; i < headColors.length; i += 1) headColors[i] *= 1.1;
   headGeometry.setAttribute("color", new THREE.Float32BufferAttribute(headColors, 3));
   headGeometry.computeVertexNormals();
   const headMesh = new THREE.Mesh(headGeometry, headSkin); headMesh.name = "sculpted-head-and-muzzle"; head.add(headMesh);
@@ -124,7 +129,7 @@ export function createBondhuModel(THREE) {
   for (const side of [-1, 1]) {
     const horn = new THREE.Mesh(new THREE.CapsuleGeometry(0.055, 0.17, 5, 12), belly);
     horn.position.set(side * 0.43, 0.56, -0.04); horn.rotation.z = -side * 0.32; head.add(horn);
-    const brow = tube([[side * 0.15, 0.34, 0.62], [side * 0.29, 0.4, 0.59], [side * 0.43, 0.35, 0.53]], 0.032, greenDeep, head, 14, 7);
+    const brow = tube([[side * 0.15, 0.39, 0.62], [side * 0.29, 0.45, 0.59], [side * 0.43, 0.4, 0.53]], 0.022, greenLight, head, 14, 7);
     brow.name = "expressive-brow";
     ball(blushMat, [0.1, 0.038, 0.015], [side * 0.51, -0.23, 0.46], head);
     ball(nostrilMat, [0.023, 0.017, 0.012], [side * 0.13, -0.18, 0.837], head);
@@ -142,16 +147,16 @@ export function createBondhuModel(THREE) {
     parts.ears.push(ear);
   }
   for (const side of [-1, 1]) {
-    const eye = new THREE.Group(); eye.position.set(side * 0.285, 0.105, 0.53); head.add(eye);
-    ball(sclera, [0.19, 0.22, 0.12], [0, 0, 0], eye, "eye-white");
+    const eye = new THREE.Group(); eye.position.set(side * 0.265, 0.105, 0.53); head.add(eye);
+    ball(sclera, [0.202, 0.232, 0.125], [0, 0, 0], eye, "eye-white");
     const gaze = new THREE.Group(); eye.add(gaze);
-    ball(iris, [0.093, 0.124, 0.055], [0.014, -0.006, 0.104], gaze, "iris");
-    ball(pupil, [0.053, 0.084, 0.036], [0.018, -0.01, 0.145], gaze, "pupil");
+    ball(iris, [0.096, 0.132, 0.057], [0.014, -0.006, 0.106], gaze, "iris");
+    ball(pupil, [0.055, 0.088, 0.037], [0.018, -0.01, 0.148], gaze, "pupil");
     ball(shine, [0.03, 0.036, 0.018], [-0.006, 0.04, 0.174], gaze, "eye-highlight");
     ball(shine, [0.015, 0.018, 0.01], [0.028, -0.032, 0.165], gaze, "eye-highlight-secondary");
     // A curved upper shell sweeps down over the sclera during a true eyelid blink.
     const lid = new THREE.Mesh(new THREE.SphereGeometry(1, 36, 22, 0, Math.PI * 2, 0, Math.PI / 2), greenLight);
-    lid.scale.set(0.196, 0.226, 0.13); lid.rotation.z = Math.PI; lid.position.set(0, 0.224, 0.015); lid.name = "upper-eyelid"; eye.add(lid);
+    lid.scale.set(0.207, 0.238, 0.134); lid.rotation.z = Math.PI; lid.position.set(0, 0.236, 0.015); lid.name = "upper-eyelid"; eye.add(lid);
     parts.eyes.push(eye); parts.lids.push(lid); parts.gaze.push(gaze);
   }
   // A shallow smile and inset mouth sit on the muzzle's front surface.
@@ -187,7 +192,7 @@ export function createBondhuModel(THREE) {
   wingShape.quadraticCurveTo(0.35, 0.43, 0.62, 0.34); wingShape.quadraticCurveTo(0.47, 0.23, 0.5, 0.08);
   wingShape.quadraticCurveTo(0.32, 0.14, 0.24, -0.1); wingShape.quadraticCurveTo(0.07, -0.03, 0, 0.02);
   const wingGeometry = new THREE.ExtrudeGeometry(wingShape, { depth: 0.045, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.018, bevelThickness: 0.012, curveSegments: 12 });
-  const membrane = new THREE.MeshStandardMaterial({ color: 0x5b9b68, roughness: 0.84, side: THREE.DoubleSide });
+  const membrane = new THREE.MeshStandardMaterial({ color: 0x6aaa75, roughness: 0.84, side: THREE.DoubleSide });
   const ribMaterial = new THREE.MeshStandardMaterial({ color: 0x327d55, roughness: 0.84 });
   for (const side of [-1, 1]) {
     const wing = new THREE.Group(); wing.position.set(side * 0.54, 0.13, -0.16); wing.scale.x = side; root.add(wing);
