@@ -18,11 +18,56 @@ import { ModisObservation } from "../models/modisobservation.model.js";
 import { snapshotService } from "./snapshot.service.js";
 import { findLatestRecommendedSmapObservation, latestRecommendedSmapSnapshot } from "./nasa/smap.quality.js";
 import { findLatestGoodModisObservation, latestGoodModisSnapshot } from "./nasa/modis.quality.js";
+import { DISTRICT_UPAZILAS } from "../config/upazilas.config.js";
 
 const MONTHS = {
   january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
   july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
 };
+
+const BENGALI_SOWING_PERIODS = {
+  "Late June to Early July (Mid Asharh)": "জুনের শেষ থেকে জুলাইয়ের শুরু (মধ্য আষাঢ়)",
+  "Early July to Mid July (Late Asharh)": "জুলাইয়ের শুরু থেকে মাঝামাঝি (শেষ আষাঢ়)",
+  "Mid November to Early December (Agrahayan)": "নভেম্বরের মাঝামাঝি থেকে ডিসেম্বরের শুরু (অগ্রহায়ণ)",
+  "Late November to Mid December (Agrahayan)": "নভেম্বরের শেষ থেকে ডিসেম্বরের মাঝামাঝি (অগ্রহায়ণ)",
+  "Mid March to Mid April (Chaitra-Baishakh)": "মার্চের মাঝামাঝি থেকে এপ্রিলের মাঝামাঝি (চৈত্র-বৈশাখ)",
+  "Late March to Mid April (Chaitra-Baishakh)": "মার্চের শেষ থেকে এপ্রিলের মাঝামাঝি (চৈত্র-বৈশাখ)",
+  "Early November to Mid November (Kartik)": "নভেম্বরের শুরু থেকে মাঝামাঝি (কার্তিক)",
+  "Late November to Early December (Agrahayan)": "নভেম্বরের শেষ থেকে ডিসেম্বরের শুরু (অগ্রহায়ণ)",
+};
+
+function localizeSowingPeriodBn(period) {
+  return BENGALI_SOWING_PERIODS[period] || "সরকারি ক্যালেন্ডারে উল্লেখিত বপনের সময়";
+}
+
+function localizeCropMessageBn(message, crop) {
+  const water = crop.waterRequirementMmTotal ?? "—";
+  const period = localizeSowingPeriodBn(crop.sowingPeriod);
+  const season = crop.seasonBn || "নির্ধারিত";
+  if (message.startsWith("Aligned with official ")) return `${season} মৌসুমের সরকারি ক্যালেন্ডারের সঙ্গে মেলে। বপনের সময়: ${period}।`;
+  if (message.startsWith("Crop is traditionally cultivated in ")) return `এই ফসল সাধারণত ${season} মৌসুমে (${period}) চাষ করা হয়, যা আপনার পছন্দের মৌসুমের সঙ্গে মেলে না।`;
+  if (message === "Direct match for farmer's crop interest.") return "আপনার পছন্দের ফসলের সঙ্গে মেলে।";
+  if (message.startsWith("Boro rice requires high cumulative irrigation")) return `শুষ্ক রবি মৌসুমে বোরো ধানে মোট প্রায় ${water} মিমি সেচের পানি লাগে। নিশ্চিত সেচ না থাকলে শুধু বৃষ্টির পানিতে চাষে ফসল নষ্ট হওয়ার ঝুঁকি আছে।`;
+  if (message.startsWith("Requires careful Alternate Wetting and Drying")) return `সেচের পানি সীমিত হওয়ায় বোরো ধানে পালাক্রমে ভেজানো ও শুকানোর (AWD) পদ্ধতিতে সতর্কভাবে পানি ব্যবস্থাপনা দরকার (প্রায় ${water} মিমি)।`;
+  if (message.startsWith("Assured irrigation meets")) return `নিশ্চিত সেচের ব্যবস্থা বোরোর শুষ্ক মৌসুমের ${water} মিমি পানির চাহিদা পূরণ করে।`;
+  if (message.startsWith("Irrigation availability is unknown, so Boro")) return "সেচের পানির প্রাপ্যতা জানা নেই, তাই দেওয়া তথ্য থেকে বোরো ধানের পানির ব্যবস্থা যাচাই করা যাচ্ছে না।";
+  if (message.startsWith("Low moisture requirement")) return `সরিষার পানির চাহিদা কম (প্রায় ${water} মিমি)। জমিতে থাকা অবশিষ্ট আর্দ্রতা ও ১–২ বার হালকা সেচে চাষ করা যেতে পারে।`;
+  if (message.startsWith("Irrigation availability is unknown; residual soil moisture")) return "সেচের পানির প্রাপ্যতা জানা নেই। জমির অবশিষ্ট আর্দ্রতা ও প্রয়োজনে সেচের ব্যবস্থা স্থানীয়ভাবে যাচাই করুন।";
+  if (message.startsWith("Can be cultivated with residual soil moisture")) return `আমন ধান কাটার পর জমিতে থাকা আর্দ্রতায় সরিষা চাষ করা যেতে পারে (মোট পানির চাহিদা প্রায় ${water} মিমি)।`;
+  if (message.startsWith("Primary monsoon-fed crop")) return "খরিফ-২ মৌসুমের এই প্রধান ফসল বৃষ্টিনির্ভর; এলাকার বর্ষার বৃষ্টি সাধারণত চাষে সহায়তা করে।";
+  if (message.startsWith("Monsoon rainfall supported with supplemental irrigation")) return "কুশি গঠন বা শীষ বের হওয়ার সময় বৃষ্টি কম হলে অতিরিক্ত সেচ দিয়ে আমন ধানের চাষে সহায়তা করা যায়।";
+  if (message.startsWith("Moderate water requirement")) return `খরিফ-১ মৌসুমে আউশ ধানের পানির চাহিদা মাঝারি (প্রায় ${water} মিমি)।`;
+  if (message.startsWith("Lowland is prone to deep monsoon submergence")) return "নিচু জমি বর্ষায় ৫০ সেন্টিমিটারের বেশি পানিতে ডুবে যেতে পারে। চারা নষ্ট হওয়া ঠেকাতে বন্যা-সহনশীল জাত (যেমন BRRI dhan51/52) বেছে নিন।";
+  if (message.startsWith("Lowland is well-suited for Boro rice")) return "শীতের শুরুতে উপরিভাগের বন্যার পানি নেমে যাওয়ায় নিচু জমি বোরো ধানের জন্য উপযোগী হতে পারে।";
+  if (message.startsWith("Lowland may stay waterlogged after monsoon")) return "বর্ষার পর নিচু জমিতে পানি জমে থাকতে পারে। সরিষার বীজ পচা এড়াতে সময়মতো পানি নিষ্কাশন দরকার।";
+  if (message.startsWith("High to medium-high land provides good drainage")) return "উঁচু ও মাঝারি-উঁচু জমিতে পানি ভালোভাবে নেমে যায়, যা সরিষার শিকড়ের বাতাস চলাচল ও বীজ গজানোর জন্য দরকারি।";
+  if (message.startsWith("Medium-high land is prime")) return "নিয়ন্ত্রিত আইলসহ রোপা আমন ধানের জন্য মাঝারি-উঁচু জমি উপযোগী।";
+  if (message.startsWith("Waterlogged drainage is detrimental to mustard")) return "জমিতে পানি জমে থাকলে সরিষার চারা গজানো বাধাগ্রস্ত হয়। উঁচু বেড তৈরি বা নালা কেটে পানি নিষ্কাশন করুন।";
+  if (message.startsWith("Selected planting date falls within")) return `আপনার বেছে নেওয়া রোপণের তারিখ সরকারি বপন-সময়ের মধ্যে: ${period}।`;
+  if (message.startsWith("Selected planting date is outside")) return `আপনার বেছে নেওয়া রোপণের তারিখ সরকারি বপন-সময়ের বাইরে। উপযুক্ত সময় ${period}; স্থানীয় কৃষি কর্মকর্তার সঙ্গে মিলিয়ে নিন।`;
+  if (message.startsWith("The official sowing window could not be compared")) return "সরকারি বপন-সময়ের সঙ্গে আপনার তারিখের তুলনা করা যায়নি। স্থানীয় কৃষি কর্মকর্তার সঙ্গে সময়টি যাচাই করুন।";
+  return "এই ফসলের উপযোগিতা ও চাষের সময় স্থানীয় কৃষি কর্মকর্তার সঙ্গে যাচাই করুন।";
+}
 
 function parseCalendarEndpoint(value) {
   const match = value.trim().match(/^(Early|Mid|Late)\s+(January|February|March|April|May|June|July|August|September|October|November|December)$/i);
@@ -357,6 +402,34 @@ export async function generatePlanningExplanation(args = {}) {
   const environmentalContext = args.environmentalContext || args.satelliteContext || {};
   const apiKey = env.geminiApiKey;
   let geminiOutput = null;
+  const upazilaBn = Object.values(DISTRICT_UPAZILAS)
+    .flat()
+    .find((item) => item.nameEn.toLowerCase() === String(farmerProfile.upazila || "").toLowerCase())?.nameBn || "";
+  const districtName = isBangla
+    ? ((evaluationResult.districtCode || "").toLowerCase() === "cumilla" ? "কুমিল্লা" : "চট্টগ্রাম")
+    : evaluationResult.districtName;
+  const placeName = isBangla ? upazilaBn : farmerProfile.upazila;
+  const localizedCrops = evaluationResult.eligibleCrops.map((crop) => ({
+    ...crop,
+    displayName: isBangla ? crop.cropNameBn : crop.cropNameEn,
+    displaySeason: isBangla ? crop.seasonBn : crop.season,
+    displaySowingPeriod: isBangla ? localizeSowingPeriodBn(crop.sowingPeriod) : crop.sowingPeriod,
+    displayReasons: isBangla ? crop.reasons.map((reason) => localizeCropMessageBn(reason, crop)) : crop.reasons,
+    displayConstraints: isBangla ? crop.constraints.map((item) => localizeCropMessageBn(item, crop)) : crop.constraints,
+  }));
+  const landTypeLabelsBn = {
+    high: "উঁচু জমি",
+    medium_high: "মাঝারি-উঁচু জমি",
+    low: "নিচু জমি",
+    unspecified: "উল্লেখ করা হয়নি",
+    unknown: "জানা নেই",
+  };
+  const irrigationLabelsBn = {
+    available: "পর্যাপ্ত",
+    limited: "সীমিত",
+    unavailable: "নেই",
+    unknown: "জানা নেই",
+  };
 
   // Attempt Gemini if configured
   if (apiKey && apiKey.length > 20 && !apiKey.startsWith("YOUR_")) {
@@ -365,6 +438,7 @@ export async function generatePlanningExplanation(args = {}) {
       const prompt = `
 You are the grounded agricultural planning advisor of KrishiBondhu.
 Explain the following verified crop planning evaluation to a Bangladeshi farmer in simple, respectful, and crystal-clear ${isBangla ? "Bangla (চলিত বাংলা)" : "English"}.
+${isBangla ? "Write every explanatory sentence only in Bangla. Do not use English prose, English season names, English month names, or English crop explanations. Keep only official abbreviations, scientific names, and variety identifiers as written." : "Write the full response in English."}
 
 STRICT RULES:
 1. Ground your answer ONLY in the provided verified data below.
@@ -375,21 +449,21 @@ STRICT RULES:
 6. No emojis, no markdown tables. Keep paragraphs natural and readable.
 
 Farmer & Plot Context:
-- District: ${evaluationResult.districtName} (${evaluationResult.districtCode})
-- Upazila: ${farmerProfile.upazila || "Not specified"}
+- District: ${districtName} (${evaluationResult.districtCode})
+- Upazila: ${placeName || (isBangla ? "উল্লেখ করা হয়নি" : "Not specified")}
 - Land Area: ${farmerProfile.land?.area || "N/A"} ${farmerProfile.land?.unit || "decimal"}
-- Land Type: ${farmerProfile.land?.landType || "unknown / not supplied"}
-- Irrigation Availability: ${farmerProfile.water?.irrigationAvailability || "unknown"}
+- Land Type: ${isBangla ? landTypeLabelsBn[farmerProfile.land?.landType] || "জানা নেই" : farmerProfile.land?.landType || "unknown / not supplied"}
+- Irrigation Availability: ${isBangla ? irrigationLabelsBn[farmerProfile.water?.irrigationAvailability] || "জানা নেই" : farmerProfile.water?.irrigationAvailability || "unknown"}
 
 Verified Eligible Crops from Official BAMIS / DAE Crop Calendars:
-${evaluationResult.eligibleCrops
+${localizedCrops
   .map(
     (c) => `
-* ${c.cropNameEn} (${c.cropNameBn}) - Season: ${c.season} (~${c.totalDurationDays} days)
-  - Official Planting Period: ${c.sowingPeriod}
+* ${c.displayName} - Season: ${c.displaySeason} (~${c.totalDurationDays} ${isBangla ? "দিন" : "days"})
+  - Official Planting Period: ${c.displaySowingPeriod}
   - Suitability Status: ${c.suitabilityCategory}
-  - Key Agronomic Reasons: ${c.reasons.join("; ")}
-  - Constraints/Cautions: ${c.constraints.length > 0 ? c.constraints.join("; ") : "None reported in calendar"}
+  - Key Agronomic Reasons: ${c.displayReasons.join("; ")}
+  - Constraints/Cautions: ${c.displayConstraints.length > 0 ? c.displayConstraints.join("; ") : isBangla ? "ক্যালেন্ডারে কোনো সতর্কতা উল্লেখ নেই" : "None reported in calendar"}
 `
   )
   .join("\n")}
@@ -410,6 +484,10 @@ NASA Environmental Satellite Context:
 
       if (response && response.text) {
         geminiOutput = response.text.trim();
+        // A few English prose words indicate the model ignored the requested language.
+        // Fall back to the fully localized, deterministic explanation in that case.
+        const englishProse = /\b(?:the|and|is|are|was|were|with|from|for|or|to|in|on|of|this|that|your|crop|soil|water|season|official|planting|window|requires|suitable|supported|irrigation|rainfall|harvest|november|december|january|february|march|april|may|june|july|august|september|october)\b/i;
+        if (isBangla && englishProse.test(geminiOutput)) geminiOutput = null;
       }
     } catch (err) {
       console.warn(`[cropplanning.service] Gemini explanation failed, falling back to deterministic explanation: ${err.message}`);
@@ -422,20 +500,20 @@ NASA Environmental Satellite Context:
       const topCrops = evaluationResult.eligibleCrops.filter((c) => c.suitabilityCategory === "supported");
       const potentialCrops = evaluationResult.eligibleCrops.filter((c) => c.suitabilityCategory === "potential");
 
-      let text = `আপনার ${evaluationResult.districtName} জেলার ${farmerProfile.upazila || ""} এলাকার জমির জন্য সরকারি বিএএমআইএস (BAMIS) ও ডিএই (DAE) ক্রপ ক্যালেন্ডার অনুযায়ী ফসলের উপযোগিতা যাচাই করা হয়েছে।\n\n`;
+      let text = `আপনার ${districtName} জেলার ${placeName || ""} এলাকার জমির জন্য সরকারি বিএএমআইএস (BAMIS) ও ডিএই (DAE) ফসল পঞ্জিকা অনুযায়ী ফসলের উপযোগিতা যাচাই করা হয়েছে।\n\n`;
 
       if (topCrops.length > 0) {
         text += `বিদ্যমান তথ্যানুযায়ী সরাসরি উপযোগী ফসল:\n`;
-        topCrops.forEach((c) => {
-          text += `• ${c.cropNameBn} (${c.seasonBn}): রোপণের উপযুক্ত সময় ${c.sowingPeriod}। জীবনকাল প্রায় ${c.totalDurationDays} দিন। পানির চাহিদা প্রায় ${c.waterRequirementMmTotal} মিমি। ${c.reasons.join(" ")}\n`;
+        localizedCrops.filter((c) => c.suitabilityCategory === "supported").forEach((c) => {
+          text += `• ${c.cropNameBn} (${c.seasonBn}): রোপণের উপযুক্ত সময় ${c.displaySowingPeriod}। জীবনকাল প্রায় ${c.totalDurationDays} দিন। পানির চাহিদা প্রায় ${c.waterRequirementMmTotal} মিমি। ${c.displayReasons.join(" ")}\n`;
         });
         text += `\n`;
       }
 
       if (potentialCrops.length > 0) {
         text += `বিবেচনাধীন বিকল্পসমূহ:\n`;
-        potentialCrops.forEach((c) => {
-          text += `• ${c.cropNameBn}: ${c.constraints.join(" ")}\n`;
+        localizedCrops.filter((c) => c.suitabilityCategory === "potential").forEach((c) => {
+          text += `• ${c.cropNameBn}: ${c.displayConstraints.join(" ")}\n`;
         });
         text += `\n`;
       }
@@ -451,16 +529,16 @@ NASA Environmental Satellite Context:
 
       if (topCrops.length > 0) {
         text += `Directly Supported Options:\n`;
-        topCrops.forEach((c) => {
-          text += `• ${c.cropNameEn} (${c.season}): Recommended sowing period is ${c.sowingPeriod} with an estimated duration of ${c.totalDurationDays} days. Water demand is ~${c.waterRequirementMmTotal} mm. ${c.reasons.join(" ")}\n`;
+        localizedCrops.filter((c) => c.suitabilityCategory === "supported").forEach((c) => {
+          text += `• ${c.cropNameEn} (${c.season}): Recommended sowing period is ${c.displaySowingPeriod} with an estimated duration of ${c.totalDurationDays} days. Water demand is ~${c.waterRequirementMmTotal} mm. ${c.displayReasons.join(" ")}\n`;
         });
         text += `\n`;
       }
 
       if (potentialCrops.length > 0) {
         text += `Options with Field Considerations:\n`;
-        potentialCrops.forEach((c) => {
-          text += `• ${c.cropNameEn}: ${c.constraints.join(" ")}\n`;
+        localizedCrops.filter((c) => c.suitabilityCategory === "potential").forEach((c) => {
+          text += `• ${c.cropNameEn}: ${c.displayConstraints.join(" ")}\n`;
         });
         text += `\n`;
       }
