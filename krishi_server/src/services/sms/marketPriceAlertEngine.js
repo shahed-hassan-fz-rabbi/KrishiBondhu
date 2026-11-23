@@ -182,6 +182,9 @@ export function buildMarketDedupeKey({ userId, alert }) {
     normalise(alert.market),
     normalise(alert.unit),
     normalise(alert.priceType),
+    normalise(alert.frequency),
+    alert.grade ? normalise(alert.grade) : "none",
+    normalise(alert.source),
     alert.observedOn || "unknown",
   ].join(":");
 }

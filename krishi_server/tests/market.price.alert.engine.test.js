@@ -156,7 +156,17 @@ test("dedupe key is scoped per farmer", () => {
   const a = buildMarketDedupeKey({ userId: "farmer-1", alert });
   const b = buildMarketDedupeKey({ userId: "farmer-2", alert });
   assert.notEqual(a, b);
-  assert.match(a, /^market:farmer-1:rice:cumilla central:bdt\/kg:retail:2026-11-22$/);
+  assert.match(a, /^market:farmer-1:rice:cumilla central:bdt\/kg:retail:daily:none:dam official report:2026-11-22$/);
+
+  const gradeA = { ...alert, grade: "A" };
+  const gradeB = { ...alert, grade: "B" };
+  const weekly = { ...alert, frequency: "weekly" };
+  const otherSource = { ...alert, source: "Another official source" };
+  const base = buildMarketDedupeKey({ userId: "farmer-1", alert });
+  assert.notEqual(base, buildMarketDedupeKey({ userId: "farmer-1", alert: gradeA }));
+  assert.notEqual(buildMarketDedupeKey({ userId: "farmer-1", alert: gradeA }), buildMarketDedupeKey({ userId: "farmer-1", alert: gradeB }));
+  assert.notEqual(base, buildMarketDedupeKey({ userId: "farmer-1", alert: weekly }));
+  assert.notEqual(base, buildMarketDedupeKey({ userId: "farmer-1", alert: otherSource }));
 });
 
 test("engine requires verified phone, market consent and farmer's own location", async () => {

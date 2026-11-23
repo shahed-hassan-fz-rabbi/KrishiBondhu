@@ -32,7 +32,7 @@ async function findRecentAlert({ dedupeKey, userId, windowMs, logger }) {
   }
 }
 
-function farmerLocationMatches({ user = {}, selection = {} }) {
+export function farmerLocationMatches({ user = {}, selection = {} }) {
   const district = selection.district || user.preferredDistrict || null;
   if (!district) return false;
   const farmerDistrict = user.preferredDistrict;
