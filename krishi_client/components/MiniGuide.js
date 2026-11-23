@@ -28,11 +28,10 @@ const TOUR_STOPS = BONDHU_TOUR_STEPS.map((step) => step.route);
 
 function measureCompanionObstacles() {
   const main = document.querySelector("main");
-  if (!main) return [];
   const width = window.innerWidth;
   const height = window.innerHeight;
   const boundarySelector = 'article, aside, section, [role="region"], [data-bondhu-obstacle], [class*="-card"], [class*="-panel"], [class*="-strip"]';
-  const boundaries = [...main.querySelectorAll(boundarySelector)]
+  const boundaries = [...(main?.querySelectorAll(boundarySelector) || [])]
     .filter((element) => !element.closest(".kb-mini-guide") && element.getAttribute("aria-hidden") !== "true")
     .filter((element) => ![...element.classList].some((name) => name.includes("stage")))
     .filter((element) => ![...element.classList].some((name) => name.includes("hero")))
@@ -47,8 +46,17 @@ function measureCompanionObstacles() {
     .map((element) => ({ element, rect: element.getBoundingClientRect() }))
     .filter(({ rect }) => rect.width >= 100 && rect.height >= 76 && rect.bottom > 0 && rect.top < height)
     .sort((a, b) => (b.rect.width * b.rect.height) - (a.rect.width * a.rect.height));
+  const known = new Set(boundaries.map(({ element }) => element));
+  for (const element of document.querySelectorAll('header, nav, footer, [role="banner"], [role="contentinfo"], [data-bondhu-no-fly]')) {
+    if (known.has(element) || element.closest(".kb-mini-guide") || element.getAttribute("aria-hidden") === "true") continue;
+    const rect = element.getBoundingClientRect();
+    if (!rect.width || !rect.height || rect.bottom <= 0 || rect.top >= height || rect.right <= 0 || rect.left >= width) continue;
+    boundaries.push({ element, rect, protected: true });
+    known.add(element);
+  }
+  boundaries.sort((a, b) => (b.rect.width * b.rect.height) - (a.rect.width * a.rect.height));
   const obstacles = [];
-  for (const { element, rect } of boundaries) {
+  for (const { element, rect, protected: isProtected } of boundaries) {
     if (boundaries.some((candidate) => candidate.element !== element && candidate.element.contains(element) && obstacles.some((obstacle) => obstacle.element === candidate.element))) continue;
     const gap = 10;
     obstacles.push({
@@ -58,10 +66,10 @@ function measureCompanionObstacles() {
       top: Math.max(0, rect.top - gap),
       bottom: Math.min(height, rect.bottom + gap),
       weight: 3,
-      soft: true,
+      soft: !isProtected,
     });
   }
-  const textAndControls = main.querySelectorAll("h1,h2,h3,p,span,label,strong,li,a,button,input,select,textarea,summary,[role=button]");
+  const textAndControls = main?.querySelectorAll("h1,h2,h3,p,span,label,strong,li,a,button,input,select,textarea,summary,[role=button]") || [];
   for (const element of textAndControls) {
     if (element.closest(".kb-mini-guide,[aria-hidden='true']") || (element.closest("a,button,summary,[role=button]") && !/^(A|BUTTON|SUMMARY)$/.test(element.tagName) && element.getAttribute("role") !== "button")) continue;
     const interactive = /^(A|BUTTON|INPUT|SELECT|TEXTAREA|SUMMARY)$/.test(element.tagName) || element.getAttribute("role") === "button";
@@ -85,12 +93,13 @@ function measureCompanionObstacles() {
 
 function measureCompanionSafeArea() {
   const area = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
-  for (const element of document.querySelectorAll("header, nav, aside, [role=banner], [data-bondhu-safe-edge]")) {
+  for (const element of document.querySelectorAll("header, nav, aside, footer, [role=banner], [role=contentinfo], [data-bondhu-safe-edge]")) {
     if (element.closest(".kb-mini-guide") || element.getAttribute("aria-hidden") === "true") continue;
     const style = window.getComputedStyle(element);
     const rect = element.getBoundingClientRect();
     if (!rect.width || !rect.height) continue;
     const topHeader = element.tagName === "HEADER" || element.getAttribute("role") === "banner";
+    const bottomFooter = element.tagName === "FOOTER" || element.getAttribute("role") === "contentinfo";
     const fixed = style.position === "fixed" || style.position === "sticky";
     if (rect.top <= 1 && rect.bottom <= window.innerHeight * 0.45 && (topHeader || fixed)) {
       const controls = topHeader ? [...element.querySelectorAll("button,a,[role=button],input,select")]
@@ -106,12 +115,40 @@ function measureCompanionSafeArea() {
       const visibleControlBottom = fixed ? rect.bottom : controls.length || textBottom ? Math.max(...controls, textBottom) : rect.bottom;
       area.top = Math.max(area.top, Math.min(rect.bottom, visibleControlBottom));
     }
-    if (!fixed && !topHeader) continue;
+    if (!fixed && !topHeader && !bottomFooter) continue;
     if (rect.bottom >= window.innerHeight - 1 && rect.top >= window.innerHeight * 0.55) area.bottom = Math.min(area.bottom, rect.top);
     if (rect.left <= 1 && rect.right <= window.innerWidth * 0.4 && rect.height >= window.innerHeight * 0.55) area.left = Math.max(area.left, rect.right);
     if (rect.right >= window.innerWidth - 1 && rect.left >= window.innerWidth * 0.6 && rect.height >= window.innerHeight * 0.55) area.right = Math.min(area.right, rect.left);
   }
   return area;
+}
+
+function findSafeTourLanding(targetRect, bottomNavHeight = 0) {
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const size = viewportWidth <= 760 ? { width: 86, height: 100 } : { width: 140, height: 156 };
+  const gap = 14;
+  const centeredY = targetRect.top + (targetRect.height - size.height) / 2;
+  const centeredX = targetRect.left + (targetRect.width - size.width) / 2;
+  const targetSides = [
+    { x: targetRect.left + targetRect.width + gap, y: centeredY },
+    { x: targetRect.left - size.width - gap, y: centeredY },
+    { x: centeredX, y: targetRect.top - size.height - gap },
+    { x: centeredX, y: targetRect.top + targetRect.height + gap },
+  ];
+  const safeArea = measureCompanionSafeArea();
+  const obstacles = measureCompanionObstacles();
+  return chooseCompanionPosition({
+    viewportWidth,
+    viewportHeight,
+    size,
+    collisionBounds: { x: 2, y: 0, width: size.width - 4, height: size.height - 12 },
+    preferredPositions: targetSides,
+    candidatePositions: targetSides,
+    obstacles,
+    safeArea,
+    bottomNavHeight,
+  });
 }
 
 function pageTip(pathname, bn) {
@@ -200,6 +237,7 @@ export function MiniGuide() {
   const characterState = tourMode && tourPaused ? "idle" : flying ? "flying" : isDragging ? "dragging" : isTourVoiceSpeaking && !isTourVoicePaused ? "talking" : tourMode || pokeState ? "happy" : hovered ? "listening" : sleeping ? "sleeping" : assistantState;
   const [position, setPosition] = useState(null);
   const [contentPosition, setContentPosition] = useState(null);
+  const [tourLandingPosition, setTourLandingPosition] = useState(null);
   const [bubblePosition, setBubblePosition] = useState(null);
   const [bottomNavHeight, setBottomNavHeight] = useState(0);
   const dragRef = useRef(null);
@@ -219,15 +257,29 @@ export function MiniGuide() {
     ? [...PLACES, { href: "/officer/reviews", en: "Officer reviews", bn: "কর্মকর্তার পর্যালোচনা" }]
     : PLACES;
 
+  const beginFlight = useCallback(() => {
+    if (!animationEnabled || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      window.clearTimeout(flightTimerRef.current);
+      setFlying(false);
+      return;
+    }
+    setFlying(true);
+    window.clearTimeout(flightTimerRef.current);
+    flightTimerRef.current = window.setTimeout(() => setFlying(false), 2800);
+  }, [animationEnabled]);
+  const finishFlight = useCallback(() => {
+    window.clearTimeout(flightTimerRef.current);
+    setFlying(false);
+  }, []);
+
   const navigateTo = useCallback((href) => {
     setSleeping(false);
-    setFlying(true);
+    beginFlight();
     window.clearTimeout(timerRef.current);
     timerRef.current = window.setTimeout(() => {
       router.push(href);
-      if (!tourRunRef.current) setFlying(false);
-    }, 360);
-  }, [router]);
+    }, 240);
+  }, [beginFlight, router]);
 
   useEffect(() => () => {
     window.clearTimeout(timerRef.current);
@@ -369,6 +421,8 @@ export function MiniGuide() {
         bottomNavHeight,
       });
       const safe = validSaved ?? candidate;
+      const currentPosition = position || contentPosition || savedPosition;
+      if (currentPosition && Math.hypot(currentPosition.x - safe.x, currentPosition.y - safe.y) > 24) beginFlight();
       if (position && (position.x !== safe.x || position.y !== safe.y)) {
         setPosition(safe);
         savePreferences(safe);
@@ -403,7 +457,16 @@ export function MiniGuide() {
       resizeObserver?.disconnect();
       mutationObserver?.disconnect();
     };
-  }, [pathname, preferences.x, preferences.y, savedPosition, position, contentPosition, tourMode, hidden, isDragging, bottomNavHeight]);
+  }, [pathname, preferences.x, preferences.y, savedPosition, position, contentPosition, tourMode, hidden, isDragging, bottomNavHeight, beginFlight]);
+
+  useLayoutEffect(() => {
+    if (!tourMode || !targetRect) {
+      setTourLandingPosition(null);
+      return;
+    }
+    const next = findSafeTourLanding(targetRect, bottomNavHeight);
+    setTourLandingPosition((current) => current && Math.abs(current.x - next.x) < 1 && Math.abs(current.y - next.y) < 1 ? current : next);
+  }, [tourMode, targetRect, bottomNavHeight]);
 
   useLayoutEffect(() => {
     if (!open || !launcherRef.current || !bubbleRef.current) {
@@ -638,7 +701,6 @@ export function MiniGuide() {
         setFacing(rect.left >= (lastTargetXRef.current ?? rect.left) ? 1 : -1);
         lastTargetXRef.current = rect.left;
         setTargetRect({ left: rect.left, top: rect.top, width: rect.width, height: rect.height, viewportWidth: window.innerWidth, viewportHeight: window.innerHeight });
-        setFlying(false);
       });
       settled = true;
       resizeObserver?.disconnect();
@@ -688,27 +750,22 @@ export function MiniGuide() {
 
   const launcherPosition = position || visibleContentPosition || contentPosition || savedPosition;
   const launcherStyle = launcherPosition ? { left: launcherPosition.x, top: launcherPosition.y, right: "auto", bottom: "auto" } : undefined;
-  const tourPosition = tourMode && targetRect ? {
-    left: (() => {
-      if (window.innerWidth <= 760) return Math.max(8, window.innerWidth - 98);
-      const size = window.innerWidth < 640 ? 92 : 132;
-      const rightSide = targetRect.left + targetRect.width + 8;
-      const leftSide = targetRect.left - size - 8;
-      return rightSide + size <= window.innerWidth - 8 ? rightSide : leftSide >= 8 ? leftSide : Math.max(8, window.innerWidth - size - 8);
-    })(),
-      top: window.innerWidth <= 760
-        ? Math.max(72, window.innerHeight - 250 - 100 - 12)
-        : Math.min(Math.max(72, window.innerHeight - 212), Math.max(72, targetRect.top)),
-    right: "auto",
-    bottom: "auto",
-  } : launcherStyle;
+  const tourPosition = tourMode && targetRect && tourLandingPosition
+    ? { left: tourLandingPosition.x, top: tourLandingPosition.y, right: "auto", bottom: "auto" }
+    : launcherStyle;
   const compactTourSheet = tourMode && typeof window !== "undefined" && window.innerWidth <= 760;
   const speechStyle = bubblePosition && !compactTourSheet ? { left: bubblePosition.left, top: bubblePosition.top, width: bubblePosition.width, right: "auto", bottom: "auto" } : undefined;
 
   return <>
     {tourMode && targetRect && pathname === tourStep?.route && <svg className="kb-tour-spotlight" aria-hidden="true" focusable="false" viewBox={"0 0 " + targetRect.viewportWidth + " " + targetRect.viewportHeight} preserveAspectRatio="none"><path fillRule="evenodd" d={"M0 0H" + targetRect.viewportWidth + "V" + targetRect.viewportHeight + "H0Z M" + (targetRect.left - 8) + " " + (targetRect.top - 8) + "H" + (targetRect.left + targetRect.width + 8) + "V" + (targetRect.top + targetRect.height + 8) + "H" + (targetRect.left - 8) + "Z"} /></svg>}
     {tourMode && targetRect && pathname === tourStep?.route && <div className="kb-tour-outline" aria-hidden="true" style={{ left: targetRect.left - 6, top: targetRect.top - 6, width: targetRect.width + 12, height: targetRect.height + 12 }} />}
-  <div className={"kb-mini-guide" + (tourMode ? " is-tour-active" : "")} style={tourPosition}>
+  <div
+    className={"kb-mini-guide" + (tourMode ? " is-tour-active" : "") + (flying ? " is-flying" : "")}
+    style={tourPosition}
+    onTransitionEnd={(event) => {
+      if (event.target === event.currentTarget && (event.propertyName === "left" || event.propertyName === "top")) finishFlight();
+    }}
+  >
     {open && <section ref={bubbleRef} className={`kb-mini-bubble${tourMode ? " is-tour-bubble" : ""}`} data-side={bubblePosition?.side || "above"} style={speechStyle} role="dialog" aria-label={bn ? "বন্ধুর কৃষি নির্দেশনা" : "Bondhu’s farm guide"} aria-describedby={tourMode ? "bondhu-tour-description" : undefined} onPointerEnter={() => { bubbleHoveredRef.current = true; }} onPointerLeave={() => { bubbleHoveredRef.current = false; }}>
       <header className="kb-mini-bubble-head"><div className="kb-mini-kicker">{tourMode ? (bn ? `ধাপ ${visibleTourIndex + 1} / ${eligibleTourSteps.length}` : `STEP ${visibleTourIndex + 1} OF ${eligibleTourSteps.length}`) : (bn ? "বন্ধু · আপনার মাঠের সঙ্গী" : "BONDHU · YOUR FIELD GUIDE")}</div><button type="button" aria-label={bn ? "বন্ধ করুন" : "Close"} onClick={closeGuide} className="kb-mini-close"><X size={17}/></button></header>
       <div className="kb-mini-bubble-body">
