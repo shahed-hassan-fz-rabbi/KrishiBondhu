@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Check, ChevronRight, CircleUserRound, LogOut, MapPin, Moon, Phone, Settings, Sun } from "lucide-react";
+import { Check, ChevronRight, CircleUserRound, LogOut, MapPin, Moon, Phone, Settings, Sun } from "lucide-react";
 import { PrivateAccess } from "@/components/auth/PrivateAccess.js";
+import { SmsAlertsSettings } from "@/components/settings/SmsAlertsSettings.js";
 import { useAuth } from "@/contexts/AuthContext.js";
 import { useLocation } from "@/contexts/LocationContext.js";
 import { useTheme } from "@/contexts/ThemeContext.js";
@@ -20,7 +21,6 @@ function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [messageIsError, setMessageIsError] = useState(false);
-  const [enabled, setEnabled] = useState(Boolean(user?.smsAlertsEnabled && user?.phoneVerifiedAt));
   const [phone, setPhone] = useState(user?.phone || "");
   const [verificationCode, setVerificationCode] = useState("");
   const [codeSent, setCodeSent] = useState(false);
@@ -57,7 +57,6 @@ function SettingsPage() {
       const result = await updateProfile({ phone });
       if (result.success) {
         setPhone(result.user.phone || "");
-        setEnabled(Boolean(result.user.smsAlertsEnabled && result.user.phoneVerifiedAt));
         setCodeSent(false);
         setVerificationCode("");
         showMessage(bn ? "ফোন নম্বর সংরক্ষণ হয়েছে। SMS চালুর আগে নম্বর যাচাই করুন।" : "Phone number saved. Verify it before enabling SMS alerts.");
@@ -92,24 +91,8 @@ function SettingsPage() {
       if (result.success) {
         setCodeSent(false);
         setVerificationCode("");
-        setEnabled(Boolean(result.user?.smsAlertsEnabled && result.user?.phoneVerifiedAt));
         showMessage(bn ? "ফোন নম্বর যাচাই হয়েছে। এখন SMS অ্যালার্ট চালু করতে পারবেন।" : "Phone verified. You can now enable SMS alerts.");
       } else showMessage(bn ? "কোড যাচাই হয়নি। কোডটি দেখে আবার চেষ্টা করুন।" : "That code could not be verified. Check it and try again.", true);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const saveSms = async (next) => {
-    if (saving) return;
-    setSaving(true);
-    showMessage("");
-    try {
-      const result = await updateProfile({ smsAlertsEnabled: next });
-      if (result.success) {
-        setEnabled(next);
-        showMessage(bn ? (next ? "SMS অ্যালার্ট চালু হয়েছে।" : "SMS অ্যালার্ট বন্ধ হয়েছে।") : (next ? "SMS alerts are enabled." : "SMS alerts are off."));
-      } else showMessage(bn ? "পছন্দটি সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।" : "Could not save this preference. Please try again.", true);
     } finally {
       setSaving(false);
     }
@@ -166,9 +149,7 @@ function SettingsPage() {
             <p className="mt-4 text-xs leading-5 text-muted">{bn ? "SMS পাঠাতে সেবাদাতার অ্যাকাউন্ট ও সার্ভার কনফিগারেশন দরকার; সেটআপ না থাকলে বার্তা পাঠানো হবে না। SMS চার্জ প্রযোজ্য হতে পারে।" : "SMS delivery requires the project owner’s provider account and server configuration. No message is sent without that setup. Carrier charges may apply."}</p>
           </section>
 
-          <section aria-labelledby="sms-heading" className="rounded-2xl border border-line bg-surface p-5 shadow-km-sm sm:p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div className="flex items-start gap-3"><span className="rounded-xl bg-emerald/10 p-2.5 text-emerald"><Bell size={20} aria-hidden="true" /></span><div><h2 id="sms-heading" className="font-bold text-content">{bn ? "খামার ও বাজারের SMS অ্যালার্ট" : "Farm and market SMS alerts"}</h2><p className="mt-1 text-sm leading-6 text-muted">{bn ? "খামারের কাজের রিমাইন্ডার ও লক্ষ্যদরের অ্যালার্টের সম্মতি পরিচালনা করুন।" : "Manage consent for farm task reminders and price target alerts."}</p>{!user?.phoneVerifiedAt && <p className="mt-2 text-sm font-medium text-amber-strong">{bn ? "চালুর আগে একটি ফোন নম্বর যোগ ও যাচাই করুন।" : "Add and verify a phone number before enabling SMS alerts."}</p>}</div></div><label className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-3 rounded-xl border border-line px-3 text-sm font-semibold text-content has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-55"><input type="checkbox" checked={enabled} disabled={saving || !user?.phoneVerifiedAt} onChange={(event) => saveSms(event.target.checked)} className="h-5 w-5 accent-emerald" aria-label={bn ? "SMS অ্যালার্ট চালু করুন" : "Enable SMS alerts"} />{enabled ? (bn ? "চালু" : "On") : (bn ? "বন্ধ" : "Off")}</label></div>
-          </section>
+          <SmsAlertsSettings />
         </div>
 
         <aside className="space-y-5">

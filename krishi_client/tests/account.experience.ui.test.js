@@ -37,7 +37,9 @@ test("Profile settings only expose current persisted preferences and existing ac
   assert.match(settings, /setTheme\("dark"\)/);
   assert.match(settings, /requestPhoneVerification\(\)/);
   assert.match(settings, /confirmPhoneVerification\(verificationCode\)/);
-  assert.match(settings, /updateProfile\(\{ smsAlertsEnabled: next \}\)/);
+  // SMS preferences now come from the dedicated subscription API component.
+  assert.match(settings, /<SmsAlertsSettings \/>/);
+  assert.doesNotMatch(settings, /updateProfile\(\{ smsAlertsEnabled: next \}\)/);
   assert.match(settings, /await logout\(\)/);
   assert.match(settings, /aria-label=\{bn \? "লগআউট নিশ্চিত করুন" : "Confirm sign out"\}/);
   assert.doesNotMatch(settings, /changePassword|deleteAccount|resetPassword/);

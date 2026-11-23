@@ -786,6 +786,25 @@ export async function fetchActivitiesNotificationReadiness() {
  */
 
 /**
+ * SMS subscription preferences (Part 3A API).
+ * All responses are masked: the full phone number never reaches the client.
+ */
+export async function fetchSmsSubscriptions() {
+  return request("/sms-subscriptions");
+}
+
+export async function updateSmsSubscription(category, enabled) {
+  return request(`/sms-subscriptions/${encodeURIComponent(category)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ enabled: Boolean(enabled), source: "settings" }),
+  });
+}
+
+export async function unsubscribeAllSms() {
+  return request("/sms-subscriptions/unsubscribe-all", { method: "POST" });
+}
+
+/**
  * GET /api/v1/notifications
  */
 export async function fetchNotifications(params = {}) {
