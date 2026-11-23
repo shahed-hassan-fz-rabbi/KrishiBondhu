@@ -3,6 +3,7 @@ export const appNav = [
   { href: "/dashboard", key: "nav.dashboard" },
   { href: "/my-farm", key: "nav.myFarm" },
   { href: "/market", key: "publicHeader.market" },
+  { href: "/marketplace/my-listings", key: "nav.marketplaceListings", roles: ["farmer"] },
   { href: "/rotation-planner", key: "publicHeader.cropRotation" },
   { href: "/assistant", key: "nav.assistant" },
   { href: "/handoff", key: "nav.handoff" },
@@ -20,5 +21,5 @@ export const appNavGroups = [
   { key: "Work", keyBn: "কাজ", hrefs: ["/dashboard", "/my-farm", "/assistant", "/my-farm/reviews", "/officer/reviews"] },
   { key: "Plan", keyBn: "পরিকল্পনা", hrefs: ["/crop-calendar", "/rotation-planner", "/handoff", "/saved-advisories"] },
   { key: "Field", keyBn: "মাঠ", hrefs: ["/climate", "/map"] },
-  { key: "Data & evidence", keyBn: "তথ্য ও প্রমাণ", hrefs: ["/market", "/data-sources"] },
+  { key: "Data & evidence", keyBn: "তথ্য ও প্রমাণ", hrefs: ["/market", "/marketplace/my-listings", "/data-sources"] },
 ];

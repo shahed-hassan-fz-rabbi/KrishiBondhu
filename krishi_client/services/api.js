@@ -30,6 +30,11 @@ export function fetchMarketplaceProducts({ page = 1, limit = 12, q, district } =
   if (typeof district === "string" && district.trim()) query.set("district", district.trim());
   return request(`/marketplace/products?${query.toString()}`);
 }
+/** GET /api/v1/marketplace/products/mine — authenticated farmer's own listings. */
+export function fetchMyMarketplaceProducts({ page = 1, limit = 20 } = {}) {
+  const query = new URLSearchParams({ page: String(page), limit: String(limit) });
+  return request(`/marketplace/products/mine?${query.toString()}`);
+}
 /** POST /api/v1/marketplace/products — create a listing using the existing cookie session. */
 export function createMarketplaceProduct(input = {}) {
   const allowedFields = ["productName", "description", "quantity", "unit", "askingPricePerUnit", "district", "upazila"];

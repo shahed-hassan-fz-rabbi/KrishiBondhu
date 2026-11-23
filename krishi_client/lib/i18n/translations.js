@@ -46,6 +46,7 @@ export const translations = {
       dataSources: "Data Sources",
       settings: "Settings",
       myReviews: "My Officer Reviews",
+      marketplaceListings: "My Listings",
       officerReviews: "Officer Review Queue",
     },
 
@@ -1277,6 +1278,7 @@ export const translations = {
       dataSources: "ডেটা উৎস",
       settings: "সেটিংস",
       myReviews: "কর্মকর্তার পর্যালোচনা",
+      marketplaceListings: "আমার পণ্যের তালিকা",
       officerReviews: "পর্যালোচনা তালিকা",
     },
 

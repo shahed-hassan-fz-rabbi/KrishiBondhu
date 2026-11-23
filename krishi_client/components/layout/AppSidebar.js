@@ -52,6 +52,7 @@ const icons = {
   "/dashboard": LayoutDashboard,
   "/my-farm": Sprout,
   "/market": Store,
+  "/marketplace/my-listings": Store,
   "/rotation-planner": RefreshCw,
   "/crop-rotation": RefreshCw,
   "/assistant": MessageCircle,
