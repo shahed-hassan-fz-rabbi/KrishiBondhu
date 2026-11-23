@@ -62,6 +62,10 @@ export const env = {
   smsOutboxIntervalSeconds: parseInt(process.env.SMS_OUTBOX_INTERVAL_SECONDS || "60", 10),
   smsOutboxBatchSize: parseInt(process.env.SMS_OUTBOX_BATCH_SIZE || "20", 10),
   smsOutboxDbWaitTimeoutMs: parseInt(process.env.SMS_OUTBOX_DB_WAIT_TIMEOUT_MS || "30000", 10),
+  // Market alert scheduler is OFF unless explicitly enabled.
+  marketAlertSchedulerEnabled: process.env.MARKET_ALERT_SCHEDULER_ENABLED === "1",
+  marketAlertIntervalMinutes: parseInt(process.env.MARKET_ALERT_INTERVAL_MINUTES || "30", 10),
+  marketAlertDbWaitTimeoutMs: parseInt(process.env.MARKET_ALERT_DB_WAIT_TIMEOUT_MS || "30000", 10),
   get googleClientId() {
     return (process.env.GOOGLE_CLIENT_ID || "").trim();
   },

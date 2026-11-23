@@ -12,6 +12,7 @@ import { env } from "./config/env.config.js";
 import { startFarmSmsScheduler } from "./services/farm-sms-scheduler.service.js";
 import { startWeatherAlertScheduler } from "./services/sms/weatherAlertScheduler.service.js";
 import { startSmsOutboxScheduler } from "./services/sms/smsOutboxScheduler.service.js";
+import { startMarketAlertScheduler } from "./services/sms/marketAlertScheduler.service.js";
 
 async function main() {
   await connectDatabase();
@@ -31,6 +32,8 @@ async function main() {
   const stopWeatherAlertScheduler = startWeatherAlertScheduler().stop;
   // Disabled by default; dry-run only; needs SMS_OUTBOX_SCHEDULER_ENABLED=1.
   const stopSmsOutboxScheduler = startSmsOutboxScheduler().stop;
+  // Disabled by default; needs MARKET_ALERT_SCHEDULER_ENABLED=1.
+  const stopMarketAlertScheduler = startMarketAlertScheduler().stop;
 
   // ---- Graceful shutdown ----
   const shutdown = async (signal) => {
@@ -38,6 +41,7 @@ async function main() {
     stopFarmSmsScheduler?.();
     await stopWeatherAlertScheduler();
     await stopSmsOutboxScheduler();
+    await stopMarketAlertScheduler();
     server.close(async () => {
       const { disconnectDatabase } = await import("./config/database.js");
       await disconnectDatabase();

@@ -222,7 +222,9 @@ export async function commitMarketImport(req, res, next) {
     return successResponse(res, 201, {
       submittedRecords: cleaned.length, insertedOrUpdated: importedRecords, qualityStatus: humanVerified ? "verified" : "review",
       frequency, lastSuccessfulSyncAt, sourceDocumentId: sourceDocumentId || null,
-      note: humanVerified ? "Admin-confirmed source rows are available to current-price and frequency-specific forecast tools." : "Rows remain review-only and are excluded from farmer current-price and forecast results until an administrator verifies them.",
+      note: humanVerified
+        ? "Admin-confirmed source rows are available to current-price and frequency-specific forecast tools, and become eligible for the next automatic market alert cycle."
+        : "Rows remain review-only and are excluded from farmer current-price and forecast results until an administrator verifies them.",
     });
   } catch (error) { return next(error); }
 }
