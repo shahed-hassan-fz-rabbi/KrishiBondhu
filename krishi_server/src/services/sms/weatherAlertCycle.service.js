@@ -7,14 +7,14 @@ import {
 import { getLiveForecast } from "../weather/forecast.service.js";
 import { hasSmsConsent } from "./smsPreferences.js";
 import { evaluateWeatherForecast, resolveWeatherDistrict } from "./weatherAlertEngine.js";
-import { evaluateFarmerWeatherAlert } from "./weatherAlert.service.js";
+import { evaluateFarmerWeatherAlertForOutbox } from "./weatherAlertOutbox.service.js";
 
 /**
  * ONE-CYCLE weather alert runner (Part 3D.1).
  *
- * Not a scheduler: a caller invokes this once. No queues, no retries and no
- * real delivery — all alerts go through the dry-run `sendSms()` foundation.
- * A database-backed single-document lock prevents overlapping cycles.
+ * Not a scheduler: a caller invokes this once. Qualified farmers get a pending
+ * SMS outbox job (never an immediate send). No queues, retries or real
+ * delivery here. A database-backed single-document lock prevents overlap.
  *
  * The returned summary contains counts and reasons only, never phone numbers
  * or other farmer identifiers.
@@ -93,6 +93,10 @@ function emptySummary(runId, now) {
     locked: false,
     evaluated: 0,
     eligible: 0,
+    queued: 0,
+    duplicate: 0,
+    failed: 0,
+    // Legacy alias kept for existing callers; equals `queued` (no send occurs).
     dryRunAlerts: 0,
     skipped: 0,
     errors: 0,
@@ -139,7 +143,7 @@ export async function runWeatherAlertCycle({
   lockModel = WeatherAlertCycleLock,
   lock = null,
   getForecast = getLiveForecast,
-  evaluate = evaluateFarmerWeatherAlert,
+  evaluate = evaluateFarmerWeatherAlertForOutbox,
   logger = null,
   now = new Date(),
   batchSize = DEFAULT_BATCH_SIZE,
@@ -257,8 +261,17 @@ export async function runWeatherAlertCycle({
         try {
           if (evaluationResult.error) throw evaluationResult.error;
           const result = evaluationResult.value;
-          if (result.created) summary.dryRunAlerts += 1;
-          else bump(summary, result.reason || "NOT_CREATED");
+          const queued = result.queued === true || result.created === true;
+          if (queued) {
+            summary.queued += 1;
+            summary.dryRunAlerts += 1; // legacy alias
+          } else if (result.reason === "DUPLICATE") {
+            summary.duplicate += 1;
+          } else if (["ENQUEUE_ERROR", "INVALID_DEDUPE_KEY", "EMPTY_MESSAGE"].includes(result.reason)) {
+            summary.failed += 1;
+          } else {
+            bump(summary, result.reason || "NOT_CREATED");
+          }
         } catch (error) {
           summary.errors += 1;
           bump(summary, "EVALUATION_ERROR");

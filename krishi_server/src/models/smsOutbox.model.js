@@ -25,9 +25,15 @@ export const SMS_OUTBOX_TRANSITIONS = Object.freeze({
   submitted: [],
   // Terminal: a simulated send is never a real submission and is never retried.
   dry_run: [],
-  failed: ["pending", "cancelled"],
+  // Terminal: retries are scheduled as pending with nextAttemptAt, never by
+  // reviving a failed job.
+  failed: ["cancelled"],
   cancelled: [],
 });
+
+/** Only temporary processing failures may be retried. */
+export const SMS_OUTBOX_FAILURE_CATEGORIES = Object.freeze(["temporary", "permanent"]);
+export const DEFAULT_MAX_OUTBOX_ATTEMPTS = 3;
 
 export function outboxMessageRef({ dedupeKey = "", text = "" } = {}) {
   return createHash("sha256").update(`${dedupeKey}\u0000${text}`).digest("hex");
@@ -55,6 +61,19 @@ const smsOutboxSchema = new mongoose.Schema(
       index: true,
     },
     attempts: { type: Number, min: 0, default: 0 },
+    maxAttempts: {
+      type: Number,
+      min: 1,
+      max: 10,
+      default: DEFAULT_MAX_OUTBOX_ATTEMPTS,
+    },
+    /** Retry is deferred until this time; a claim must never ignore it. */
+    nextAttemptAt: { type: Date, default: null },
+    failureCategory: {
+      type: String,
+      enum: SMS_OUTBOX_FAILURE_CATEGORIES,
+      default: null,
+    },
     phoneLast4: { type: String, default: null, match: /^\d{4}$/ },
     /** Consent snapshot (timestamps only, no PII) for later revalidation audit. */
     consentGivenAt: { type: Date, default: null },
@@ -80,6 +99,7 @@ smsOutboxSchema.index(
   { unique: true, name: "sms_outbox_user_dedupe_unique" }
 );
 smsOutboxSchema.index({ status: 1, createdAt: 1 }, { name: "sms_outbox_status_created" });
+smsOutboxSchema.index({ status: 1, nextAttemptAt: 1 }, { name: "sms_outbox_retry_ready" });
 smsOutboxSchema.index({ dedupeKey: 1 }, { name: "sms_outbox_dedupe_lookup" });
 
 export const SmsOutbox =

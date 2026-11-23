@@ -6,6 +6,9 @@ const PUBLIC_PRODUCT_FIELDS = "productName description quantity unit askingPrice
 const ALLOWED_UNITS = new Set(["kg", "quintal", "ton"]);
 const MAX_PAGE_SIZE = 100;
 const MAX_RESULT_OFFSET = 1_000_000;
+const MAX_SEARCH_LENGTH = 100;
+const MAX_DISTRICT_LENGTH = 80;
+const ALLOWED_PRODUCT_QUERY_FIELDS = new Set(["q", "district", "page", "limit"]);
 const EDITABLE_PRODUCT_FIELDS = new Set([
   "productName", "description", "quantity", "unit", "askingPricePerUnit", "district", "upazila", "status",
 ]);
@@ -15,6 +18,19 @@ function parsePositiveInteger(value, fallback, maximum = Number.MAX_SAFE_INTEGER
   if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) return null;
   const parsed = Number(value);
   return Number.isSafeInteger(parsed) && parsed <= maximum ? parsed : null;
+}
+
+function parseOptionalTextQuery(value, field, maximumLength) {
+  if (value === undefined) return { value: "" };
+  if (typeof value !== "string") return { error: `${field} must be a single string value.` };
+  const normalized = value.trim();
+  if (normalized.length > maximumLength) return { error: `${field} cannot exceed ${maximumLength} characters.` };
+  if (/[\u0000-\u001f\u007f]/.test(normalized)) return { error: `${field} contains unsupported control characters.` };
+  return { value: normalized };
+}
+
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function validateListingInput(body, { partial = false, rejectUnknown = false } = {}) {
@@ -64,11 +80,25 @@ function validateListingInput(body, { partial = false, rejectUnknown = false } =
 /** GET /api/v1/marketplace/products — public active listing browse. */
 export async function listMarketplaceProducts(req, res, next) {
   try {
+    const unexpectedFields = Object.keys(req.query || {}).filter((field) => !ALLOWED_PRODUCT_QUERY_FIELDS.has(field));
+    if (unexpectedFields.length) {
+      return errorResponse(res, 400, "Unsupported Marketplace query parameter.", "INVALID_QUERY", unexpectedFields.map((field) => ({ field, message: "This query parameter is not supported." })));
+    }
+
     const page = parsePositiveInteger(req.query.page, 1);
     const limit = parsePositiveInteger(req.query.limit, 20, MAX_PAGE_SIZE);
     if (!page || !limit || (page - 1) * limit > MAX_RESULT_OFFSET) return errorResponse(res, 400, "Page and limit must be positive integers; limit cannot exceed 100 or request an excessive offset.", "INVALID_PAGINATION");
 
+    const search = parseOptionalTextQuery(req.query.q, "q", MAX_SEARCH_LENGTH);
+    const district = parseOptionalTextQuery(req.query.district, "district", MAX_DISTRICT_LENGTH);
+    const invalidFilters = [];
+    if (search.error) invalidFilters.push({ field: "q", message: search.error });
+    if (district.error) invalidFilters.push({ field: "district", message: district.error });
+    if (invalidFilters.length) return errorResponse(res, 400, "Invalid Marketplace query parameters.", "INVALID_QUERY", invalidFilters);
+
     const filter = { status: "active" };
+    if (search.value) filter.productName = { $regex: escapeRegex(search.value), $options: "i" };
+    if (district.value) filter.district = { $regex: `^${escapeRegex(district.value)}$`, $options: "i" };
     const [products, total] = await Promise.all([
       MarketplaceProduct.find(filter)
         .sort({ createdAt: -1, _id: -1 })

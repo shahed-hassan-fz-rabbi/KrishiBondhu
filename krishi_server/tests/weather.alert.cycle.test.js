@@ -124,6 +124,8 @@ async function makeCycle(options = {}) {
     preferencesModel: preferencesModel(fixtures.map((item) => item.prefs)),
     lock: options.lock || fakeLock(),
     getForecast,
+    // Cycle mechanics are tested here; outbox behaviour has dedicated tests.
+    evaluate: options.evaluate || (async () => ({ created: true, queued: true, reason: "QUEUED" })),
     logger,
     now: NOW,
     ...extra,
@@ -151,24 +153,25 @@ test("multiple farmers in one district each get a dry-run alert; forecast is reu
   assert.equal(summary.eligible, 3);
   assert.equal(summary.evaluated, 3);
   assert.equal(summary.dryRunAlerts, 3);
+  assert.equal(summary.queued, 3);
   assert.equal(cycle.getForecastCount.value, 0);
   assert.deepEqual(calls, ["cumilla", "chattogram"]);
   assert.deepEqual(summary.districtsProcessed, ["chattogram", "cumilla"]);
-  assert.equal(cycle.logger.entries.length, 3);
-  const keys = cycle.logger.entries.map((entry) => entry.dedupeKey);
-  assert.equal(new Set(keys).size, 3, "dedupe keys must be per farmer");
-  assert.ok(keys.some((key) => key.includes(":u1:")) && keys.some((key) => key.includes(":u2:")));
+  assert.equal(cycle.logger.entries.length, 0, "no immediate delivery logs from the cycle");
 });
 
-test("repeated runs do not re-alert the same farmers", async () => {
+test("cycle summary counts duplicate and failed enqueue results separately", async () => {
   const cycle = await makeCycle({ fixtures: [farmer({ id: "u1" }), farmer({ id: "u2" })] });
-  const first = await cycle.run();
-  const second = await cycle.run();
+  const summary = await cycle.run({
+    evaluate: async ({ user }) => ({
+      queued: false,
+      reason: user._id === "u1" ? "DUPLICATE" : "ENQUEUE_ERROR",
+    }),
+  });
 
-  assert.equal(first.dryRunAlerts, 2);
-  assert.equal(second.dryRunAlerts, 0);
-  assert.equal(second.skipped, 2);
-  assert.equal(second.skipReasons.DUPLICATE, 2);
+  assert.equal(summary.queued, 0);
+  assert.equal(summary.duplicate, 1);
+  assert.equal(summary.failed, 1);
 });
 
 test("revoked consent, unverified phone and missing district are skipped", async () => {
@@ -220,7 +223,7 @@ test("bounded batches and maxUsers cap the work", async () => {
   assert.equal(summary.eligible, 3);
   assert.equal(summary.evaluated, 3);
   assert.equal(summary.stoppedEarly, "MAX_USERS");
-  assert.equal(cycle.logger.entries.length, 3);
+  assert.equal(summary.queued, 3);
 });
 
 test("evaluation errors are counted, the lock is released, and the summary has no phone numbers", async () => {

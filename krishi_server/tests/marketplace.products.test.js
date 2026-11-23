@@ -51,6 +51,52 @@ function selectedQuery(resolve) {
   };
 }
 
+function installBrowseDatasetMocks(t, inventory) {
+  const filters = [];
+  const matches = (product, filter) => {
+    if (product.status !== filter.status) return false;
+    if (filter.productName && !new RegExp(filter.productName.$regex, filter.productName.$options).test(product.productName)) return false;
+    if (filter.district && !new RegExp(filter.district.$regex, filter.district.$options).test(product.district)) return false;
+    return true;
+  };
+
+  t.mock.method(MarketplaceProduct, "find", (filter) => {
+    filters.push(filter);
+    let offset = 0;
+    let pageSize = inventory.length;
+    return {
+      sort(sort) { assert.deepEqual(sort, { createdAt: -1, _id: -1 }); return this; },
+      skip(value) { offset = value; return this; },
+      limit(value) { pageSize = value; return this; },
+      select(fields) { assert.doesNotMatch(fields, /ownerId|email|phone|passwordHash/); return this; },
+      lean: async () => inventory
+        .filter((product) => matches(product, filter))
+        .sort((a, b) => b.createdAt - a.createdAt || String(b._id).localeCompare(String(a._id)))
+        .slice(offset, offset + pageSize),
+    };
+  });
+  t.mock.method(MarketplaceProduct, "countDocuments", async (filter) => {
+    filters.push(filter);
+    return inventory.filter((product) => matches(product, filter)).length;
+  });
+  return filters;
+}
+
+function browseInventory() {
+  const date = (day) => new Date(`2026-11-${String(day).padStart(2, "0")}T00:00:00.000Z`);
+  return [
+    publicProduct({ _id: new mongoose.Types.ObjectId("650000000000000000000001"), productName: "Potato", district: "Cumilla", createdAt: date(23) }),
+    publicProduct({ _id: new mongoose.Types.ObjectId("650000000000000000000002"), productName: "Sweet potato", district: "Cumilla", createdAt: date(22) }),
+    publicProduct({ _id: new mongoose.Types.ObjectId("650000000000000000000003"), productName: "আলু", district: "Cumilla", createdAt: date(21) }),
+    publicProduct({ _id: new mongoose.Types.ObjectId("650000000000000000000004"), productName: "BRRI dhan rice", district: "Cumilla", createdAt: date(20) }),
+    publicProduct({ _id: new mongoose.Types.ObjectId("650000000000000000000005"), productName: "Rice", district: "Chattogram", createdAt: date(19) }),
+    publicProduct({ _id: new mongoose.Types.ObjectId("650000000000000000000006"), productName: "Rice", district: "Cumilla", createdAt: date(18) }),
+    publicProduct({ _id: new mongoose.Types.ObjectId("650000000000000000000007"), productName: "Rice", district: "Cumilla", status: "sold_out", createdAt: date(17) }),
+    publicProduct({ _id: new mongoose.Types.ObjectId("650000000000000000000008"), productName: "Rice", district: "Cumilla", status: "archived", createdAt: date(16) }),
+    publicProduct({ _id: new mongoose.Types.ObjectId("650000000000000000000009"), productName: "Special .* produce", district: "Noakhali", createdAt: date(15) }),
+  ];
+}
+
 async function request(method, path, body, token) {
   const response = await fetch(`${baseUrl}${path}`, {
     method,
@@ -112,6 +158,82 @@ test("GET marketplace products is public, active-only, paginated, and privacy-sa
   for (const privateValue of [farmer.email, farmer.phone, farmer.passwordHash, "ownerId", "googleId"]) {
     assert.equal(serialized.includes(privateValue), false);
   }
+});
+
+test("public product search matches English, Bengali, and case-insensitively as literal text", async (t) => {
+  const filters = installBrowseDatasetMocks(t, browseInventory());
+  const english = await request("GET", "/api/v1/marketplace/products?q=Potato");
+  assert.equal(english.response.status, 200);
+  assert.deepEqual(english.payload.data.products.map(({ productName }) => productName), ["Potato", "Sweet potato"]);
+  assert.deepEqual(filters[0], { status: "active", productName: { $regex: "Potato", $options: "i" } });
+
+  const bengali = await request("GET", "/api/v1/marketplace/products?q=%E0%A6%86%E0%A6%B2%E0%A7%81");
+  assert.equal(bengali.response.status, 200);
+  assert.deepEqual(bengali.payload.data.products.map(({ productName }) => productName), ["আলু"]);
+  assert.deepEqual(filters[2], { status: "active", productName: { $regex: "আলু", $options: "i" } });
+
+  const caseInsensitive = await request("GET", "/api/v1/marketplace/products?q=RICE");
+  assert.equal(caseInsensitive.response.status, 200);
+  assert.deepEqual(caseInsensitive.payload.data.products.map(({ productName }) => productName), ["BRRI dhan rice", "Rice", "Rice"]);
+  assert.equal(caseInsensitive.payload.data.pagination.total, 3);
+
+  const regexCharacters = await request("GET", "/api/v1/marketplace/products?q=%2E%2A");
+  assert.equal(regexCharacters.response.status, 200);
+  assert.deepEqual(regexCharacters.payload.data.products.map(({ productName }) => productName), ["Special .* produce"]);
+  assert.deepEqual(filters[6], { status: "active", productName: { $regex: "\\.\\*", $options: "i" } });
+});
+
+test("district is an exact case-insensitive filter and combines with search before pagination", async (t) => {
+  const filters = installBrowseDatasetMocks(t, browseInventory());
+  const district = await request("GET", "/api/v1/marketplace/products?district=%20cumilla%20");
+  assert.equal(district.response.status, 200);
+  assert.deepEqual(filters[0], { status: "active", district: { $regex: "^cumilla$", $options: "i" } });
+  assert.equal(district.payload.data.pagination.total, 5);
+  assert.ok(district.payload.data.products.every((product) => product.district === "Cumilla"));
+
+  const combined = await request("GET", "/api/v1/marketplace/products?q=rice&district=CUMILLA&page=2&limit=1");
+  assert.equal(combined.response.status, 200);
+  assert.deepEqual(filters[2], {
+    status: "active",
+    productName: { $regex: "rice", $options: "i" },
+    district: { $regex: "^CUMILLA$", $options: "i" },
+  });
+  assert.deepEqual(combined.payload.data.products.map(({ productName }) => productName), ["Rice"]);
+  assert.deepEqual(combined.payload.data.pagination, { page: 2, limit: 1, total: 2, pages: 2 });
+  assert.deepEqual(filters[3], filters[2], "countDocuments uses the same combined filters as find");
+
+  const noMatch = await request("GET", "/api/v1/marketplace/products?q=dragon&district=Cumilla");
+  assert.equal(noMatch.response.status, 200);
+  assert.deepEqual(noMatch.payload.data.products, []);
+  assert.deepEqual(noMatch.payload.data.pagination, { page: 1, limit: 20, total: 0, pages: 0 });
+
+  const reset = await request("GET", "/api/v1/marketplace/products");
+  assert.equal(reset.response.status, 200);
+  assert.deepEqual(filters[6], { status: "active" });
+  assert.equal(reset.payload.data.pagination.total, 7, "clearing filters restores every active listing");
+});
+
+test("Marketplace search rejects malformed, oversized, control-character, and operator query inputs before database access", async (t) => {
+  let findCalls = 0;
+  let countCalls = 0;
+  t.mock.method(MarketplaceProduct, "find", () => { findCalls += 1; throw new Error("Invalid filters must not query products"); });
+  t.mock.method(MarketplaceProduct, "countDocuments", () => { countCalls += 1; throw new Error("Invalid filters must not count products"); });
+  const invalidQueries = [
+    "?q=one&q=two",
+    `?q=${"a".repeat(101)}`,
+    `?district=${"a".repeat(81)}`,
+    "?q=bad%00value",
+    "?q%5B%24ne%5D=anything",
+    "?status%5B%24ne%5D=archived",
+  ];
+
+  for (const query of invalidQueries) {
+    const { response, payload } = await request("GET", `/api/v1/marketplace/products${query}`);
+    assert.equal(response.status, 400, query);
+    assert.equal(payload.error.code, "INVALID_QUERY", query);
+  }
+  assert.equal(findCalls, 0);
+  assert.equal(countCalls, 0);
 });
 
 test("guest cannot create a marketplace product (401)", async () => {

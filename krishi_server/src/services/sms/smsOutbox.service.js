@@ -43,6 +43,9 @@ export function toSafeOutboxView(document = {}) {
     parts: document.parts ?? null,
     status: document.status || null,
     attempts: document.attempts ?? 0,
+    maxAttempts: document.maxAttempts ?? null,
+    nextAttemptAt: document.nextAttemptAt || null,
+    failureCategory: document.failureCategory || null,
     phoneLast4: document.phoneLast4 || null,
     createdAt: document.createdAt || null,
   };

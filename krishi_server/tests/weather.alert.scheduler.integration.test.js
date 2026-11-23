@@ -12,6 +12,7 @@ import {
   WeatherAlertCycleLock,
   WEATHER_CYCLE_LOCK_ID,
 } from "../src/models/weatherAlertCycleLock.model.js";
+import { SmsOutbox } from "../src/models/smsOutbox.model.js";
 import {
   createDbCycleLock,
   runWeatherAlertCycle,
@@ -31,7 +32,7 @@ const BLOCKED = "BLOCKED: no isolated MongoDB test instance (set MONGODB_TEST_UR
 const integration = (name, fn) => test(name, { skip: dbAvailable ? false : BLOCKED }, fn);
 
 let databaseName = null;
-const COLLECTIONS = [User, SmsPreferences, SmsNotificationLog, WeatherAlertCycleLock];
+const COLLECTIONS = [User, SmsPreferences, SmsNotificationLog, SmsOutbox, WeatherAlertCycleLock];
 
 if (dbAvailable) {
   before(async () => {
@@ -165,16 +166,17 @@ integration("only the lock owner can release it", async () => {
   assert.equal(released.status, "idle");
 });
 
-integration("repeated cycles produce no duplicate dry-run alerts", async () => {
+integration("repeated cycles produce no duplicate outbox jobs", async () => {
   await seedFarmers(2);
   const first = await runWeatherAlertCycle(cycleOptions());
   const second = await runWeatherAlertCycle(cycleOptions());
 
-  assert.equal(first.dryRunAlerts, 2);
-  assert.equal(second.dryRunAlerts, 0);
-  assert.equal(second.skipReasons.DUPLICATE, 2);
-  assert.equal(await SmsNotificationLog.countDocuments({ category: "weather", status: "dry_run" }), 2);
-  assert.equal(await SmsNotificationLog.countDocuments({ userId: { $exists: false } }), 0);
+  assert.equal(first.queued, 2);
+  assert.equal(second.queued, 0);
+  assert.equal(second.duplicate, 2);
+  assert.equal(await SmsOutbox.countDocuments({}), 2);
+  // The cycle only enqueues; no delivery log is written until a worker runs.
+  assert.equal(await SmsNotificationLog.countDocuments({}), 0);
 });
 
 function makeTimers() {

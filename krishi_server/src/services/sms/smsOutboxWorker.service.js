@@ -9,13 +9,20 @@ import {
   transitionOutboxStatus,
   toSafeOutboxView,
 } from "./smsOutbox.service.js";
+import {
+  scheduleOutboxRetry,
+  DEFAULT_RETRY_BASE_MS,
+  DEFAULT_RETRY_MAX_MS,
+} from "./smsOutboxRetry.service.js";
 
 /**
  * Safe dry-run outbox worker (Part 3D.4B).
  *
  * This worker NEVER contacts an SMS gateway. It atomically claims pending (or
  * expired-lease) jobs, revalidates consent/phone, then records a dry-run
- * outcome in a terminal `dry_run` state. No scheduler, retries or webhooks.
+ * outcome in a terminal `dry_run` state. Temporary failures only get a
+ * nextAttemptAt timestamp (no timers, scheduler or webhook); every attempt
+ * revalidates consent and recipient.
  */
 
 const DEFAULT_LEASE_TTL_MS = 5 * 60 * 1000;
@@ -45,7 +52,10 @@ export async function claimNextOutboxJob({
   const query = model.findOneAndUpdate(
     {
       $or: [
-        { status: "pending" },
+        {
+          status: "pending",
+          $or: [{ nextAttemptAt: null }, { nextAttemptAt: { $lte: now } }],
+        },
         { status: "processing", leaseExpiresAt: { $lte: now } },
       ],
     },
@@ -57,6 +67,7 @@ export async function claimNextOutboxJob({
         lastAttemptAt: now,
         updatedAt: now,
         lastError: null,
+        nextAttemptAt: null,
       },
       $inc: { attempts: 1 },
     },
@@ -129,6 +140,9 @@ export async function processSmsOutboxBatch({
   liveEnabled = null,
   dryRunGuard = null,
   revalidate = revalidateForDelivery,
+  retryScheduler = scheduleOutboxRetry,
+  retryBaseMs = DEFAULT_RETRY_BASE_MS,
+  retryMaxMs = DEFAULT_RETRY_MAX_MS,
 } = {}) {
   const summary = {
     claimed: 0,
@@ -138,6 +152,8 @@ export async function processSmsOutboxBatch({
     failed: 0,
     conflicts: 0,
     errors: 0,
+    retryScheduled: 0,
+    retriesExhausted: 0,
     refused: false,
     reason: null,
     results: [],
@@ -173,7 +189,11 @@ export async function processSmsOutboxBatch({
       if (job.messageRef && actualRef !== job.messageRef) {
         const failed = await transitionOutboxStatus({
           id: job._id, from: "processing", to: "failed", leaseOwner, now,
-          extra: { lastError: "MESSAGE_INTEGRITY_MISMATCH" }, model,
+          extra: {
+            lastError: "MESSAGE_INTEGRITY_MISMATCH",
+            failureCategory: "permanent",
+            nextAttemptAt: null,
+          }, model,
         });
         if (failed.ok) { summary.failed += 1; summary.results.push(safeResult(job, "failed", "MESSAGE_INTEGRITY_MISMATCH")); }
         else { summary.conflicts += 1; }
@@ -195,7 +215,12 @@ export async function processSmsOutboxBatch({
         // Revoked consent / unverified phone: cancel safely, never send.
         const cancelled = await transitionOutboxStatus({
           id: job._id, from: "processing", to: "cancelled", leaseOwner, now,
-          extra: { lastError: check.code, cancellationReason: check.code }, model,
+          extra: {
+            lastError: check.code,
+            cancellationReason: check.code,
+            failureCategory: "permanent",
+            nextAttemptAt: null,
+          }, model,
         });
         if (cancelled.ok) {
           summary.cancelled += 1;
@@ -224,17 +249,36 @@ export async function processSmsOutboxBatch({
       summary.processed += 1;
       summary.results.push(safeResult(job, "dry_run", "DRY_RUN_RECORDED"));
     } catch {
-      // There is no retry worker yet: fail the job and clear its lease rather
-      // than returning it to pending where it would be re-claimed immediately.
+      // Only unexpected processing errors are temporary. Scheduling is atomic
+      // and honours the attempt budget; every later attempt revalidates.
+      let retry;
       try {
-        await transitionOutboxStatus({
-          id: job._id, from: "processing", to: "failed", leaseOwner, now,
-          extra: { lastError: "PROCESSING_ERROR" }, model,
+        retry = await retryScheduler({
+          id: job._id,
+          leaseOwner,
+          attempts: Number(job.attempts) || 1,
+          maxAttempts: Number(job.maxAttempts) || 3,
+          now,
+          lastError: "TEMPORARY_FAILURE",
+          baseDelayMs: retryBaseMs,
+          maxDelayMs: retryMaxMs,
+          model,
         });
-      } catch { /* best-effort lease release */ }
+      } catch {
+        retry = { scheduled: false, exhausted: false, reason: "RETRY_SCHEDULE_ERROR" };
+      }
       summary.errors += 1;
-      summary.failed += 1;
-      summary.results.push(safeResult(job, "failed", "PROCESSING_ERROR"));
+      if (retry.scheduled) {
+        summary.retryScheduled += 1;
+        summary.results.push(safeResult(job, "retry_scheduled", "TEMPORARY_FAILURE"));
+      } else if (retry.exhausted) {
+        summary.retriesExhausted += 1;
+        summary.failed += 1;
+        summary.results.push(safeResult(job, "failed", "RETRY_EXHAUSTED"));
+      } else {
+        summary.failed += 1;
+        summary.results.push(safeResult(job, "failed", retry.reason || "TEMPORARY_FAILURE"));
+      }
     }
   }
 
