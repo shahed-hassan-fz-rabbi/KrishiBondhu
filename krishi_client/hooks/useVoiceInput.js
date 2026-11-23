@@ -12,7 +12,7 @@ const getServerSupport = () => false;
 const MAX_RECORDING_MS = 25_000;
 const MAX_AUDIO_BYTES = 2_500_000;
 
-/** Records short farmer questions and uses multilingual automatic transcription. */
+/** Uses live browser speech recognition when available, with recorded transcription as a fallback. */
 export function useVoiceInput({ onFinalTranscript, onInterimTranscript, uiLanguage = "bn" } = {}) {
   const isSupported = useSyncExternalStore(subscribeToBrowserSupport, getSupport, getServerSupport);
   const [isListening, setIsListening] = useState(false);
@@ -21,6 +21,8 @@ export function useVoiceInput({ onFinalTranscript, onInterimTranscript, uiLangua
   const [errorCode, setErrorCode] = useState(null);
   const [errorDetails, setErrorDetails] = useState("");
   const recorderRef = useRef(null);
+  const finalTranscriptRef = useRef("");
+  const liveTranscriptRef = useRef("");
   const streamRef = useRef(null);
   const chunksRef = useRef([]);
   const timeoutRef = useRef(null);
@@ -36,37 +38,56 @@ export function useVoiceInput({ onFinalTranscript, onInterimTranscript, uiLangua
     streamRef.current = null;
   }, []);
 
-  const runBrowserFallback = useCallback(() => {
+  const startBrowserRecognition = useCallback(() => {
     const SpeechRecognition = typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
     if (!SpeechRecognition) {
-      setErrorCode("UNSUPPORTED");
-      setErrorDetails("This browser does not provide microphone recording.");
-      setIsListening(false);
       return;
     }
     try {
       const recognition = new SpeechRecognition();
-      recognition.lang = "bn-BD";
-      recognition.continuous = false;
+      recognition.lang = uiLanguage === "bn" ? "bn-BD" : "en-US";
+      recognition.continuous = true;
       recognition.interimResults = true;
       recognition.maxAlternatives = 3;
+      finalTranscriptRef.current = "";
+      liveTranscriptRef.current = "";
       recognition.onstart = () => setIsListening(true);
       recognition.onresult = (event) => {
-        let interim = "";
-        let final = "";
-        for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const finalParts = [];
+        const interimParts = [];
+        for (let i = 0; i < event.results.length; i += 1) {
           const result = event.results[i];
-          if (result.isFinal) final += result[0]?.transcript || "";
-          else interim += result[0]?.transcript || "";
+          const transcript = result[0]?.transcript?.trim();
+          if (!transcript) continue;
+          if (result.isFinal) finalParts.push(transcript);
+          else interimParts.push(transcript);
         }
-        if (interim) { setInterimTranscript(interim); onInterimRef.current?.(interim); }
-        if (final.trim()) { setInterimTranscript(""); onFinalRef.current?.(final.trim()); }
+        finalTranscriptRef.current = finalParts.join(" ").replace(/\s+/g, " ").trim();
+        const interim = interimParts.join(" ").replace(/\s+/g, " ").trim();
+        const liveTranscript = [finalTranscriptRef.current, interim].filter(Boolean).join(" ");
+        liveTranscriptRef.current = liveTranscript;
+        setInterimTranscript(interim);
+        if (liveTranscript) onInterimRef.current?.(liveTranscript);
       };
       recognition.onerror = (event) => {
-        setErrorCode(event.error === "not-allowed" ? "PERMISSION_DENIED" : event.error === "no-speech" ? "NO_SPEECH" : "NETWORK");
+        if (event.error === "aborted") return;
+        const code = event.error === "not-allowed" || event.error === "service-not-allowed"
+          ? "PERMISSION_DENIED"
+          : event.error === "no-speech"
+          ? "NO_SPEECH"
+          : event.error === "audio-capture"
+          ? "AUDIO_CAPTURE"
+          : event.error === "language-not-supported"
+          ? "UNSUPPORTED"
+          : "NETWORK";
+        setErrorCode(code);
         setErrorDetails(event.message || event.error || "Speech recognition failed.");
       };
-      recognition.onend = () => { setIsListening(false); setInterimTranscript(""); };
+      recognition.onend = () => {
+        setIsListening(false);
+        setInterimTranscript("");
+        if (liveTranscriptRef.current) onInterimRef.current?.(liveTranscriptRef.current);
+      };
       recorderRef.current = recognition;
       recognition.start();
     } catch (error) {
@@ -74,7 +95,7 @@ export function useVoiceInput({ onFinalTranscript, onInterimTranscript, uiLangua
       setErrorDetails(error.message || "Could not start speech recognition.");
       setIsListening(false);
     }
-  }, []);
+  }, [uiLanguage]);
 
   const transcribeRecording = useCallback(async (blob, mimeType) => {
     if (!blob.size) { setErrorCode("NO_SPEECH"); setIsTranscribing(false); return; }
@@ -112,7 +133,16 @@ export function useVoiceInput({ onFinalTranscript, onInterimTranscript, uiLangua
     setErrorDetails("");
     setInterimTranscript("");
     if (typeof window === "undefined") return;
-    if (!window.MediaRecorder || !navigator.mediaDevices?.getUserMedia) { runBrowserFallback(); return; }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      startBrowserRecognition();
+      return;
+    }
+    if (!window.MediaRecorder || !navigator.mediaDevices?.getUserMedia) {
+      setErrorCode("UNSUPPORTED");
+      setErrorDetails("This browser does not support live speech recognition or microphone recording.");
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
       streamRef.current = stream;
@@ -150,7 +180,7 @@ export function useVoiceInput({ onFinalTranscript, onInterimTranscript, uiLangua
       setErrorCode(error.name === "NotAllowedError" || error.name === "PermissionDeniedError" ? "PERMISSION_DENIED" : "AUDIO_CAPTURE");
       setErrorDetails(error.message || "Could not access the microphone.");
     }
-  }, [releaseStream, runBrowserFallback, transcribeRecording, uiLanguage]);
+  }, [releaseStream, startBrowserRecognition, transcribeRecording, uiLanguage]);
 
   const stopListening = useCallback(() => {
     if (recorderRef.current?.state === "recording") {

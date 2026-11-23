@@ -66,6 +66,7 @@ import {
 } from "@/services/api.js";
 import { dispatchFarmNotificationUpdate } from "@/lib/farmNotificationEvents.js";
 import WeatherIntelligenceSection from "@/components/dashboard/WeatherIntelligenceSection.js";
+import { FERTILIZER_GUIDANCE_SOURCE, getFarmFertilizerGuidance } from "@/lib/fertilizerGuidance.js";
 
 function FarmDetailsContent() {
   const router = useRouter();
@@ -461,6 +462,8 @@ function FarmDetailsContent() {
   const stages = lifecycle?.stages || [];
   const currentStageCodes = new Set(stages.filter(stage => stage.isCurrent).map(stage => stage.stageCode));
   const currentTasks = activities.filter(act => currentStageCodes.has(act.relatedStageCode) && act.status !== "COMPLETED" && act.status !== "SKIPPED");
+  const fertilizerGuidance = getFarmFertilizerGuidance(farm, lang);
+  const farmTabs = ["now", "timeline", "fertilizer", "land"];
 
   return (
     <div className="mx-auto max-w-[1200px] space-y-6 pb-6">
@@ -534,7 +537,7 @@ function FarmDetailsContent() {
       )}
 
       <div role="tablist" aria-label={t("farmUi.tabsLabel")} className="flex gap-2 overflow-x-auto rounded-2xl border border-line bg-surface p-2">
-        {["now", "timeline", "land"].map(tab => <button key={tab} id={`field-tab-${tab}`} role="tab" type="button" tabIndex={activeFarmTab === tab ? 0 : -1} onKeyDown={event => { const tabs = ["now", "timeline", "land"]; const index = tabs.indexOf(tab); const next = event.key === "ArrowRight" ? tabs[(index + 1) % 3] : event.key === "ArrowLeft" ? tabs[(index + 2) % 3] : event.key === "Home" ? tabs[0] : event.key === "End" ? tabs[2] : null; if (next) { event.preventDefault(); setActiveFarmTab(next); document.getElementById(`field-tab-${next}`)?.focus(); } }} aria-selected={activeFarmTab === tab} aria-controls={`field-panel-${tab}`} onClick={() => setActiveFarmTab(tab)} className={`min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${activeFarmTab === tab ? "bg-forest text-white shadow-sm" : "text-muted hover:bg-emerald-50 dark:hover:bg-emerald-950/30"}`}>{t(`farmUi.tabs.${tab}`)}</button>)}
+        {farmTabs.map(tab => <button key={tab} id={`field-tab-${tab}`} role="tab" type="button" tabIndex={activeFarmTab === tab ? 0 : -1} onKeyDown={event => { const index = farmTabs.indexOf(tab); const next = event.key === "ArrowRight" ? farmTabs[(index + 1) % farmTabs.length] : event.key === "ArrowLeft" ? farmTabs[(index + farmTabs.length - 1) % farmTabs.length] : event.key === "Home" ? farmTabs[0] : event.key === "End" ? farmTabs[farmTabs.length - 1] : null; if (next) { event.preventDefault(); setActiveFarmTab(next); document.getElementById(`field-tab-${next}`)?.focus(); } }} aria-selected={activeFarmTab === tab} aria-controls={`field-panel-${tab}`} onClick={() => setActiveFarmTab(tab)} className={`min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${activeFarmTab === tab ? "bg-forest text-white shadow-sm" : "text-muted hover:bg-emerald-50 dark:hover:bg-emerald-950/30"}`}>{tab === "fertilizer" ? (lang === "bn" ? "সার ব্যবস্থাপনা" : "Fertilizer") : t(`farmUi.tabs.${tab}`)}</button>)}
       </div>
       <section id="field-panel-land" role="tabpanel" aria-labelledby="field-tab-land" hidden={activeFarmTab !== "land"}>
       {/* Grid: Land/Location & Soil/Water */}
@@ -628,7 +631,58 @@ function FarmDetailsContent() {
       </div>
 
       </section>
-      <section id={`field-panel-${activeFarmTab === "land" ? "inactive" : activeFarmTab}`} role="tabpanel" aria-labelledby={`field-tab-${activeFarmTab}`} hidden={activeFarmTab === "land"}>
+      <section id="field-panel-fertilizer" role="tabpanel" aria-labelledby="field-tab-fertilizer" hidden={activeFarmTab !== "fertilizer"} className="space-y-5">
+        <div className="overflow-hidden rounded-3xl border border-emerald-200 bg-surface shadow-km-sm dark:border-emerald-900">
+          <div className="flex flex-col gap-4 border-b border-line bg-gradient-to-r from-emerald-50/80 via-surface to-lime-50/50 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6 dark:from-emerald-950/30 dark:to-lime-950/20">
+            <div className="flex items-start gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-forest dark:bg-emerald-900/50 dark:text-emerald-300"><Leaf className="h-5 w-5" aria-hidden="true" /></span>
+              <div>
+                <h2 className="text-lg font-bold text-content">{lang === "bn" ? "সার প্রয়োগের সহজ পরিকল্পনা" : "Fertilizer plan, made clear"}</h2>
+                <p className="mt-1 text-sm text-muted">{fertilizerGuidance.cropLabel} · {lang === "bn" ? "আপনার মাঠের তথ্য অনুযায়ী" : "For this field"}</p>
+              </div>
+            </div>
+            <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-200 bg-white/80 px-3 py-1.5 text-xs font-semibold text-forest dark:border-emerald-900 dark:bg-surface dark:text-emerald-300"><ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />{lang === "bn" ? "সরকারি উৎস যাচাই করা" : "Official source checked"}</span>
+          </div>
+
+          <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
+            <div>
+              <p className="text-sm leading-6 text-content">{fertilizerGuidance.summary}</p>
+              <h3 className="mt-5 text-sm font-bold text-content">{lang === "bn" ? "কখন কী করবেন" : "When to apply"}</h3>
+              {fertilizerGuidance.schedule.length ? <ol className="mt-3 space-y-3">
+                {fertilizerGuidance.schedule.map((step, index) => <li key={`${step.title}-${index}`} className="flex gap-3 rounded-2xl border border-line bg-bg/70 p-3.5">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-forest text-xs font-bold text-white">{localDigits(index + 1)}</span>
+                  <div><h4 className="text-sm font-semibold text-content">{step.title}</h4><p className="mt-1 text-sm leading-6 text-muted">{step.text}</p></div>
+                </li>)}
+              </ol> : <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200">{fertilizerGuidance.summary}</p>}
+
+              <h3 className="mt-5 text-sm font-bold text-content">{lang === "bn" ? "নিরাপদ প্রয়োগে খেয়াল রাখুন" : "Safe application"}</h3>
+              <ul className="mt-2 space-y-2">{fertilizerGuidance.precautions.map((item, index) => <li key={index} className="flex items-start gap-2 text-sm leading-6 text-muted"><CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-emerald" aria-hidden="true" />{item}</li>)}</ul>
+            </div>
+
+            <aside className="space-y-3">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
+                <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200"><Info className="h-4 w-4 shrink-0" aria-hidden="true" /><h3 className="text-sm font-bold">{lang === "bn" ? "মাত্রা: তথ্য যাচাইাধীন" : "Dose: verification pending"}</h3></div>
+                <p className="mt-2 text-sm leading-6 text-amber-950/80 dark:text-amber-100/80">{lang === "bn" ? "মাঠের মাটির ধরন লেখা আছে, কিন্তু পুষ্টি উপাদানের মাটি পরীক্ষার ফল নেই। তাই ইউরিয়া, টিএসপি বা অন্য সারের কেজি অনুমান করে দেখানো হচ্ছে না।" : "The field has a soil type, but no lab results for soil nutrients. Urea, TSP, or other fertilizer quantities are not guessed."}</p>
+                <p className="mt-2 text-xs leading-5 text-amber-900/70 dark:text-amber-200/70">{lang === "bn" ? "জাত, চাষপদ্ধতি, জমির পরিমাণ ও আগের সার প্রয়োগও চূড়ান্ত হিসাবকে প্রভাবিত করে।" : "Variety, cultivation method, field size, and previous applications also affect the final calculation."}</p>
+              </div>
+
+              <div className="rounded-2xl border border-line bg-bg/70 p-4">
+                <h3 className="text-xs font-bold uppercase tracking-wide text-content-muted">{lang === "bn" ? "যাচাই করা উৎস" : "Verified source"}</h3>
+                <p className="mt-2 text-sm font-semibold text-content">{FERTILIZER_GUIDANCE_SOURCE.organization}</p>
+                <p className="mt-1 text-xs leading-5 text-muted">{FERTILIZER_GUIDANCE_SOURCE.title} · {lang === "bn" ? "ফসলের নির্দেশিকা পৃষ্ঠা" : "Crop guidance page"} {localDigits(fertilizerGuidance.page || "—")}</p>
+                <p className="mt-1 text-xs text-muted">{lang === "bn" ? "সর্বশেষ উৎস যাচাই:" : "Source last checked:"} {lang === "bn" ? "২৪ নভেম্বর ২০২৬" : "24 November 2026"}</p>
+                <a href={FERTILIZER_GUIDANCE_SOURCE.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex min-h-9 items-center gap-1.5 text-xs font-semibold text-forest hover:underline dark:text-emerald-300">{lang === "bn" ? "মূল নির্দেশিকা খুলুন" : "Open original guide"}<ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /></a>
+              </div>
+            </aside>
+          </div>
+
+          <div className="flex flex-col gap-2 border-t border-line bg-bg/60 p-4 sm:flex-row sm:justify-end sm:px-6">
+            <button type="button" onClick={() => { setCustomForm({ title: lang === "bn" ? "সার প্রয়োগের কাজ" : "Fertilizer application", description: lang === "bn" ? "প্রয়োগের আগে মাটির আর্দ্রতা ও সারের পরিমাণ যাচাই করুন। প্রয়োগের পর ব্যবহৃত পরিমাণ লিখুন।" : "Check soil moisture and the verified dose before application. Record the amount used afterward.", scheduledDate: new Date().toISOString().split("T")[0], activityType: "fertilizer_application", relatedStageCode: overview?.currentStage?.stageCode || "" }); setShowCreateModal(true); }} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-forest px-4 text-sm font-semibold text-white hover:bg-forest/90"><Plus className="h-4 w-4" aria-hidden="true" />{lang === "bn" ? "সার প্রয়োগের কাজ যোগ করুন" : "Add fertilizer task"}</button>
+            <Link href={`/assistant?farmId=${farm._id}`} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-line bg-surface px-4 text-sm font-semibold text-content hover:bg-surface-2"><Bot className="h-4 w-4 text-forest" aria-hidden="true" />{lang === "bn" ? "সহকারীকে মাঠের তথ্য জিজ্ঞাসা করুন" : "Ask about this field"}</Link>
+          </div>
+        </div>
+      </section>
+      <section id={`field-panel-${activeFarmTab === "land" ? "inactive" : activeFarmTab}`} role="tabpanel" aria-labelledby={`field-tab-${activeFarmTab}`} hidden={activeFarmTab === "land" || activeFarmTab === "fertilizer"}>
       {/* PHASE 9.2: CROP LIFECYCLE ENGINE TIMELINE */}
       <div className="rounded-2xl border border-line bg-surface p-5 shadow-km-sm sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-stone-100 pb-4 dark:border-line">
