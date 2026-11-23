@@ -194,7 +194,7 @@ function FarmDetailsContent() {
         setFarm(farmRes.data);
         setLoadedFarmId(String(farmId));
       } else {
-        setError(farmRes.error?.message || "Failed to load farm details");
+        setError(farmRes.error?.message || "Failed to load field details");
         setLoadedFarmId(String(farmId));
         setLoading(false);
         return;
@@ -224,7 +224,7 @@ function FarmDetailsContent() {
         setDataError(true);
       }
     } catch {
-      setError("A network error occurred while loading farm data.");
+      setError("A network error occurred while loading field data.");
       setLoadedFarmId(String(farmId));
     } finally {
       if (isCurrent()) {
@@ -399,7 +399,7 @@ function FarmDetailsContent() {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm(t("myFarm.confirmDelete") || "Are you sure you want to delete this farm?")) {
+    if (!window.confirm(t("myFarm.confirmDelete") || "Are you sure you want to delete this field?")) {
       return;
     }
     setDeleting(true);
@@ -408,11 +408,11 @@ function FarmDetailsContent() {
       if (res.success) {
         router.push("/my-farm");
       } else {
-        alert(res.error?.message || "Failed to delete farm");
+        alert(res.error?.message || "Failed to delete field");
         setDeleting(false);
       }
     } catch {
-      alert("Error deleting farm");
+      alert("Error deleting field");
       setDeleting(false);
     }
   };
@@ -433,7 +433,7 @@ function FarmDetailsContent() {
     return (
       <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center shadow-km-sm dark:border-red-900/30 dark:bg-red-950/20">
         <p className="text-base font-semibold text-red-800 dark:text-red-300">
-          {!user ? (lang === "bn" ? "খামার দেখতে লগইন করুন।" : "Please log in to view this farm.") : (error || "Farm not found")}
+          {!user ? (lang === "bn" ? "ক্ষেত দেখতে লগইন করুন।" : "Please log in to view this field.") : (error || "Field not found")}
         </p>
         <div className="mt-4">
           <Link
@@ -525,18 +525,18 @@ function FarmDetailsContent() {
 
       {dataError && (
         <div role="status" className="flex flex-col gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 sm:flex-row sm:items-center sm:justify-between dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
-          <span>{lang === "bn" ? "কিছু খামার-সম্পর্কিত তথ্য লোড হয়নি। সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।" : "Some farm details could not be loaded. Check the connection and retry."}</span>
+          <span>{lang === "bn" ? "কিছু ক্ষেত-সম্পর্কিত তথ্য লোড হয়নি। সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।" : "Some field details could not be loaded. Check the connection and retry."}</span>
           <button type="button" onClick={() => loadData(undefined, currentUserId)} className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-amber-400 px-3 py-2 text-xs font-semibold hover:bg-amber-100 dark:border-amber-800 dark:hover:bg-amber-950/60">
             <RefreshCw className="h-3.5 w-3.5" />
-            {lang === "bn" ? "আবার চেষ্টা করুন" : "Retry farm data"}
+            {lang === "bn" ? "আবার চেষ্টা করুন" : "Retry field data"}
           </button>
         </div>
       )}
 
       <div role="tablist" aria-label={t("farmUi.tabsLabel")} className="flex gap-2 overflow-x-auto rounded-2xl border border-line bg-surface p-2">
-        {["now", "timeline", "land"].map(tab => <button key={tab} id={`farm-tab-${tab}`} role="tab" type="button" tabIndex={activeFarmTab === tab ? 0 : -1} onKeyDown={event => { const tabs = ["now", "timeline", "land"]; const index = tabs.indexOf(tab); const next = event.key === "ArrowRight" ? tabs[(index + 1) % 3] : event.key === "ArrowLeft" ? tabs[(index + 2) % 3] : event.key === "Home" ? tabs[0] : event.key === "End" ? tabs[2] : null; if (next) { event.preventDefault(); setActiveFarmTab(next); document.getElementById(`farm-tab-${next}`)?.focus(); } }} aria-selected={activeFarmTab === tab} aria-controls={`farm-panel-${tab}`} onClick={() => setActiveFarmTab(tab)} className={`min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${activeFarmTab === tab ? "bg-forest text-white shadow-sm" : "text-muted hover:bg-emerald-50 dark:hover:bg-emerald-950/30"}`}>{t(`farmUi.tabs.${tab}`)}</button>)}
+        {["now", "timeline", "land"].map(tab => <button key={tab} id={`field-tab-${tab}`} role="tab" type="button" tabIndex={activeFarmTab === tab ? 0 : -1} onKeyDown={event => { const tabs = ["now", "timeline", "land"]; const index = tabs.indexOf(tab); const next = event.key === "ArrowRight" ? tabs[(index + 1) % 3] : event.key === "ArrowLeft" ? tabs[(index + 2) % 3] : event.key === "Home" ? tabs[0] : event.key === "End" ? tabs[2] : null; if (next) { event.preventDefault(); setActiveFarmTab(next); document.getElementById(`field-tab-${next}`)?.focus(); } }} aria-selected={activeFarmTab === tab} aria-controls={`field-panel-${tab}`} onClick={() => setActiveFarmTab(tab)} className={`min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${activeFarmTab === tab ? "bg-forest text-white shadow-sm" : "text-muted hover:bg-emerald-50 dark:hover:bg-emerald-950/30"}`}>{t(`farmUi.tabs.${tab}`)}</button>)}
       </div>
-      <section id="farm-panel-land" role="tabpanel" aria-labelledby="farm-tab-land" hidden={activeFarmTab !== "land"}>
+      <section id="field-panel-land" role="tabpanel" aria-labelledby="field-tab-land" hidden={activeFarmTab !== "land"}>
       {/* Grid: Land/Location & Soil/Water */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* Land & Location */}
@@ -628,7 +628,7 @@ function FarmDetailsContent() {
       </div>
 
       </section>
-      <section id={`farm-panel-${activeFarmTab === "land" ? "inactive" : activeFarmTab}`} role="tabpanel" aria-labelledby={`farm-tab-${activeFarmTab}`} hidden={activeFarmTab === "land"}>
+      <section id={`field-panel-${activeFarmTab === "land" ? "inactive" : activeFarmTab}`} role="tabpanel" aria-labelledby={`field-tab-${activeFarmTab}`} hidden={activeFarmTab === "land"}>
       {/* PHASE 9.2: CROP LIFECYCLE ENGINE TIMELINE */}
       <div className="rounded-2xl border border-line bg-surface p-5 shadow-km-sm sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-stone-100 pb-4 dark:border-line">
@@ -774,7 +774,7 @@ function FarmDetailsContent() {
         {activeFarmTab === "now" && <section className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-5 sm:p-6 dark:border-emerald-900/50 dark:bg-emerald-950/20" aria-labelledby="now-guidance-heading">
           <div className="flex items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-forest dark:bg-emerald-900/40 dark:text-emerald-300"><Sprout className="h-5 w-5" aria-hidden="true" /></span><h3 id="now-guidance-heading" className="text-base font-semibold text-content">{t("farmUi.whatNow")}</h3></div>
           {currentTasks.length > 0 ? <ul className="mt-4 space-y-2 text-sm leading-6 text-content">{currentTasks.slice(0, 3).map(act => <li key={act._id} className="flex items-start gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-600" aria-hidden="true" />{activityTitle(act)}</li>)}</ul> : <p className="mt-4 text-sm leading-6 text-muted">{t(overview?.currentStage ? "farmUi.noPendingTasks" : "farmUi.noCurrentStage")}</p>}
-          <button type="button" onClick={() => { setActiveFarmTab("timeline"); document.getElementById("farm-tab-timeline")?.focus(); }} className="mt-4 flex min-h-11 w-full items-center justify-between gap-3 rounded-xl bg-forest px-4 py-3 text-left text-sm font-semibold text-white transition-colors hover:bg-forest/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 dark:bg-emerald-800 dark:hover:bg-emerald-700">{t("farmUi.timelineButton")}<ChevronRight className="h-4 w-4 shrink-0" aria-hidden="true" /></button>
+          <button type="button" onClick={() => { setActiveFarmTab("timeline"); document.getElementById("field-tab-timeline")?.focus(); }} className="mt-4 flex min-h-11 w-full items-center justify-between gap-3 rounded-xl bg-forest px-4 py-3 text-left text-sm font-semibold text-white transition-colors hover:bg-forest/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 dark:bg-emerald-800 dark:hover:bg-emerald-700">{t("farmUi.timelineButton")}<ChevronRight className="h-4 w-4 shrink-0" aria-hidden="true" /></button>
         </section>}
         <div hidden={activeFarmTab !== "timeline"}>
         {/* Vertical Lifecycle Stages Timeline */}
@@ -996,7 +996,7 @@ function FarmDetailsContent() {
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-bold uppercase tracking-wider text-stone-700 dark:text-muted flex items-center gap-1.5">
                   <ListTodo className="h-3.5 w-3.5 text-forest-700" />
-                  {lang === "bn" ? "অতিরিক্ত খামার কাজ" : "Additional Farm Tasks"}
+                  {lang === "bn" ? "অতিরিক্ত ক্ষেত কাজ" : "Additional Field Tasks"}
                 </span>
                 <span className="text-xs text-stone-500 font-mono">
                   {localDigits(unassigned.length)} {lang === "bn" ? "টি কাজ" : "tasks"}
@@ -1048,7 +1048,7 @@ function FarmDetailsContent() {
               <div className="flex items-center gap-2">
                 <ListTodo className="h-5 w-5 text-forest-700 dark:text-forest-400" />
                 <h3 className="text-base font-bold text-stone-900 dark:text-content">
-                  {t("myFarm.activities.modal.createTitle") || "Add Farm Activity"}
+                  {t("myFarm.activities.modal.createTitle") || "Add Field Activity"}
                 </h3>
               </div>
               <button
@@ -1120,7 +1120,7 @@ function FarmDetailsContent() {
                   onChange={(e) => setCustomForm((p) => ({ ...p, relatedStageCode: e.target.value }))}
                   className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 focus:border-forest-500 focus:outline-none dark:border-line dark:bg-surface-2 dark:text-content"
                 >
-                  <option value="">{lang === "bn" ? "কোনো নির্দিষ্ট পর্যায় নয় (সাধারণ কাজ)" : "None / General Farm Task"}</option>
+                  <option value="">{lang === "bn" ? "কোনো নির্দিষ্ট পর্যায় নয় (সাধারণ কাজ)" : "None / General Field Task"}</option>
                   {stages.map((stg) => (
                     <option key={stg.stageCode} value={stg.stageCode}>
                       {stageLabel(stg)}

@@ -262,7 +262,7 @@ export function NotificationCenter({ variant = "default" }) {
                 const isDueToday = item.type === "ACTIVITY_DUE_TODAY";
                 const isStage = item.type === "LIFECYCLE_STAGE_UPCOMING";
                 const farmIdStr = item.farmId?._id || item.farmId;
-                const farmName = item.farmId?.name || (isBn ? "খামার" : "Farm");
+                const farmName = item.farmId?.name || (isBn ? "ক্ষেত" : "Farm");
 
                 return (
                   <div

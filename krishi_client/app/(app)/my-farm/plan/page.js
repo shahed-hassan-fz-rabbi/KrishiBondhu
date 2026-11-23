@@ -194,7 +194,7 @@ function CropPlanningPageContent() {
     const supportedDistrict = DISTRICTS.some((item) => item.code === farm.location?.districtCode);
     if (!supportedDistrict) {
       setSelectedFarmId("");
-      setError(lang === "bn" ? "এই খামারের জেলার জন্য পরিকল্পনা সমর্থিত নয়।" : "Crop planning is not supported for this farm's district.");
+      setError(lang === "bn" ? "এই ক্ষেতের জেলার জন্য পরিকল্পনা সমর্থিত নয়।" : "Crop planning is not supported for this field's district.");
       return;
     }
     setFormData((prev) => ({
@@ -351,7 +351,7 @@ function CropPlanningPageContent() {
 
   const handleConfirmCreateFarm = async () => {
     if (!setupFarmName.trim()) {
-      setCreateError(lang === "bn" ? "খামারের নাম আবশ্যক।" : "Farm name is required.");
+      setCreateError(lang === "bn" ? "ক্ষেতের নাম আবশ্যক।" : "Field name is required.");
       return;
     }
 
@@ -397,10 +397,10 @@ function CropPlanningPageContent() {
         dispatchFarmNotificationUpdate();
         router.push(`/my-farm/${res.data._id}`);
       } else {
-        setCreateError(res.error?.message || "Failed to create farm.");
+        setCreateError(res.error?.message || "Failed to create field.");
       }
     } catch {
-      setCreateError("A network error occurred while setting up farm.");
+      setCreateError("A network error occurred while setting up field.");
     } finally {
       setCreatingFarm(false);
     }
@@ -425,26 +425,26 @@ function CropPlanningPageContent() {
 
       {user && (
         <div className="rounded-2xl border border-line bg-surface p-4 shadow-km-sm sm:flex sm:items-center sm:gap-4">
-          <label htmlFor="planning-farm" className="mb-2 block text-sm font-medium text-content sm:mb-0">
-            {lang === "bn" ? "সংরক্ষিত খামারের তথ্য ব্যবহার করুন" : "Plan for a saved farm"}
+          <label htmlFor="planning-field" className="mb-2 block text-sm font-medium text-content sm:mb-0">
+            {lang === "bn" ? "সংরক্ষিত ক্ষেতের তথ্য ব্যবহার করুন" : "Plan for a saved field"}
           </label>
           <select
-            id="planning-farm"
+            id="planning-field"
           value={activeSelectedFarmId}
             disabled={farmsLoading}
             onChange={(event) => selectFarm(event.target.value)}
             className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-content sm:max-w-md"
           >
-            <option value="">{farmsLoading ? (lang === "bn" ? "খামার লোড হচ্ছে…" : "Loading farms…") : (lang === "bn" ? "ম্যানুয়ালি জমির তথ্য দিন" : "Enter a field profile manually")}</option>
+            <option value="">{farmsLoading ? (lang === "bn" ? "ক্ষেত লোড হচ্ছে…" : "Loading fields…") : (lang === "bn" ? "ম্যানুয়ালি জমির তথ্য দিন" : "Enter a field profile manually")}</option>
             {availableFarms.map((farm) => <option key={farm._id} value={farm._id}>{farm.farmName} · {farm.location?.upazila}, {farm.location?.district}</option>)}
           </select>
-          {activeSelectedFarmId && <p className="mt-2 text-xs text-muted sm:mt-0">{lang === "bn" ? "সংরক্ষিত খামারের অবস্থান ও জমির তথ্য দিয়ে সুপারিশ তৈরি হবে। তথ্য সম্পাদনা করলে পরিকল্পনাটি খামার থেকে আলাদা হবে।" : "Recommendations use this farm’s saved profile. Editing profile fields detaches the plan from the farm."}</p>}
+          {activeSelectedFarmId && <p className="mt-2 text-xs text-muted sm:mt-0">{lang === "bn" ? "সংরক্ষিত ক্ষেতের অবস্থান ও জমির তথ্য দিয়ে সুপারিশ তৈরি হবে। তথ্য সম্পাদনা করলে পরিকল্পনাটি ক্ষেত থেকে আলাদা হবে।" : "Recommendations use this field’s saved profile. Editing profile fields detaches the plan from the field."}</p>}
         </div>
       )}
 
       {user && !farmsLoading && farmsLoadError && (
         <div role="status" className="flex flex-col gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 sm:flex-row sm:items-center sm:justify-between dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
-          <span>{lang === "bn" ? "সংরক্ষিত খামারগুলো লোড হয়নি; আপনি চাইলে তথ্য হাতে লিখতে পারেন।" : "Saved farms could not be loaded; you can still enter a profile manually."}</span>
+          <span>{lang === "bn" ? "সংরক্ষিত ক্ষেতগুলো লোড হয়নি; আপনি চাইলে তথ্য হাতে লিখতে পারেন।" : "Saved fields could not be loaded; you can still enter a profile manually."}</span>
           <button type="button" onClick={() => loadSavedFarms(currentUserId)} className="min-h-9 rounded-lg border border-amber-400 px-3 py-2 text-xs font-semibold hover:bg-amber-100 dark:border-amber-800 dark:hover:bg-amber-950/60">
             {lang === "bn" ? "আবার চেষ্টা করুন" : "Retry"}
           </button>

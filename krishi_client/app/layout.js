@@ -17,9 +17,9 @@ const bengali = Noto_Sans_Bengali({
 });
 
 export const metadata = {
-  title: "KrishiBondhu — From Seed to Market",
+  title: "KrishiBondhu",
   description:
-    "A Bangla-first farming companion for Bangladesh: check dated market information, plan crops, organize farm work, and understand local weather context.",
+    "A Bangla-first farming companion for Bangladesh: check dated market information, plan crops, organize field work, and understand local weather context.",
   icons: {
     icon: BRAND_LOGO_SRC,
     apple: BRAND_LOGO_SRC,

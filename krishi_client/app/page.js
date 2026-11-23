@@ -127,7 +127,7 @@ const steps = [
 
 const workflowCards = [
   { icon: Satellite, image: "/img/photos/nasa-modis-bangladesh.jpg", titleBn: "তথ্য কোথা থেকে আসে", titleEn: "Where the information comes from", bodyBn: "আবহাওয়া, জলবায়ু, উপগ্রহ ও বাজারের তথ্য তাদের উৎস এবং তারিখসহ এক জায়গায় দেখানো হয়।", bodyEn: "Weather, climate, satellite and market information is presented with its source and date.", detailBn: "পূর্বাভাস, ঐতিহাসিক রেকর্ড ও স্যাটেলাইট পর্যবেক্ষণ আলাদা ধরনের তথ্য। কোন উৎস কোন এলাকা ও সময়কে বোঝায় তা দেখে ব্যবহার করুন।", detailEn: "Forecasts, historical records and satellite observations are different kinds of information. Check each source’s area and time coverage before using it.", tagsBn: "NASA POWER · SMAP · MODIS", tagsEn: "NASA POWER · SMAP · MODIS", href: "/data-sources", linkBn: "তথ্যের উৎস দেখুন", linkEn: "Explore data sources" },
-  { icon: MapPin, image: "/img/photos/soil-moisture-card.jpg", titleBn: "জমির তথ্য যোগ করুন", titleEn: "Add your farm context", bodyBn: "জেলা, মাটি, পানি এবং বর্তমানে যে ফসলের পর যে ফসল করেন—সেই তথ্য দিন।", bodyEn: "Enter your district, soil and water context, and the crops you currently grow in sequence.", detailBn: "যা জানা আছে শুধু সেটিই দিন। মাটি বা সেচের তথ্য অজানা হলে সেটি অজানাই থাকবে; সিস্টেম নিজে থেকে ধরে নেবে না।", detailEn: "Share what you know. Unknown soil or irrigation details stay unknown; the system does not assume them.", tagsBn: "জেলা · মাটি · ফসলের ক্রম", tagsEn: "District · Soil · Crop sequence", href: "/crop-rotation", linkBn: "পরিকল্পনা শুরু করুন", linkEn: "Start planning" },
+  { icon: MapPin, image: "/img/photos/soil-moisture-card.jpg", titleBn: "জমির তথ্য যোগ করুন", titleEn: "Add your field context", bodyBn: "জেলা, মাটি, পানি এবং বর্তমানে যে ফসলের পর যে ফসল করেন—সেই তথ্য দিন।", bodyEn: "Enter your district, soil and water context, and the crops you currently grow in sequence.", detailBn: "যা জানা আছে শুধু সেটিই দিন। মাটি বা সেচের তথ্য অজানা হলে সেটি অজানাই থাকবে; সিস্টেম নিজে থেকে ধরে নেবে না।", detailEn: "Share what you know. Unknown soil or irrigation details stay unknown; the system does not assume them.", tagsBn: "জেলা · মাটি · ফসলের ক্রম", tagsEn: "District · Soil · Crop sequence", href: "/crop-rotation", linkBn: "পরিকল্পনা শুরু করুন", linkEn: "Start planning" },
   { icon: Sprout, image: "/img/photos/transplanting.jpg", titleBn: "বিকল্পগুলো মিলিয়ে দেখুন", titleEn: "Compare the alternatives", bodyBn: "বর্তমান পদ্ধতির সঙ্গে বিকল্প ফসলের ক্রম, চাষের সময় ও আনুমানিক পানির চাহিদা তুলনা করুন।", bodyEn: "Compare crop sequences, growing times and estimated crop-water needs against your current plan.", detailBn: "ফসল পঞ্জিকার সময়ের সংঘাত, তাপমাত্রা যাচাইয়ের প্রয়োজন ও অনুপস্থিত তথ্যও ফলাফলে দেখানো হয়। এই তুলনা ফলন বা আয়ের নিশ্চয়তা নয়।", detailEn: "Results also flag possible calendar conflicts, temperature checks and missing data. The comparison does not guarantee yield or income.", tagsBn: "ফসল পঞ্জিকা · সময় · সতর্কতা", tagsEn: "Crop calendars · Timing · Checks", href: "/crop-rotation", linkBn: "ফসল তুলনা করুন", linkEn: "Compare crops" },
   { icon: MessageSquare, image: "/img/photos/agricultural-field-guidance.jpg", titleBn: "AI সহায়তা নিয়ে সিদ্ধান্ত নিন", titleEn: "Use AI support, then decide", bodyBn: "বাংলা বা ইংরেজিতে প্রশ্ন করে উপলভ্য তথ্য ও ফলাফল সহজভাবে বুঝে নিন।", bodyEn: "Ask in Bangla or English to get help understanding available information and results.", detailBn: "সহকারী উৎসসহ তথ্য ব্যাখ্যা করতে পারে, তবে আপনার জমি সরাসরি পরীক্ষা করে না এবং আপনার হয়ে চাষের সিদ্ধান্ত নেয় না। স্থানীয় কৃষি কর্মকর্তার পরামর্শে মাঠের অবস্থা যাচাই করুন।", detailEn: "The assistant can explain information with sources, but it does not inspect your field or make the farming decision for you. Check local conditions with an agricultural officer.", tagsBn: "বাংলা সহকারী · স্থানীয় যাচাই", tagsEn: "Bangla assistant · Local review", href: "/assistant", linkBn: "সহকারীকে জিজ্ঞাসা করুন", linkEn: "Ask the assistant" },
 ];
@@ -502,7 +502,7 @@ export default function LandingPage() {
             FEATURED SERVICES (Feature discovery — modern)
             ============================================================ */}
         <section className="kb-featured" id="features">
-          <h2 className="kb-featured-eyebrow">{locale === "bn" ? t("landing.featureDiscoveryTitle") : "Core services for your farm"}</h2>
+          <h2 className="kb-featured-eyebrow">{locale === "bn" ? t("landing.featureDiscoveryTitle") : "Core services for your field"}</h2>
           <p className="kb-featured-desc">{locale === "bn" ? t("landing.featureDiscoverySub") : "Market, forecasting, weather, crop rotation and planning—designed for Bangladeshi farmers."}</p>
           <div className="kb-featured-grid">
             {featuredCards.map((card) => {
@@ -654,12 +654,12 @@ export default function LandingPage() {
                 </>
               ) : (
                 <>
-                  <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/20 dark:text-amber-200 flex items-start gap-2">
-                    <Info className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                  <div className="mb-4 flex items-start gap-2 rounded-xl border border-line bg-surface-2/70 p-3 text-xs leading-6 text-[#111827] dark:bg-surface-2/50 dark:text-[#f1f5f2]">
+                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#111827] dark:text-[#f1f5f2]" />
                     <span>
                       {locale === "bn"
-                        ? "সচিত্র নমুনা ফরম্যাট (প্রদর্শনীমূলক) — এটি আজকের বাজারদর নয়। বাজারদরের পর্যবেক্ষণ তারিখ, মান ও সরকারি DAM রিপোর্ট দেখতে 'পুরো বাজার দেখুন' খুলুন।"
-                        : "Sample Demonstration (Illustrative) — Not live or today’s prices. For verified observation dates, market locations, and official DAM reports, tap 'View Full Market'."}
+                        ? "একই ফসলের দাম স্থান ও বাজারভেদে ভিন্ন হতে পারে। প্রদর্শিত মূল্যকে সম্ভাব্য বাজারদরের ধারণা হিসেবে নিন এবং বিক্রির আগে স্থানীয় বাজারে যাচাই করুন।"
+                        : "Prices for the same crop can vary by location and market. Treat the displayed price as an indication of a possible market rate and verify it locally before selling."}
                     </span>
                   </div>
 
@@ -916,7 +916,7 @@ export default function LandingPage() {
                   <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
                   <span>
                     {locale === "bn"
-                      ? "এটি এআই সহকারীর ইন্টারফেস প্রদর্শনের জন্য একটি সাধারণ নমুনা প্রশ্নোত্তর। এটি আপনার খামারের ব্যক্তিগত সুপারিশ বা অনুমোদন নয়।"
+                      ? "এটি এআই সহকারীর ইন্টারফেস প্রদর্শনের জন্য একটি সাধারণ নমুনা প্রশ্নোত্তর। এটি আপনার ক্ষেতের ব্যক্তিগত সুপারিশ বা অনুমোদন নয়।"
                       : "This is an illustrative demonstration of the conversational interface, not a personalized agronomic recommendation for your plot."}
                   </span>
                 </div>
@@ -1194,7 +1194,7 @@ export default function LandingPage() {
           <div className="mx-auto max-w-7xl">
             <div className="mx-auto mb-10 max-w-3xl text-center">
               <p className="text-xs font-bold uppercase tracking-[.18em] text-emerald-strong">{locale === "bn" ? "কৃষিবন্ধুর কর্মধারা" : "THE KRISHIBONDHU WORKFLOW"}</p>
-              <h2 id="how-it-works-title" className="mt-3 text-3xl font-extrabold tracking-tight text-forest dark:text-green-100 sm:text-4xl">{locale === "bn" ? "তথ্য থেকে কৃষিকাজের সিদ্ধান্তে" : "From information to farm action"}</h2>
+              <h2 id="how-it-works-title" className="mt-3 text-3xl font-extrabold tracking-tight text-forest dark:text-green-100 sm:text-4xl">{locale === "bn" ? "তথ্য থেকে কৃষিকাজের সিদ্ধান্তে" : "From information to field action"}</h2>
               <p className="mt-3 text-base leading-7 text-muted">{locale === "bn" ? "প্রতিটি ধাপে কীভাবে সাহায্য করে জানতে card-এর বিস্তারিত খুলুন।" : "Open a card to see how each step can help."}</p>
             </div>
             <div className="grid items-start gap-5 sm:grid-cols-2 xl:grid-cols-4">
