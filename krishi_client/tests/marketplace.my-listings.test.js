@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { fetchMyMarketplaceProducts } from "../services/api.js";
+import { fetchMyMarketplaceProducts, updateMarketplaceProduct } from "../services/api.js";
+import { buildMarketplaceListingEditPatch, validateMarketplaceListingEdit } from "../lib/marketplaceListingEdit.js";
 
 const component = readFileSync(new URL("../components/marketplace/MarketplaceMyListings.js", import.meta.url), "utf8");
 const route = readFileSync(new URL("../app/(public-data)/marketplace/my-listings/page.js", import.meta.url), "utf8");
@@ -69,6 +70,55 @@ test("dashboard displays all listing fields, all statuses, pagination, and read-
   assert.match(component, /href="\/marketplace"/);
   assert.match(component, /Not a DAM-verified price/);
   assert.match(component, /data-bondhu-no-fly/);
-  assert.doesNotMatch(component, /Edit listing|Archive listing|Delete listing|Sold Out button|onDelete/);
+  assert.match(component, /status !== "archived"/);
+  assert.match(component, /\["active", "sold_out"\]\.includes\(product\.status\)/);
+  assert.doesNotMatch(component, /Archive listing|Delete listing|Sold Out button|onDelete/);
   assert.doesNotMatch(component, /phone|password|email|ownerId/i);
+});
+
+test("listing edit API sends only price and quantity in an authenticated PATCH", async () => {
+  const mock = mockFetch({ status: 200, body: { success: true, data: { product: { _id: "p-1", askingPricePerUnit: 5, quantity: 12 } } } });
+  try {
+    const result = await updateMarketplaceProduct("p-1", { askingPricePerUnit: 5, quantity: 12, ownerId: "spoof", role: "admin", status: "active", productName: "spoof" });
+    assert.equal(result.success, true);
+    assert.match(mock.requests[0].url, /\/marketplace\/products\/p-1$/);
+    assert.equal(mock.requests[0].options.method, "PATCH");
+    assert.equal(mock.requests[0].options.credentials, "include");
+    assert.deepEqual(JSON.parse(mock.requests[0].options.body), { askingPricePerUnit: 5, quantity: 12 });
+  } finally { mock.restore(); }
+});
+
+test("listing edit numeric validation enforces finite values and inclusive backend bounds", () => {
+  const messages = { askingPricePerUnit: "price", quantity: "quantity" };
+  for (const value of ["", "0", "0.009", "Infinity", "NaN", String(Number.MAX_SAFE_INTEGER + 1)]) {
+    assert.equal(Object.keys(validateMarketplaceListingEdit({ askingPricePerUnit: value, quantity: "2" }, messages)).includes("askingPricePerUnit"), true);
+    assert.equal(Object.keys(validateMarketplaceListingEdit({ askingPricePerUnit: "2", quantity: value }, messages)).includes("quantity"), true);
+  }
+  assert.deepEqual(validateMarketplaceListingEdit({ askingPricePerUnit: "0.01", quantity: String(Number.MAX_SAFE_INTEGER) }, messages), {});
+  assert.deepEqual(buildMarketplaceListingEditPatch({ askingPricePerUnit: "3.5", quantity: "10" }, { askingPricePerUnit: 2, quantity: 10, status: "active", ownerId: "private" }), { askingPricePerUnit: 3.5 });
+});
+
+test("listing editor is accessible, prefilled, blocks duplicate saves, and updates only after API confirmation", () => {
+  assert.match(component, /askingPricePerUnit: String\(product\.askingPricePerUnit/);
+  assert.match(component, /quantity: String\(product\.quantity/);
+  assert.match(component, /aria-invalid=\{Boolean\(errors\[name\]\)\}/);
+  assert.match(component, /if \(editInFlight\.current \|\| !editingId\) return/);
+  assert.match(component, /response\.success && response\.data\?\.product/);
+  assert.match(component, /setState\(\(current\) => \(\{ \.\.\.current, products:/);
+  assert.match(component, /onClick=\{onCancel\}/);
+  assert.match(component, /disabled=\{saving\}/);
+  assert.match(component, /messages\[response\.status\]/);
+  assert.match(component, /text\.errors\.network/);
+  assert.match(component, /data-bondhu-no-fly onSubmit=\{onSave\}/);
+});
+
+test("listing edit API preserves backend 400, 401, 403 and 404 responses and handles network failures", async () => {
+  for (const status of [400, 401, 403, 404]) {
+    const mock = mockFetch({ status, body: { error: { code: "REJECTED", message: "Rejected" } } });
+    try { assert.equal((await updateMarketplaceProduct("p-1", { quantity: 2 })).status, status); }
+    finally { mock.restore(); }
+  }
+  const mock = mockFetch(new Error("offline"));
+  try { assert.equal((await updateMarketplaceProduct("p-1", { quantity: 2 })).status, 0); }
+  finally { mock.restore(); }
 });

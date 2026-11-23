@@ -42,6 +42,13 @@ export function createMarketplaceProduct(input = {}) {
   const product = Object.fromEntries(allowedFields.filter((field) => Object.hasOwn(source, field)).map((field) => [field, source[field]]));
   return request("/marketplace/products", { method: "POST", body: JSON.stringify(product) });
 }
+/** PATCH /api/v1/marketplace/products/:id — whitelist editable farmer listing fields. */
+export function updateMarketplaceProduct(productId, input = {}) {
+  const allowedFields = ["askingPricePerUnit", "quantity"];
+  const source = input && typeof input === "object" && !Array.isArray(input) ? input : {};
+  const patch = Object.fromEntries(allowedFields.filter((field) => Object.hasOwn(source, field)).map((field) => [field, source[field]]));
+  return request(`/marketplace/products/${encodeURIComponent(productId)}`, { method: "PATCH", body: JSON.stringify(patch) });
+}
 export function fetchMarketPriceForecast({ commodity, division, district, upazila, market, unit, source, priceType = "wholesale", frequency = "daily", horizonDays = 30 }) {
   const query = new URLSearchParams({ commodity, priceType, frequency, horizonDays: String(horizonDays) });
   if (division) query.set("division", division);
