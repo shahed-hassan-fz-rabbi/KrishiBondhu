@@ -65,15 +65,15 @@ import { useLocation } from "@/contexts/LocationContext.js";
 
 /** Featured service cards (part 2). Icon order mirrors the design system; hrefs target existing routes. */
 const featuredCards = [
-  { icon: Store, objKey: "cardMarket", href: "/market" },
-  { icon: TrendingUp, objKey: "cardForecast", href: "/market" },
-  { icon: CloudSun, objKey: "cardWeather", href: "/climate" },
-  { icon: Tractor, objKey: "cardCrops", href: "/crop-rotation" },
-  { icon: MessageSquare, objKey: "cardAssistant", href: "/assistant" },
-  { icon: Globe, objKey: "cardMap", href: "/map" },
-  { icon: Bookmark, objKey: "cardAdvisories", href: "/saved-advisories" },
-  { icon: Tractor, objKey: "cardMyFarm", href: "/my-farm" },
-  { icon: Database, objKey: "cardData", href: "/data-sources" },
+  { icon: Store, objKey: "cardMarket", href: "/market", image: "/img/photos/market-produce.jpg" },
+  { icon: TrendingUp, objKey: "cardForecast", href: "/market", image: "/img/photos/price-forecasting.jpg" },
+  { icon: CloudSun, objKey: "cardWeather", href: "/climate", image: "/img/photos/weather-climate.jpg" },
+  { icon: Tractor, objKey: "cardCrops", href: "/crop-rotation", image: "/img/photos/crop-rotation-cycle.jpg" },
+  { icon: MessageSquare, objKey: "cardAssistant", href: "/assistant", image: "/img/photos/ai-assistant.avif" },
+  { icon: Globe, objKey: "cardMap", href: "/map", image: "/img/photos/nasa-modis-bangladesh.jpg" },
+  { icon: Bookmark, objKey: "cardAdvisories", href: "/saved-advisories", image: "/img/farmer-call.svg" },
+  { icon: Tractor, objKey: "cardMyFarm", href: "/my-farm", image: "/img/photos/farmer-rajshahi.jpg" },
+  { icon: Database, objKey: "cardData", href: "/data-sources", image: "/img/photos/trusted-agri-data.jpg" },
 ];
 
 const overviewDatasets = [
@@ -82,6 +82,7 @@ const overviewDatasets = [
     title: "powerTitle",
     key: "nasa:power:daily:point",
     meaning: "powerMeaning",
+    image: "/img/photos/data-rainfall-temperature.avif",
     icon: Satellite,
     tone: "border-green-300 bg-gradient-to-br from-green-50 via-green-50/60 to-lime-100 dark:border-green-800 dark:from-green-950 dark:via-surface dark:to-green-900/40",
     iconTone: "bg-green-200/60 text-green-800 dark:bg-green-800/40 dark:text-green-300",
@@ -91,6 +92,7 @@ const overviewDatasets = [
     title: "soilTitle",
     key: "nasa:smap:spl3smp_e:v006",
     meaning: "soilMeaning",
+    image: "/img/photos/data-soil-moisture.jpg",
     icon: Sprout,
     tone: "border-amber-300 bg-gradient-to-br from-amber-50 via-yellow-50/70 to-amber-100 dark:border-amber-800 dark:from-amber-950/50 dark:via-surface dark:to-amber-900/30",
     iconTone: "bg-amber-200/60 text-amber-800 dark:bg-amber-800/40 dark:text-amber-300",
@@ -100,6 +102,7 @@ const overviewDatasets = [
     title: "rainTitle",
     key: "nasa:gpm:imerg:3imerghh:v07",
     meaning: "rainMeaning",
+    image: "/img/photos/data-rainfall-observations.jpg",
     icon: CloudRain,
     tone: "border-sky-300 bg-gradient-to-br from-sky-50 via-sky-50/70 to-cyan-100 dark:border-sky-800 dark:from-sky-950 dark:via-surface dark:to-sky-900/40",
     iconTone: "bg-sky-200/60 text-sky-700 dark:bg-sky-800/40 dark:text-sky-300",
@@ -109,54 +112,12 @@ const overviewDatasets = [
     title: "vegetationTitle",
     key: "nasa:modis:mod13q1:v061",
     meaning: "greenMeaning",
+    image: "/img/photos/data-vegetation-condition.jpg",
     icon: Leaf,
     tone: "border-violet-300 bg-gradient-to-br from-violet-50 via-violet-50/60 to-indigo-100 dark:border-violet-800 dark:from-violet-950/60 dark:via-surface dark:to-violet-900/30",
     iconTone: "bg-violet-200/60 text-green-700 dark:bg-violet-800/40 dark:text-green-300",
   },
 ];
-
-function DatasetScene({ kind }) {
-  return (
-    <svg aria-hidden="true" focusable="false" viewBox="0 0 320 90" preserveAspectRatio="none" className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-20 w-full opacity-80 dark:opacity-35">
-      {kind === "NASA POWER" && (
-        <>
-          <circle cx="248" cy="42" r="26" fill="#fbbf24" />
-          <path d="M248 5v-5m-37 17-7-7m81 7 7-7m-91 32h-10m101 0h10" stroke="#f59e0b" strokeWidth="3" strokeLinecap="round" />
-          <path d="M0 64Q65 18 145 62T320 47V90H0Z" fill="#b7dc98" />
-          <path d="M0 79Q90 45 165 76T320 62V90H0Z" fill="#78b951" />
-          <path d="M125 90q40-22 110-27m-68 27q35-16 100-24m-45 24q35-12 90-18" fill="none" stroke="#d7edaa" strokeWidth="4" />
-        </>
-      )}
-      {kind === "SMAP" && (
-        <>
-          <path d="M0 39Q70 61 160 38T320 29V90H0Z" fill="#b77c3e" />
-          <path d="M0 62Q70 84 160 61T320 52V90H0Z" fill="#d8a76a" />
-          <path d="M0 39Q70 61 160 38T320 29" fill="none" stroke="#79b74b" strokeWidth="8" />
-          <path d="M115 47v19m0-9-13-6m13 12 14-8m102-21v25m0-13-12-6m12 14 12-7" stroke="#f4d8ac" strokeWidth="2" fill="none" />
-          <path d="M280 43c-6 9-10 14-10 19a10 10 0 0 0 20 0c0-5-4-10-10-19Z" fill="#38bdf8" stroke="#0284c7" strokeWidth="2" />
-          <path d="M70 13v28m0-14C43 30 45 8 70 13m0 9C94 24 94 3 70 10" fill="#65a932" stroke="#4d8b2b" strokeWidth="2" />
-        </>
-      )}
-      {kind === "GPM" && (
-        <>
-          <path d="M35 20a14 14 0 0 1 26-7 18 18 0 0 1 33 9 12 12 0 0 1-2 24H37a13 13 0 0 1-2-26Z" fill="#78cbe9" />
-          <path d="m44 53-4 9m26-9-4 9m26-9-4 9m-31 7-4 9m26-9-4 9" stroke="#0ea5e9" strokeWidth="3" strokeLinecap="round" />
-          <path d="M0 88Q100 72 170 54T320 57V90Z" fill="#aadad5" />
-          <path d="M100 90Q170 57 220 72T320 57V90Z" fill="#66bfb5" />
-          <path d="M175 90q70-33 145-8" stroke="#d3f1ef" strokeWidth="7" fill="none" />
-        </>
-      )}
-      {kind === "MODIS" && (
-        <>
-          <path d="M0 70Q90 83 170 45T320 25V90H0Z" fill="#a4d57b" />
-          <path d="M0 90q130-35 320-50v50Z" fill="#73b843" />
-          <path d="M25 90q110-38 295-41M85 90q100-31 235-35M150 90q78-25 170-27M215 90q50-16 105-17" stroke="#d1eaaa" strokeWidth="5" fill="none" />
-          <path d="M244 38V17m0 9c-20-1-18-17 0-13m0 6c19 0 17-17 0-10m41 19V8m0 10c-18-1-16-16 0-12m0 5c16 0 15-14 0-9" stroke="#559c32" strokeWidth="3" fill="#80bd47" />
-        </>
-      )}
-    </svg>
-  );
-}
 
 const steps = [
   { n: "01", icon: MapPin, titleKey: "step1Title", descKey: "step1Desc" },
@@ -462,16 +423,11 @@ export default function LandingPage() {
             ============================================================ */}
         <section className="kb-hero2" id="home">
           <div className="kb-hero2-bg" aria-hidden="true">
-            <Image src="/img/kb-hero-field.svg" alt="" width={1280} height={720} className="h-full w-full object-cover" priority />
+            <Image src="/img/agri-field-background.webp" alt="" width={1280} height={720} className="h-full w-full object-cover" priority />
           </div>
           <div className="kb-hero2-gradient" aria-hidden="true" />
           <div className="kb-hero2-inner">
             <div className="kb-hero2-copy">
-              <div className="kb-hero2-eyebrow">
-                <Sprout className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span>{locale === "bn" ? "বাংলাদেশের কৃষকের জন্য · বাংলা ও ইংরেজিতে" : "Made for Bangladesh's farmers · Bangla & English"}</span>
-              </div>
-
               <h1 id="home-title" data-tour-target="home.hero" className="kb-hero2-title">
                 <span className="block">{t(`landing.heroHeadlineLine1`)}</span>
                 <span className="kb-hero2-line2 block"><em className="kb-hero2-highlight">{t(`landing.heroHeadlineLine2`)}</em></span>
@@ -549,6 +505,7 @@ export default function LandingPage() {
         <section className="kb-story-flow" id="how-it-works" aria-labelledby="how-it-works-title">
           <div className="kb-flow-intro"><p>{locale === "bn" ? "কৃষিবন্ধুর কর্মধারা" : "THE KRISHIBONDHU WORKFLOW"}</p><h2 id="how-it-works-title">{locale === "bn" ? "তথ্য থেকে কৃষকের কাজে" : "From information to farm action"}</h2><span>{locale === "bn" ? "প্রতিটি ধাপে উৎস, প্রেক্ষাপট ও অনিশ্চয়তা স্পষ্ট রাখুন।" : "Keep sources, context, and uncertainty visible at every step."}</span></div>
           <div className="kb-flow-card">
+            <div className="kb-flow-visual" aria-hidden="true"><Image src="/img/photos/nasa-modis-flood-2024.jpg" alt="" width={640} height={400} /></div>
             <span className="kb-flow-step-tag">
               <Satellite className="h-3.5 w-3.5" aria-hidden="true" />
               {locale === "bn" ? "১. উপাত্ত পর্যবেক্ষণ" : "1. Scientific Data"}
@@ -569,6 +526,7 @@ export default function LandingPage() {
           </div>
 
           <div className="kb-flow-card">
+            <div className="kb-flow-visual" aria-hidden="true"><Image src="/img/photos/transplanting.jpg" alt="" width={640} height={400} /></div>
             <span className="kb-flow-step-tag">
               <Layers className="h-3.5 w-3.5" aria-hidden="true" />
               {locale === "bn" ? "২. কৃষিবন্ধু সিদ্ধান্ত" : "2. Decision Engine"}
@@ -588,6 +546,7 @@ export default function LandingPage() {
           </div>
 
           <div className="kb-flow-card">
+            <div className="kb-flow-visual" aria-hidden="true"><Image src="/img/photos/agricultural-field-advisor.jpg" alt="" width={640} height={400} /></div>
             <span className="kb-flow-step-tag">
               <Tractor className="h-3.5 w-3.5" aria-hidden="true" />
               {locale === "bn" ? "৩. কৃষকের হাতে সমাধান" : "3. Farmer Delivery"}
@@ -618,6 +577,15 @@ export default function LandingPage() {
               const data = cardData(card.objKey);
               return (
                 <a key={card.objKey} href={card.href} className="kb-featured-card">
+                  <span className={`kb-featured-visual ${card.objKey === "cardAssistant" ? "kb-featured-visual-ai" : ""}`} aria-hidden="true">
+                    <Image src={card.image} alt="" width={640} height={400} />
+                    {card.objKey === "cardAssistant" && (
+                      <span className="kb-featured-ai-overlay">
+                        <span className="kb-featured-ai-badge"><Sparkles className="h-3.5 w-3.5" />Krishi AI</span>
+                        <span className="kb-featured-ai-chat"><MessageSquare className="h-4 w-4" /><span><i /><i /><i /></span></span>
+                      </span>
+                    )}
+                  </span>
                   <span className="kb-featured-icon"><card.icon className="h-6 w-6" strokeWidth={1.7} aria-hidden="true" /></span>
                   <span className="kb-featured-title-2">{data.title}</span>
                   <span className="kb-featured-body">{data.desc}</span>
@@ -627,8 +595,6 @@ export default function LandingPage() {
             })}
           </div>
         </section>
-
-        <section className="kb-honesty">{locale === "bn" ? t("landing.honestNoteBn") : t("landing.honestNote")}</section>
 
         {/* ============================================================
             INTERACTIVE APPLICATION PREVIEWS (Agricultural Tools & Workflows)
@@ -672,6 +638,9 @@ export default function LandingPage() {
           {/* Tab Content 1: Market Intelligence Preview */}
           {activePreviewTab === "market" && (
             <div className="rounded-3xl border border-line bg-surface p-6 sm:p-8 shadow-km-md kb-reveal">
+              <div className="kb-preview-tab-banner" aria-hidden="true">
+                <Image src="/img/photos/market-community-banner.png" alt="" width={938} height={185} />
+              </div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4 mb-6">
                 <div>
                   <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#247A4B]">
@@ -840,6 +809,7 @@ export default function LandingPage() {
                       ? (locale === "bn" ? `উৎস: Open-Meteo (${shortWindowSummary.dateRange})` : `Source: Open-Meteo (${shortWindowSummary.dateRange})`)
                       : (locale === "bn" ? "উৎস: Open-Meteo আবহাওয়া মডেল" : "Source: Open-Meteo weather model")}
                   </p>
+                  <Image src="/img/photos/data-rainfall-temperature.avif" alt={locale === "bn" ? "থার্মোমিটারে তাপমাত্রা ও রৌদ্রোজ্জ্বল আবহাওয়া" : "Thermometer showing temperature in bright weather"} width={640} height={360} className="mt-3 h-20 w-full rounded-xl object-cover object-[75%_center]" />
                 </div>
 
                 {/* Rain Outlook Card */}
@@ -862,6 +832,7 @@ export default function LandingPage() {
                           : `7-day total rain · ${shortWindowSummary.rainDays} rain day(s) expected`)
                       : (locale === "bn" ? "উৎস: Open-Meteo বৃষ্টিপাত পূর্বাভাস" : "Source: Open-Meteo rainfall model")}
                   </p>
+                  <Image src="/img/photos/data-rainfall-observations.jpg" alt={locale === "bn" ? "কৃষিজমিতে বৃষ্টির পানি পড়ছে" : "Rain falling over agricultural land"} width={640} height={360} className="mt-3 h-20 w-full rounded-xl object-cover" />
                 </div>
 
                 {/* Soil Moisture Card */}
@@ -886,6 +857,7 @@ export default function LandingPage() {
                           ? soilMoistureStatus === "loading" ? "স্যাটেলাইট তথ্য লোড হচ্ছে" : "এই এলাকার জন্য SMAP পর্যবেক্ষণ অনুপলব্ধ"
                           : soilMoistureStatus === "loading" ? "Loading satellite observation" : "No SMAP observation is available for this area")}
                   </p>
+                  <Image src="/img/photos/soil-moisture-card.jpg" alt={locale === "bn" ? "হাতে মাটি ধরে রাখা" : "Hands holding soil"} width={640} height={360} className="mt-3 h-20 w-full rounded-xl object-cover" />
                 </div>
               </div>
               <p className="mt-4 text-xs text-muted text-center sm:text-left">
@@ -899,6 +871,9 @@ export default function LandingPage() {
           {/* Tab Content 3: Crop Planning Preview */}
           {activePreviewTab === "planner" && (
             <div className="rounded-3xl border border-line bg-surface p-6 sm:p-8 shadow-km-md kb-reveal">
+              <div className="kb-preview-tab-banner" aria-hidden="true">
+                <Image src="/img/photos/crop-planning-banner.png" alt="" width={1000} height={668} />
+              </div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4 mb-6">
                 <div>
                   <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#247A4B]">
@@ -984,6 +959,9 @@ export default function LandingPage() {
           {/* Tab Content 4: AI Assistant Preview */}
           {activePreviewTab === "assistant" && (
             <div className="rounded-3xl border border-line bg-surface p-6 sm:p-8 shadow-km-md kb-reveal">
+              <div className="kb-preview-tab-banner" aria-hidden="true">
+                <Image src="/img/photos/ai-assistant.avif" alt="" width={1200} height={627} />
+              </div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4 mb-6">
                 <div>
                   <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#247A4B]">
@@ -1077,8 +1055,10 @@ export default function LandingPage() {
                   ? dates.map((value) => new Intl.NumberFormat(locale === "bn" ? "bn-BD" : "en-US", { useGrouping: false }).format(new Date(value).getUTCFullYear())).join("–")
                   : dates.map(formatSourceDate).filter(Boolean).join(" – ");
                 return (
-                  <article key={dataset.key} className={`relative isolate flex h-full flex-col overflow-hidden rounded-2xl border p-5 pb-20 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg motion-reduce:transform-none ${dataset.tone}`}>
-                    <DatasetScene kind={dataset.name} />
+                  <article key={dataset.key} className={`relative isolate flex h-full flex-col overflow-hidden rounded-2xl border p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg motion-reduce:transform-none ${dataset.tone}`}>
+                    <div className="kb-dataset-visual">
+                      <Image src={dataset.image} alt="" fill sizes="(max-width: 1024px) 100vw, 25vw" className="object-cover" />
+                    </div>
                     <span className={`relative flex h-16 w-16 items-center justify-center rounded-2xl ${dataset.iconTone}`}>
                       <Icon className="h-10 w-10" strokeWidth={1.7} aria-hidden="true" />
                       {dataset.name === "SMAP" && <Droplets className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-sky-100 p-1 text-sky-600 dark:bg-sky-950" aria-hidden="true" />}
@@ -1198,6 +1178,16 @@ export default function LandingPage() {
                       </div>
                     </div>
 
+                    <Image
+                      src={key === "short" ? "/img/photos/data-rainfall-observations.jpg" : "/img/photos/weather-climate.jpg"}
+                      alt={key === "short"
+                        ? (locale === "bn" ? "ফসলের জমিতে বৃষ্টির পানি" : "Rain falling over a field")
+                        : (locale === "bn" ? "রোদ ও শুষ্ক আবহাওয়ার দৃশ্য" : "Sunny and dry weather conditions")}
+                      width={680}
+                      height={320}
+                      className={`mt-4 h-28 w-full rounded-2xl border border-white/70 object-cover shadow-sm sm:h-32 ${key === "long" ? "object-[center_58%]" : "object-center"}`}
+                    />
+
                     <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
                       <div className="rounded-xl border border-orange-200/70 bg-orange-100/60 p-3 dark:border-orange-800/50 dark:bg-orange-950/30">
                         <span className="flex items-center gap-1.5 text-[10px] font-semibold text-orange-800 dark:text-orange-300">
@@ -1284,9 +1274,10 @@ export default function LandingPage() {
               <h2 id="about-title" className="text-3xl font-bold tracking-tight text-forest dark:text-green-200 sm:text-4xl">{t("landing.sectionAbout")}</h2>
               <p className="mt-3 text-base leading-relaxed text-muted">{t("landing.aboutSimple.subtitle")}</p>
             </div>
-            <div className="relative isolate mx-auto mt-8 max-w-5xl overflow-hidden rounded-3xl border border-green-300 bg-gradient-to-br from-[#f5fbdc] via-[#eff9e9] to-[#d9efc2] p-6 pb-24 shadow-md dark:border-green-800 dark:from-[#203524] dark:via-surface-card dark:to-[#183c29] sm:p-9 sm:pb-24">
-              <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-12 -z-10 h-56 w-56 rounded-full bg-amber-200/25 blur-3xl dark:bg-amber-400/5" />
-              <div className="relative max-w-3xl">
+            <div className="relative isolate mx-auto mt-8 max-w-5xl overflow-hidden rounded-3xl border border-green-300 bg-[#edf4e5] p-6 pb-24 shadow-md dark:border-green-800 dark:bg-[#203524] sm:p-9 sm:pb-24">
+              <Image src="/img/photos/about-farm-background.avif" alt="" fill sizes="(max-width: 1024px) 100vw, 960px" className="absolute inset-0 z-0 h-full w-full object-cover" />
+              <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-r from-[#f7f7ed]/95 via-[#f7f7ed]/88 to-[#f7f7ed]/58 dark:from-[#17251d]/92 dark:via-[#17251d]/84 dark:to-[#17251d]/62" />
+              <div className="relative z-10 max-w-3xl">
                 <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-green-200 text-green-800 shadow-sm ring-1 ring-green-300 dark:bg-green-900/50 dark:text-green-300 dark:ring-green-700">
                   <Sprout className="h-7 w-7" aria-hidden="true" />
                 </span>
@@ -1308,8 +1299,8 @@ export default function LandingPage() {
                   </Button>
                 </div>
               </div>
-              <Leaf className="pointer-events-none absolute right-4 top-12 -z-10 h-44 w-44 -rotate-12 text-green-600 opacity-[0.08] dark:text-green-200" strokeWidth={1} aria-hidden="true" />
-              <svg aria-hidden="true" focusable="false" viewBox="0 0 1000 90" preserveAspectRatio="none" className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-20 w-full opacity-65 dark:opacity-25">
+              <Leaf className="pointer-events-none absolute right-4 top-12 z-[2] h-44 w-44 -rotate-12 text-green-600 opacity-[0.08] dark:text-green-200" strokeWidth={1} aria-hidden="true" />
+              <svg aria-hidden="true" focusable="false" viewBox="0 0 1000 90" preserveAspectRatio="none" className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-20 w-full opacity-65 dark:opacity-25">
                 <path d="M0 72Q190 35 400 67T760 42T1000 53V90H0Z" fill="#b4d98a" />
                 <path d="M0 85Q230 55 450 80T1000 55V90H0Z" fill="#81b84d" />
                 <path d="M580 90Q760 55 1000 66M690 90Q850 66 1000 74M810 90Q910 77 1000 82" stroke="#dbedb6" strokeWidth="5" fill="none" />

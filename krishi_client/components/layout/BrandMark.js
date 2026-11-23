@@ -24,11 +24,11 @@ export function BrandMark({ href = "/", tone = "light", compact = false, showSub
         <Image
           src={BRAND_LOGO_SRC}
           alt="KrishiBondhu"
-          width={40}
-          height={40}
+          width={48}
+          height={48}
           unoptimized
           onError={() => setLogoOk(false)}
-          className="h-10 w-10 shrink-0 object-contain drop-shadow-xs transition-transform duration-200 group-hover:scale-105"
+          className="h-11 w-11 shrink-0 object-contain drop-shadow-xs transition-transform duration-200 group-hover:scale-105"
           priority
         />
       ) : (

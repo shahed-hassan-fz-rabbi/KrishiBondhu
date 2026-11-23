@@ -1,3 +1,3 @@
-// Increment the version when replacing the public logo so browsers and the
-// Next.js image optimizer request the updated asset instead of cached output.
-export const BRAND_LOGO_SRC = "/images/krishibondhu-mark.svg";
+// Crop from the user-provided tractor/sun logo; the generic name and tagline
+// printed below the symbol are intentionally excluded.
+export const BRAND_LOGO_SRC = "/images/krishibondhu-tractor-mark.png";
