@@ -232,6 +232,47 @@ test("Marketplace CRUD workflows use isolated real MongoDB persistence", {
     assert.ok(responseProducts.every((item) => !("ownerId" in item) && !("email" in item) && !("phone" in item)));
   });
 
+  await t.test("guest checkout preview reads trusted MongoDB price and stock without reserving or changing inventory", async () => {
+    const listing = await MarketplaceProduct.findOne({ ownerId: farmer._id, productName: `Potato ${marker}` }).lean();
+    assert.ok(listing);
+    const beforeCount = await MarketplaceProduct.countDocuments({ ownerId: farmer._id });
+    const beforeUpdatedAt = listing.updatedAt.toISOString();
+
+    const preview = await request("POST", "/api/v1/marketplace/checkout/preview", {
+      productId: listing._id.toString(),
+      quantity: 1.25,
+      askingPricePerUnit: 0.01,
+    });
+    assert.equal(preview.response.status, 400, "client-supplied asking price is not accepted");
+
+    const valid = await request("POST", "/api/v1/marketplace/checkout/preview", {
+      productId: listing._id.toString(),
+      quantity: 1.25,
+    });
+    assert.equal(valid.response.status, 200);
+    assert.equal(valid.payload.data.productName, `Potato ${marker}`);
+    assert.equal(valid.payload.data.unit, "kg");
+    assert.equal(valid.payload.data.requestedQuantity, 1.25);
+    assert.equal(valid.payload.data.availableQuantity, 18);
+    assert.equal(valid.payload.data.askingPricePerUnit, 42);
+    assert.equal(valid.payload.data.subtotal, 52.5);
+    assert.equal(valid.payload.data.currency, "BDT");
+    assert.equal(valid.payload.data.priceLabel, "farmer_set_asking_price_not_DAM_verified");
+    assert.equal(valid.payload.data.previewOnly, true);
+    assert.equal(valid.payload.data.orderConfirmed, false);
+    assert.equal(valid.payload.data.priceLocked, false);
+    assert.equal(valid.payload.data.stockReserved, false);
+    for (const privateField of ["ownerId", "email", "phone", "passwordHash"]) {
+      assert.equal(privateField in valid.payload.data, false);
+    }
+
+    const after = await MarketplaceProduct.findById(listing._id).lean();
+    assert.equal(await MarketplaceProduct.countDocuments({ ownerId: farmer._id }), beforeCount);
+    assert.equal(after.quantity, listing.quantity);
+    assert.equal(after.status, listing.status);
+    assert.equal(after.updatedAt.toISOString(), beforeUpdatedAt);
+  });
+
   await t.test("mine query scopes results and counts to the authenticated farmer across statuses", async () => {
     const response = await request("GET", "/api/v1/marketplace/products/mine?limit=1", undefined, farmerToken);
     assert.equal(response.response.status, 200);

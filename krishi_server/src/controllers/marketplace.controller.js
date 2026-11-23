@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { MarketplaceProduct } from "../models/marketplaceproduct.model.js";
+import { MARKETPLACE_DEMO_PRODUCTS } from "../data/marketplaceDemoProducts.js";
 import { errorResponse, successResponse } from "../utils/response.js";
 
 const PUBLIC_PRODUCT_FIELDS = "productName description quantity unit askingPricePerUnit district upazila status createdAt updatedAt";
@@ -13,6 +14,10 @@ const ALLOWED_PRODUCT_QUERY_FIELDS = new Set(["q", "district", "page", "limit"])
 const EDITABLE_PRODUCT_FIELDS = new Set([
   "productName", "description", "quantity", "unit", "askingPricePerUnit", "district", "upazila", "status",
 ]);
+const CHECKOUT_PREVIEW_FIELDS = "productName quantity unit askingPricePerUnit status";
+const CHECKOUT_PREVIEW_BODY_FIELDS = new Set(["productId", "quantity"]);
+const DEMO_MARKETPLACE_PRODUCT_IDS = new Set(MARKETPLACE_DEMO_PRODUCTS.map(({ id }) => id.toLowerCase()));
+const MAX_CHECKOUT_PREVIEW_SUBTOTAL_PAISA = 100_000_000_000_000n;
 
 function parsePositiveInteger(value, fallback, maximum = Number.MAX_SAFE_INTEGER) {
   if (value === undefined) return fallback;
@@ -32,6 +37,61 @@ function parseOptionalTextQuery(value, field, maximumLength) {
 
 function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function decimalParts(value) {
+  const match = Number(value).toString().match(/^([+-]?)(\d+)(?:\.(\d*))?(?:e([+-]?\d+))?$/i);
+  if (!match) return null;
+  const fraction = match[3] || "";
+  const exponent = Number(match[4] || 0);
+  let coefficient = BigInt(`${match[1] === "-" ? "-" : ""}${match[2]}${fraction}`);
+  let scale = fraction.length - exponent;
+  if (scale < 0) {
+    coefficient *= 10n ** BigInt(-scale);
+    scale = 0;
+  }
+  return { coefficient, scale };
+}
+
+function comparePositiveDecimals(left, right) {
+  const a = decimalParts(left);
+  const b = decimalParts(right);
+  if (!a || !b) return null;
+  const scale = Math.max(a.scale, b.scale);
+  const leftInteger = a.coefficient * (10n ** BigInt(scale - a.scale));
+  const rightInteger = b.coefficient * (10n ** BigInt(scale - b.scale));
+  return leftInteger < rightInteger ? -1 : leftInteger > rightInteger ? 1 : 0;
+}
+
+/** Round a positive decimal product to the nearest BDT paisa, half up. */
+function calculateSubtotalInBdt(pricePerUnit, quantity) {
+  const price = decimalParts(pricePerUnit);
+  const amount = decimalParts(quantity);
+  if (!price || !amount || price.coefficient <= 0n || amount.coefficient <= 0n) return null;
+
+  const numerator = price.coefficient * amount.coefficient * 100n;
+  const denominator = 10n ** BigInt(price.scale + amount.scale);
+  let paisa = numerator / denominator;
+  if ((numerator % denominator) * 2n >= denominator) paisa += 1n;
+  if (paisa > MAX_CHECKOUT_PREVIEW_SUBTOTAL_PAISA) return null;
+  return Number(paisa) / 100;
+}
+
+function validateCheckoutPreviewBody(body) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return { error: "A JSON object with productId and quantity is required.", code: "VALIDATION_ERROR" };
+  }
+  const unsupported = Object.keys(body).filter((field) => !CHECKOUT_PREVIEW_BODY_FIELDS.has(field));
+  if (unsupported.length) {
+    return { error: "Only productId and quantity are accepted.", code: "VALIDATION_ERROR", details: unsupported.map((field) => ({ field, message: "This field is not accepted." })) };
+  }
+  if (typeof body.productId !== "string" || !mongoose.isObjectIdOrHexString(body.productId)) {
+    return { error: "productId must be a valid product ID.", code: "INVALID_ID" };
+  }
+  if (typeof body.quantity !== "number" || !Number.isFinite(body.quantity) || body.quantity < 0.01 || body.quantity > Number.MAX_SAFE_INTEGER) {
+    return { error: "quantity must be a finite number of at least 0.01.", code: "VALIDATION_ERROR" };
+  }
+  return { value: { productId: body.productId, quantity: body.quantity } };
 }
 
 function validateListingInput(body, { partial = false, rejectUnknown = false } = {}) {
@@ -200,6 +260,62 @@ export async function archiveMarketplaceProduct(req, res, next) {
     ).select(PUBLIC_PRODUCT_FIELDS).lean();
     if (!product) return errorResponse(res, 404, "Product listing not found.", "NOT_FOUND");
     return successResponse(res, 200, { product });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+/** POST /api/v1/marketplace/checkout/preview — public, read-only informational price/stock preview. */
+export async function previewMarketplaceCheckout(req, res, next) {
+  try {
+    const validation = validateCheckoutPreviewBody(req.body);
+    if (validation.error) {
+      return errorResponse(res, 400, validation.error, validation.code, validation.details);
+    }
+
+    const { productId, quantity } = validation.value;
+    if (DEMO_MARKETPLACE_PRODUCT_IDS.has(productId.toLowerCase())) {
+      return errorResponse(res, 409, "Fictional demo listings are not available for checkout.", "DEMO_PRODUCT_UNAVAILABLE");
+    }
+
+    const product = await MarketplaceProduct.findById(productId).select(CHECKOUT_PREVIEW_FIELDS).lean();
+    if (!product) return errorResponse(res, 404, "Product listing not found.", "NOT_FOUND");
+    if (product.status !== "active") {
+      return errorResponse(res, 409, "This product listing is not currently available.", "PRODUCT_UNAVAILABLE");
+    }
+    const stockComparison = comparePositiveDecimals(quantity, product.quantity);
+    if (stockComparison === null) {
+      return errorResponse(res, 400, "Product quantity cannot be safely calculated.", "VALIDATION_ERROR");
+    }
+    if (stockComparison > 0) {
+      return errorResponse(res, 409, "Requested quantity exceeds the available stock.", "INSUFFICIENT_STOCK", {
+        requestedQuantity: quantity,
+        availableQuantity: product.quantity,
+        unit: product.unit,
+      });
+    }
+
+    const subtotal = calculateSubtotalInBdt(product.askingPricePerUnit, quantity);
+    if (subtotal === null) {
+      return errorResponse(res, 400, "Subtotal exceeds the supported BDT precision range.", "VALIDATION_ERROR");
+    }
+
+    return successResponse(res, 200, {
+      productName: product.productName,
+      unit: product.unit,
+      requestedQuantity: quantity,
+      availableQuantity: product.quantity,
+      askingPricePerUnit: product.askingPricePerUnit,
+      subtotal,
+      currency: "BDT",
+      rounding: "nearest_0.01_bdt_half_up",
+      priceLabel: "farmer_set_asking_price_not_DAM_verified",
+      availability: { available: true, status: "active" },
+      previewOnly: true,
+      orderConfirmed: false,
+      priceLocked: false,
+      stockReserved: false,
+    });
   } catch (error) {
     return next(error);
   }
