@@ -56,7 +56,10 @@ const smsOutboxSchema = new mongoose.Schema(
      * live delivery, enforce field-level encryption (KMS), encrypted storage,
      * a retention TTL, and strict read auditing for the delivery worker.
      */
-    message: { type: String, select: false, maxlength: 2000 },
+    message: { type: String, select: false, maxlength: 4000 },
+    /** false means legacy plaintext; such jobs must be migrated, never exposed. */
+    messageProtected: { type: Boolean, default: false },
+    messageAlgorithm: { type: String, default: null },
     /** Source observation time and delivery-time freshness deadline. */
     sourceObservedAt: { type: Date, default: null },
     freshnessMaxAgeMs: { type: Number, min: 0, default: null },

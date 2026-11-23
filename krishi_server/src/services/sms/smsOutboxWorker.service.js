@@ -3,6 +3,15 @@ import { User } from "../../models/user.model.js";
 import { SmsPreferences } from "../../models/smsPreferences.model.js";
 import { SmsNotificationLog } from "../../models/smsNotificationLog.model.js";
 import { SmsOutbox, outboxMessageRef } from "../../models/smsOutbox.model.js";
+import {
+  decryptOutboxMessage,
+  encryptionRequirement,
+  MESSAGE_ALGORITHM,
+} from "./smsOutboxCrypto.service.js";
+import {
+  reserveSmsQuota as defaultReserveQuota,
+  releaseSmsQuota,
+} from "./smsOutboxQuota.service.js";
 import { isSmsLiveEnabled } from "./smsSender.service.js";
 import {
   revalidateForDelivery,
@@ -145,6 +154,10 @@ export async function processSmsOutboxBatch({
   retryMaxMs = DEFAULT_RETRY_MAX_MS,
   maxPerFarmerPerDay = 5,
   globalDailyLimit = 200,
+  encryptionKey,
+  requireEncryption,
+  quotaModel,
+  reserveQuota = defaultReserveQuota,
 } = {}) {
   const summary = {
     claimed: 0,
@@ -207,8 +220,42 @@ export async function processSmsOutboxBatch({
     summary.claimed += 1;
 
     try {
-      // Reject tampered content before any simulated delivery.
-      const actualRef = outboxMessageRef({ dedupeKey: job.dedupeKey, text: job.message || "" });
+      // Reject tampered content before any simulated delivery. Legacy
+      // plaintext is never exposed; it is blocked outright in live mode.
+      const cryptoCheck = encryptionRequirement({ requireEncryption });
+      let actualRef = null;
+      let legacyPlaintext = false;
+      if (job.messageProtected && job.messageAlgorithm === MESSAGE_ALGORITHM) {
+        try {
+          const plain = decryptOutboxMessage(job.message, { key: encryptionKey });
+          actualRef = outboxMessageRef({ dedupeKey: job.dedupeKey, text: plain });
+        } catch {
+          actualRef = null;
+        }
+      } else if (job.messageProtected) {
+        actualRef = null;
+      } else {
+        legacyPlaintext = true;
+        actualRef = outboxMessageRef({ dedupeKey: job.dedupeKey, text: job.message || "" });
+      }
+      if (legacyPlaintext && !cryptoCheck.ok) {
+        const blocked = await transitionOutboxStatus({
+          id: job._id, from: "processing", to: "cancelled", leaseOwner, now,
+          extra: {
+            lastError: "LEGACY_PLAINTEXT_BLOCKED",
+            cancellationReason: "LEGACY_PLAINTEXT_BLOCKED",
+            failureCategory: "permanent",
+            nextAttemptAt: null,
+          }, model,
+        });
+        if (blocked.ok) {
+          summary.cancelled += 1;
+          summary.results.push(safeResult(job, "cancelled", "LEGACY_PLAINTEXT_BLOCKED"));
+        } else {
+          summary.conflicts += 1;
+        }
+        continue;
+      }
       if (job.messageRef && actualRef !== job.messageRef) {
         const failed = await transitionOutboxStatus({
           id: job._id, from: "processing", to: "failed", leaseOwner, now,
@@ -302,6 +349,33 @@ export async function processSmsOutboxBatch({
         continue;
       }
 
+      const day = now.toISOString().slice(0, 10);
+      const reservation = await reserveQuota({
+        userId: job.userId, day,
+        farmerLimit: maxPerFarmerPerDay,
+        globalLimit: globalDailyLimit,
+        ...(quotaModel ? { model: quotaModel } : {}),
+      });
+      if (!reservation.allowed) {
+        const limited = await transitionOutboxStatus({
+          id: job._id, from: "processing", to: "cancelled", leaseOwner, now,
+          extra: {
+            lastError: reservation.reason,
+            cancellationReason: reservation.reason,
+            failureCategory: "permanent",
+            nextAttemptAt: null,
+          }, model,
+        });
+        if (limited.ok) {
+          summary.cancelled += 1;
+          summary.limitSkipped += 1;
+          summary.results.push(safeResult(job, "cancelled", reservation.reason));
+        } else {
+          summary.conflicts += 1;
+        }
+        continue;
+      }
+
       const simulated = simulateDryRun({ job, now });
       const done = await transitionOutboxStatus({
         id: job._id, from: "processing", to: "dry_run", leaseOwner, now,
@@ -313,7 +387,14 @@ export async function processSmsOutboxBatch({
         },
         model,
       });
-      if (!done.ok) { summary.conflicts += 1; continue; }
+      if (!done.ok) {
+        await releaseSmsQuota({
+          userId: job.userId, day,
+          ...(quotaModel ? { model: quotaModel } : {}),
+        }).catch(() => {});
+        summary.conflicts += 1;
+        continue;
+      }
 
       await recordDryRunLog({ job, check: { ...check, phoneLast4: job.phoneLast4 }, now, notificationLogModel });
       globalCount += 1;

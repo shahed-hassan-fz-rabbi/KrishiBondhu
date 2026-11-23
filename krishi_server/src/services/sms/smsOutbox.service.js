@@ -3,9 +3,16 @@ import {
   SMS_OUTBOX_TRANSITIONS,
   outboxMessageRef,
 } from "../../models/smsOutbox.model.js";
+import { env } from "../../config/env.config.js";
 import { hasSmsConsent, smsParts } from "./smsPreferences.js";
 import { extractVerifiedPhone } from "./smsRecipient.service.js";
 import { resolveCategory } from "./smsSubscription.service.js";
+import {
+  encryptOutboxMessage,
+  isOutboxEncryptionConfigured,
+  encryptionRequirement,
+  MESSAGE_ALGORITHM,
+} from "./smsOutboxCrypto.service.js";
 
 /**
  * Persistent SMS outbox foundation (Part 3D.4A).
@@ -61,7 +68,11 @@ export async function enqueueSmsAlert({
   sourceObservedAt = null,
   freshnessMaxAgeMs = null,
   model = SmsOutbox,
+  encryptionKey,
+  requireEncryption,
 } = {}) {
+  const cryptoCheck = encryptionRequirement({ requireEncryption });
+  if (!cryptoCheck.ok) return { enqueued: false, reason: cryptoCheck.reason, outbox: null };
   const validation = revalidateForDelivery({ user, preferences, category, now });
   if (!validation.ok) return { enqueued: false, reason: validation.code, outbox: null };
 
@@ -74,13 +85,32 @@ export async function enqueueSmsAlert({
 
   const key = dedupeKey.trim();
   const messageRef = outboxMessageRef({ dedupeKey: key, text });
+  const cryptoKey = encryptionKey !== undefined ? encryptionKey : env.smsOutboxEncryptionKey;
+  const configured = isOutboxEncryptionConfigured({ smsOutboxEncryptionKey: cryptoKey });
+  if (encryptionKey !== undefined && !configured) {
+    return { enqueued: false, reason: "ENCRYPTION_NOT_CONFIGURED", outbox: null };
+  }
+  let storedMessage = text;
+  let messageProtected = false;
+  let messageAlgorithm = null;
+  if (configured) {
+    try {
+      storedMessage = encryptOutboxMessage(text, { key: cryptoKey });
+      messageProtected = true;
+      messageAlgorithm = MESSAGE_ALGORITHM;
+    } catch {
+      return { enqueued: false, reason: "ENCRYPTION_FAILED", outbox: null };
+    }
+  }
   try {
     const created = await model.create({
       userId: user._id || user.id || null,
       category: validation.category,
       dedupeKey: key,
       messageRef,
-      message: text,
+      message: storedMessage,
+      messageProtected,
+      messageAlgorithm,
       parts: smsParts(text),
       sourceObservedAt: sourceObservedAt ? new Date(sourceObservedAt) : null,
       freshnessMaxAgeMs: Number.isFinite(freshnessMaxAgeMs) ? freshnessMaxAgeMs : null,

@@ -13,6 +13,7 @@ import {
   enqueueSmsAlert,
   transitionOutboxStatus,
 } from "../src/services/sms/smsOutbox.service.js";
+import { decryptOutboxMessage } from "../src/services/sms/smsOutboxCrypto.service.js";
 import { updateCategoryConsent } from "../src/services/sms/smsPreferences.js";
 import { toModelPatch } from "../src/services/sms/smsSubscription.service.js";
 
@@ -118,7 +119,12 @@ integration("protected message content is excluded from default reads", async ()
   assert.equal(defaultRead.messageRef.length, 64);
 
   const protectedRead = await SmsOutbox.findById(result.outbox.id).select("+message").lean();
-  assert.equal(protectedRead.message, TEXT);
+  if (protectedRead.messageProtected) {
+    assert.equal(protectedRead.message.includes(TEXT), false);
+    assert.equal(decryptOutboxMessage(protectedRead.message), TEXT);
+  } else {
+    assert.equal(protectedRead.message, TEXT);
+  }
 });
 
 integration("status transitions are atomic and lease-owner guarded", async () => {

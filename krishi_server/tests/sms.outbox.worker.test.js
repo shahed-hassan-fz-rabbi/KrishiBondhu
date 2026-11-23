@@ -5,11 +5,29 @@ import { readFileSync } from "node:fs";
 import {
   assertDryRunOnly,
   claimNextOutboxJob,
-  processSmsOutboxBatch,
+  processSmsOutboxBatch as realProcessSmsOutboxBatch,
 } from "../src/services/sms/smsOutboxWorker.service.js";
 import { outboxMessageRef } from "../src/models/smsOutbox.model.js";
 import { updateCategoryConsent } from "../src/services/sms/smsPreferences.js";
 import { toModelPatch } from "../src/services/sms/smsSubscription.service.js";
+
+function fakeQuotaModel() {
+  const docs = new Map();
+  return {
+    async updateOne(filter, update) {
+      const id = filter._id;
+      if (!docs.has(id)) docs.set(id, { ...(update.$setOnInsert || {}) });
+      return {};
+    },
+    async findOneAndUpdate(filter, update) {
+      const doc = docs.get(filter._id);
+      if (!doc || !(doc.count < (filter.count?.$lt ?? Infinity))) return null;
+      doc.count = (doc.count || 0) + (update.$inc?.count || 1);
+      return { ...doc };
+    },
+  };
+}
+const processSmsOutboxBatch = (options = {}) => realProcessSmsOutboxBatch({ quotaModel: fakeQuotaModel(), ...options });
 
 const NOW = new Date("2026-11-24T10:00:00.000Z");
 const TEXT = "Cumilla: Rice দাম বেড়েছে ১২ টাকা/কেজি। কৃষিবন্ধু।";
