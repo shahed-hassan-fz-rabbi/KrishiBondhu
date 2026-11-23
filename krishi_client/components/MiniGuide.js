@@ -9,7 +9,7 @@ import { BONDHU_TOUR_STEPS, findEligibleTourStepIndex, getTourStepIndexForRoute,
 import { useAuth } from "@/contexts/AuthContext.js";
 import { useLang } from "@/lib/i18n/LanguageContext.js";
 import { useVoiceOutput } from "@/hooks/useVoiceOutput.js";
-import { chooseCompanionPosition, getCompanionPositionBounds, placeCompanionBubble } from "@/components/mascot/companionLayout.js";
+import { chooseCompanionPosition, getCompanionPositionBounds, placeCompanionBubble, validateCompanionPosition } from "@/components/mascot/companionLayout.js";
 
 const PLACES = [
   { href: "/crop-calendar", en: "Crop calendar", bn: "ফসল ক্যালেন্ডার" },
@@ -201,6 +201,7 @@ export function MiniGuide() {
   const [position, setPosition] = useState(null);
   const [contentPosition, setContentPosition] = useState(null);
   const [bubblePosition, setBubblePosition] = useState(null);
+  const [bottomNavHeight, setBottomNavHeight] = useState(0);
   const dragRef = useRef(null);
   const launcherRef = useRef(null);
   const bubbleRef = useRef(null);
@@ -255,6 +256,27 @@ export function MiniGuide() {
     if (muted) stopTourVoice();
   }, [muted, stopTourVoice]);
 
+  // Measure the fixed bottom navigation so Bondhu never rests on top of it.
+  useEffect(() => {
+    let frame = 0;
+    const measure = () => {
+      const nav = document.querySelector('nav[aria-label="Mobile navigation"], nav[aria-label="বাংলা নেভিগেশন"]') || document.querySelector('nav.fixed.inset-x-0.bottom-0');
+      const next = nav ? Math.round(nav.getBoundingClientRect().height) : 0;
+      if (next !== bottomNavHeight) setBottomNavHeight(next);
+    };
+    measure();
+    frame = window.requestAnimationFrame(() => measure());
+    window.addEventListener("resize", measure, { passive: true });
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+    const nav = document.querySelector('nav[aria-label="Mobile navigation"]') || document.querySelector('nav.fixed.inset-x-0.bottom-0');
+    if (nav) observer?.observe(nav);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", measure);
+      observer?.disconnect();
+    };
+  }, [bottomNavHeight]);
+
   useEffect(() => {
     if (pathname !== "/" || hidden || authLoading) return undefined;
     const key = "krishibondhu.bondhu.welcome-seen";
@@ -303,7 +325,7 @@ export function MiniGuide() {
   const defaultPosition = () => {
     const bounds = launcherBounds();
     const safeArea = measureCompanionSafeArea();
-    const limits = getCompanionPositionBounds({ viewportWidth: window.innerWidth, viewportHeight: window.innerHeight, size: bounds, safeArea });
+    const limits = getCompanionPositionBounds({ viewportWidth: window.innerWidth, viewportHeight: window.innerHeight, size: bounds, safeArea, bottomNavHeight });
     return { x: limits.maxX, y: limits.maxY };
   };
   const visibleContentPosition = !tourMode && !hidden ? contentPosition : null;
@@ -317,7 +339,6 @@ export function MiniGuide() {
       const size = launcherBounds();
       const safeArea = measureCompanionSafeArea();
       const obstacles = measureCompanionObstacles();
-      const preferredPositions = [position, savedPosition, contentPosition].filter(Boolean);
       const candidatePositions = [];
       if (window.innerWidth > 780) {
         const stage = document.querySelector("#home .kb-hero2-card-stage");
@@ -332,20 +353,29 @@ export function MiniGuide() {
           });
         }
       }
-      const safe = chooseCompanionPosition({
+      // Never persist a saved position that is obstructed or off-screen; fall
+      // back to a measured safe location and remember it instead.
+      const validSaved = savedPosition ? validateCompanionPosition({ position: savedPosition, viewportWidth: window.innerWidth, viewportHeight: window.innerHeight, size, obstacles, safeArea, bottomNavHeight }) : null;
+      const preferredPositions = [position, validSaved, contentPosition].filter(Boolean);
+      const candidate = chooseCompanionPosition({
         viewportWidth: window.innerWidth,
         viewportHeight: window.innerHeight,
         size,
-        collisionBounds: { x: 2, y: 0, width: Math.max(1, size.width - 4), height: Math.max(1, size.height - 12) },
+        collisionBounds: { x: 0, y: 0, width: size.width, height: size.height },
         obstacles,
         preferredPositions,
         candidatePositions,
         safeArea,
+        bottomNavHeight,
       });
+      const safe = validSaved ?? candidate;
       if (position && (position.x !== safe.x || position.y !== safe.y)) {
         setPosition(safe);
         savePreferences(safe);
-      } else if (!position && savedPosition && (savedPosition.x !== safe.x || savedPosition.y !== safe.y)) {
+      } else if (!position && validSaved && (validSaved.x !== savedPosition.x || validSaved.y !== savedPosition.y)) {
+        setPosition(safe);
+        savePreferences(safe);
+      } else if (!position && !savedPosition && (position?.x !== safe.x || position?.y !== safe.y)) {
         setPosition(safe);
         savePreferences(safe);
       }
@@ -373,7 +403,7 @@ export function MiniGuide() {
       resizeObserver?.disconnect();
       mutationObserver?.disconnect();
     };
-  }, [pathname, preferences.x, preferences.y, savedPosition, position, contentPosition, tourMode, hidden, isDragging]);
+  }, [pathname, preferences.x, preferences.y, savedPosition, position, contentPosition, tourMode, hidden, isDragging, bottomNavHeight]);
 
   useLayoutEffect(() => {
     if (!open || !launcherRef.current || !bubbleRef.current) {
@@ -444,7 +474,7 @@ export function MiniGuide() {
   const drag = (event) => {
     if (!dragRef.current || dragRef.current.pointerId !== event.pointerId) return;
     const bounds = launcherBounds();
-    const limits = getCompanionPositionBounds({ viewportWidth: window.innerWidth, viewportHeight: window.innerHeight, size: bounds, safeArea: measureCompanionSafeArea(), margin: 8 });
+    const limits = getCompanionPositionBounds({ viewportWidth: window.innerWidth, viewportHeight: window.innerHeight, size: bounds, safeArea: measureCompanionSafeArea(), margin: 8, bottomNavHeight });
     const x = Math.max(limits.minX, Math.min(limits.maxX, event.clientX - dragRef.current.offsetX));
     const y = Math.max(limits.minY, Math.min(limits.maxY, event.clientY - dragRef.current.offsetY));
     const visualPosition = position || visibleContentPosition || savedPosition || fallbackPosition;
@@ -481,7 +511,7 @@ export function MiniGuide() {
     event.preventDefault();
     const bounds = launcherBounds();
     const base = position || visibleContentPosition || savedPosition || defaultPosition();
-    const limits = getCompanionPositionBounds({ viewportWidth: window.innerWidth, viewportHeight: window.innerHeight, size: bounds, safeArea: measureCompanionSafeArea(), margin: 8 });
+    const limits = getCompanionPositionBounds({ viewportWidth: window.innerWidth, viewportHeight: window.innerHeight, size: bounds, safeArea: measureCompanionSafeArea(), margin: 8, bottomNavHeight });
     const next = { x: Math.max(limits.minX, Math.min(limits.maxX, base.x + offset[0])), y: Math.max(limits.minY, Math.min(limits.maxY, base.y + offset[1])) };
     setPosition(next);
     savePreferences(next);

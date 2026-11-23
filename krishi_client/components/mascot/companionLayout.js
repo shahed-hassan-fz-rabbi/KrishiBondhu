@@ -6,19 +6,59 @@ function intersectionArea(a, b) {
     * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
 }
 
-export function getCompanionPositionBounds({ viewportWidth, viewportHeight, size, safeArea = {}, margin = 12 }) {
+export function getCompanionPositionBounds({ viewportWidth, viewportHeight, size, safeArea = {}, margin = 12, bottomNavHeight = 0 }) {
   const left = Math.max(margin, (safeArea.left || 0) + (safeArea.left ? margin : 0));
   // Safe edge measurements already end at the visible control bounds; do not
   // add another margin that can push the character into the first content row.
   const top = Math.max(margin, safeArea.top || 0);
   const right = Math.min(viewportWidth - margin, (safeArea.right ?? viewportWidth) - (safeArea.right < viewportWidth ? margin : 0));
-  const bottom = Math.min(viewportHeight - margin, (safeArea.bottom ?? viewportHeight) - (safeArea.bottom < viewportHeight ? margin : 0));
+  // Never let Bondhu rest on top of the sticky header or the fixed bottom nav.
+  const bottomCap = bottomNavHeight > 0 ? viewportHeight - bottomNavHeight : viewportHeight - margin;
+  const bottom = Math.min(bottomCap, (safeArea.bottom ?? viewportHeight) - (safeArea.bottom < viewportHeight ? margin : 0));
   return {
     minX: left,
     minY: top,
     maxX: Math.max(left, right - size.width),
     maxY: Math.max(top, bottom - size.height),
   };
+}
+
+/** Return a safe, viewport-clamped position for Bondhu given measured obstacles. */
+export function resolveCompanionPosition({
+  viewportWidth,
+  viewportHeight,
+  size,
+  obstacles = [],
+  preferredPositions = [],
+  candidatePositions = [],
+  safeArea = {},
+  bottomNavHeight = 0,
+  margin = 12,
+}) {
+  return chooseCompanionPosition({
+    viewportWidth,
+    viewportHeight,
+    size,
+    obstacles,
+    preferredPositions,
+    candidatePositions,
+    safeArea,
+    bottomNavHeight,
+    margin,
+  });
+}
+
+/** Validate a previously saved position; return null when it is obstructed or off-screen. */
+export function validateCompanionPosition({ position, viewportWidth, viewportHeight, size, obstacles = [], safeArea = {}, bottomNavHeight = 0, margin = 12 }) {
+  if (!position || !Number.isFinite(position.x) || !Number.isFinite(position.y)) return null;
+  const { minX: left, minY: top, maxX, maxY } = getCompanionPositionBounds({ viewportWidth, viewportHeight, size, safeArea, margin, bottomNavHeight });
+  const clamped = { x: clamp(position.x, left, maxX), y: clamp(position.y, top, maxY) };
+  const visible = { x: 0, y: 0, width: size.width, height: size.height };
+  const rect = { left: clamped.x, top: clamped.y, right: clamped.x + size.width, bottom: clamped.y + size.height };
+  const hardOverlap = obstacles.reduce((sum, obstacle) => obstacle.soft ? sum : sum + intersectionArea(rect, obstacle) * (obstacle.weight || 1), 0);
+  const offScreen = clamped.x < left || clamped.x > maxX || clamped.y < top || clamped.y > maxY;
+  if (offScreen || hardOverlap >= 1) return null;
+  return clamped;
 }
 
 /** Find a safe fixed position inside the usable viewport, away from measured content. */
@@ -32,30 +72,23 @@ export function chooseCompanionPosition({
   safeArea = {},
   collisionBounds = null,
   margin = 12,
+  bottomNavHeight = 0,
 }) {
-  const { minX: left, minY: top, maxX, maxY } = getCompanionPositionBounds({ viewportWidth, viewportHeight, size, safeArea, margin });
+  const { minX: left, minY: top, maxX, maxY } = getCompanionPositionBounds({ viewportWidth, viewportHeight, size, safeArea, margin, bottomNavHeight });
   const clampPosition = (point) => ({
     x: clamp(point.x, left, maxX),
     y: clamp(point.y, top, maxY),
   });
-  const overlapAt = (point) => {
+  const visibleRect = (point) => {
     const visible = collisionBounds || { x: 0, y: 0, width: size.width, height: size.height };
-    const rect = {
-      left: point.x + visible.x,
-      top: point.y + visible.y,
-      right: point.x + visible.x + visible.width,
-      bottom: point.y + visible.y + visible.height,
-    };
+    return { left: point.x + visible.x, top: point.y + visible.y, right: point.x + visible.x + visible.width, bottom: point.y + visible.y + visible.height };
+  };
+  const overlapAt = (point) => {
+    const rect = visibleRect(point);
     return obstacles.reduce((sum, obstacle) => sum + intersectionArea(rect, obstacle) * (obstacle.weight || 1), 0);
   };
   const hardOverlapAt = (point) => {
-    const visible = collisionBounds || { x: 0, y: 0, width: size.width, height: size.height };
-    const rect = {
-      left: point.x + visible.x,
-      top: point.y + visible.y,
-      right: point.x + visible.x + visible.width,
-      bottom: point.y + visible.y + visible.height,
-    };
+    const rect = visibleRect(point);
     return obstacles.reduce((sum, obstacle) => obstacle.soft ? sum : sum + intersectionArea(rect, obstacle) * (obstacle.weight || 1), 0);
   };
   const isSafe = (point) => hardOverlapAt(point) < 1;
