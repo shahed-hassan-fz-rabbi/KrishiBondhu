@@ -58,7 +58,7 @@ export async function runSmsLiveTest({
   userId,
   number,
   category = "weather",
-  text = "KrishiBondhu live test. No reply needed.",
+  text = "KrishiBondhu TEST SMS only - not a real weather warning. No reply needed.",
   apply = false,
   now = new Date(),
   source = env,
@@ -138,9 +138,14 @@ async function main() {
     const index = args.indexOf(name);
     return index >= 0 ? args[index + 1] : undefined;
   };
+  // Avoid putting the full number on the command line: use the single
+  // configured allowlist entry when --number is omitted.
+  const allowlist = String(env.smsLiveTestAllowedNumbers || process.env.SMS_LIVE_TEST_ALLOWED_NUMBERS || "")
+    .split(",").map((entry) => entry.trim()).filter(Boolean);
+  const number = value("--number") || (allowlist.length === 1 ? allowlist[0] : undefined);
   const report = await runSmsLiveTest({
     userId: value("--user"),
-    number: value("--number"),
+    number,
     category: value("--category") || "weather",
     apply: args.includes("--apply"),
   });
