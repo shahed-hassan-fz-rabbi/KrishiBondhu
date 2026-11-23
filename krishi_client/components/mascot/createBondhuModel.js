@@ -4,11 +4,11 @@ export function createBondhuModel(THREE) {
   root.name = "Bondhu";
   const parts = { root, eyes: [], lids: [], gaze: [], wings: [], arms: [], mouth: null, tail: null, ears: [], spines: [] };
 
-  const green = new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.76, metalness: 0.04, clearcoat: 0.04, clearcoatRoughness: 0.85, sheen: 0.22, sheenColor: 0x9be8b0 });
-  const greenLight = new THREE.MeshStandardMaterial({ color: 0x67ae7b, roughness: 0.78 });
-  const headSkin = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.79 });
+  const green = new THREE.MeshPhysicalMaterial({ color: 0x287847, vertexColors: true, roughness: 0.82, metalness: 0.01, clearcoat: 0.025, clearcoatRoughness: 0.88, sheen: 0.18, sheenColor: 0x78b98a });
+  const greenLight = new THREE.MeshStandardMaterial({ color: 0x4f955f, roughness: 0.82 });
+  const headSkin = new THREE.MeshStandardMaterial({ color: 0x32864c, vertexColors: true, roughness: 0.84 });
   const greenDeep = new THREE.MeshStandardMaterial({ color: 0x245c43, roughness: 0.82 });
-  const scaleGreen = new THREE.MeshStandardMaterial({ color: 0x79b982, roughness: 0.83 });
+  const scaleGreen = new THREE.MeshStandardMaterial({ color: 0x5c9b67, roughness: 0.86 });
   const belly = new THREE.MeshStandardMaterial({ color: 0xf3e4c2, roughness: 0.84 });
   const sclera = new THREE.MeshStandardMaterial({ color: 0xfffdf7, roughness: 0.28 });
   const iris = new THREE.MeshStandardMaterial({ color: 0x2d7557, roughness: 0.38 });
@@ -49,7 +49,7 @@ export function createBondhuModel(THREE) {
         const u = col / columns; positions.push(...pointAt(v, u));
         if (colorize) {
           const variation = 0.965 + 0.025 * Math.sin(u * Math.PI * 12 + v * Math.PI * 5) + 0.018 * Math.cos(v * Math.PI * 17);
-          shade.setRGB(0.72 * variation, 0.91 * variation, 0.77 * variation);
+          shade.setRGB(0.9 * variation, 0.94 * variation, 0.9 * variation);
           colors.push(shade.r, shade.g, shade.b);
         }
         if (row < rows && col < columns) {
@@ -114,7 +114,7 @@ export function createBondhuModel(THREE) {
   for (let i = 0; i < hp.count; i += 1) {
     const y = hp.getY(i), z = hp.getZ(i);
     const variation = 0.98 + 0.018 * Math.sin(y * 25 + z * 18) + 0.012 * Math.cos(y * 34 - z * 9);
-    headColors.push(0.73 * variation, 0.94 * variation, 0.79 * variation);
+    headColors.push(0.92 * variation, 0.95 * variation, 0.92 * variation);
   }
   headGeometry.setAttribute("color", new THREE.Float32BufferAttribute(headColors, 3));
   headGeometry.computeVertexNormals();
@@ -187,7 +187,7 @@ export function createBondhuModel(THREE) {
   wingShape.quadraticCurveTo(0.35, 0.43, 0.62, 0.34); wingShape.quadraticCurveTo(0.47, 0.23, 0.5, 0.08);
   wingShape.quadraticCurveTo(0.32, 0.14, 0.24, -0.1); wingShape.quadraticCurveTo(0.07, -0.03, 0, 0.02);
   const wingGeometry = new THREE.ExtrudeGeometry(wingShape, { depth: 0.045, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.018, bevelThickness: 0.012, curveSegments: 12 });
-  const membrane = new THREE.MeshStandardMaterial({ color: 0x78bd84, roughness: 0.78, side: THREE.DoubleSide });
+  const membrane = new THREE.MeshStandardMaterial({ color: 0x5b9b68, roughness: 0.84, side: THREE.DoubleSide });
   const ribMaterial = new THREE.MeshStandardMaterial({ color: 0x327d55, roughness: 0.84 });
   for (const side of [-1, 1]) {
     const wing = new THREE.Group(); wing.position.set(side * 0.54, 0.13, -0.16); wing.scale.x = side; root.add(wing);

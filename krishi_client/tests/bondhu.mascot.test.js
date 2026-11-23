@@ -26,7 +26,14 @@ test("the real Three.js model uses continuous sculpted forms and animated eyelid
   assert.match(model, /upper-eyelid/, "the eyes have actual eyelid meshes");
   assert.match(model, /ExtrudeGeometry\(wingShape/, "wings have a beveled three-dimensional membrane");
   assert.match(model, /tailGeometry\.computeVertexNormals\(\)/, "the tail uses a smooth custom tapered tube");
-  assert.match(model, /roughness: 0\.76/, "skin uses a soft rough material response");
+  assert.match(model, /roughness: 0\.82, metalness: 0\.01, clearcoat: 0\.025/, "skin stays soft and low-gloss");
+  assert.match(model, /color: 0x287847, vertexColors: true/, "torso base material supplies clear green color beneath vertex variation");
+  assert.match(model, /shade\.setRGB\(0\.9 \* variation, 0\.94 \* variation, 0\.9 \* variation\)/, "torso vertex variation stays close to neutral and preserves the base green");
+  assert.match(model, /color: 0x32864c, vertexColors: true/, "head base material matches the richer green palette");
+  assert.match(model, /headColors\.push\(0\.92 \* variation, 0\.95 \* variation, 0\.92 \* variation\)/, "head vertex variation preserves its base green color");
+  assert.match(renderer, /renderer\.toneMappingExposure = 0\.9/);
+  assert.match(renderer, /HemisphereLight\(0xf6fff3, 0x365e49, 0\.85\)/);
+  assert.match(renderer, /DirectionalLight\(0xfff1d6, 1\.35\)/);
   assert.match(renderer, /parts\.lids\[index\]/, "blink motion moves the lid over the eye");
   assert.match(renderer, /flightLift/, "takeoff and landing use a smoothed body transition");
   assert.match(renderer, /Math\.exp\(-rate \* delta\)/, "animation easing is frame-rate aware");
@@ -80,6 +87,7 @@ test("Bondhu stays character-first at rest and opens a compact speech bubble onl
   assert.match(guide, /kb-mini-hit-area/, "the pointer target follows Bondhu's visible silhouette rather than the transparent canvas bounds");
   assert.match(css, /\.kb-mini-launcher:not\(\.is-hidden\)\s*\{[^}]*pointer-events:none!important/);
   assert.match(css, /\.kb-mini-hit-area\s*\{[^}]*clip-path:polygon/);
+  assert.match(css, /\.kb-mini-launcher>span:not\(\.kb-mini-hit-area\)/, "the transparent interaction layer is excluded from greeting-pill styling");
   assert.match(guide, /const startDrag = \(event\)/, "pointer dragging remains available");
   assert.match(guide, /savePreferences\(position\)/, "dragged placement is saved");
   assert.match(guide, /onKeyDown=\{moveWithKeyboard\}/, "keyboard movement remains available");
