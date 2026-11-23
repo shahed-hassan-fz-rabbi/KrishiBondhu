@@ -15,16 +15,32 @@ export const serverEnvPath = path.resolve(serverRootDir, ".env");
 // Hosts and local multi-project workspaces need to choose a free PORT without editing .env.
 dotenv.config({ path: serverEnvPath });
 
+// Render sets NODE_ENV=production for Node services, but a manually configured
+// NODE_ENV=development can override it. Treat the hosted runtime as production
+// so credentialed cross-site auth cookies and production CORS rules stay safe.
+const nodeEnv = process.env.RENDER === "true"
+  ? "production"
+  : process.env.NODE_ENV || "development";
+
+function normalizeOrigin(value) {
+  const candidate = String(value || "").trim();
+  try {
+    return new URL(candidate).origin;
+  } catch {
+    return candidate.replace(/\/+$/, "");
+  }
+}
+
 export const env = {
-  nodeEnv: process.env.NODE_ENV || "development",
+  nodeEnv,
   port: parseInt(process.env.PORT || "5000", 10),
   mongoUri: process.env.MONGODB_URI || "",
-  clientUrl: process.env.CLIENT_URL || "http://localhost:3000",
+  clientUrl: normalizeOrigin(process.env.CLIENT_URL || "http://localhost:3000"),
   corsOrigin: (process.env.CORS_ORIGIN || process.env.CLIENT_URL || "http://localhost:3000")
     .split(",")
-    .map((origin) => origin.trim())
+    .map(normalizeOrigin)
     .filter(Boolean),
-  jwtSecret: resolveJwtSecret(process.env.NODE_ENV || "development", process.env.JWT_SECRET),
+  jwtSecret: resolveJwtSecret(nodeEnv, process.env.JWT_SECRET),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
   logLevel: process.env.LOG_LEVEL || "info",
   geminiApiKey: process.env.GEMINI_API_KEY || "",
@@ -45,6 +61,18 @@ export const env = {
   },
   get googleCallbackUrl() {
     const configuredUrl = (process.env.GOOGLE_CALLBACK_URL || "").trim();
+    const renderExternalUrl = (process.env.RENDER_EXTERNAL_URL || "").trim().replace(/\/+$/, "");
+    if (renderExternalUrl) {
+      let configuredHostIsLocal = false;
+      try {
+        configuredHostIsLocal = ["localhost", "127.0.0.1"].includes(new URL(configuredUrl).hostname);
+      } catch {
+        configuredHostIsLocal = Boolean(configuredUrl);
+      }
+      if (!configuredUrl || configuredHostIsLocal) {
+        return `${renderExternalUrl}/api/v1/auth/google/callback`;
+      }
+    }
     const callbackUrl = configuredUrl || `http://localhost:${env.port}/api/v1/auth/google/callback`;
     // The development runner may reserve a different port than the persisted
     // .env callback. Keep the local redirect on the server that started this app.
