@@ -416,6 +416,9 @@ export async function generatePlanningExplanation(args = {}) {
     displaySowingPeriod: isBangla ? localizeSowingPeriodBn(crop.sowingPeriod) : crop.sowingPeriod,
     displayReasons: isBangla ? crop.reasons.map((reason) => localizeCropMessageBn(reason, crop)) : crop.reasons,
     displayConstraints: isBangla ? crop.constraints.map((item) => localizeCropMessageBn(item, crop)) : crop.constraints,
+    displaySuitability: isBangla
+      ? ({ supported: "তথ্য অনুযায়ী উপযোগী", potential: "বিবেচনা প্রয়োজন", insufficient_info: "তথ্য অপর্যাপ্ত" }[crop.suitabilityCategory] || "তথ্য অপর্যাপ্ত")
+      : crop.suitabilityCategory,
   }));
   const landTypeLabelsBn = {
     high: "উঁচু জমি",
@@ -461,7 +464,7 @@ ${localizedCrops
     (c) => `
 * ${c.displayName} - Season: ${c.displaySeason} (~${c.totalDurationDays} ${isBangla ? "দিন" : "days"})
   - Official Planting Period: ${c.displaySowingPeriod}
-  - Suitability Status: ${c.suitabilityCategory}
+  - Suitability Status: ${c.displaySuitability}
   - Key Agronomic Reasons: ${c.displayReasons.join("; ")}
   - Constraints/Cautions: ${c.displayConstraints.length > 0 ? c.displayConstraints.join("; ") : isBangla ? "ক্যালেন্ডারে কোনো সতর্কতা উল্লেখ নেই" : "None reported in calendar"}
 `
@@ -486,7 +489,7 @@ NASA Environmental Satellite Context:
         geminiOutput = response.text.trim();
         // A few English prose words indicate the model ignored the requested language.
         // Fall back to the fully localized, deterministic explanation in that case.
-        const englishProse = /\b(?:the|and|is|are|was|were|with|from|for|or|to|in|on|of|this|that|your|crop|soil|water|season|official|planting|window|requires|suitable|supported|irrigation|rainfall|harvest|november|december|january|february|march|april|may|june|july|august|september|october)\b/i;
+        const englishProse = /\b(?:the|and|is|are|was|were|with|from|for|or|to|in|on|of|this|that|your|crop|soil|water|season|official|planting|window|requires|suitable|supported|irrigation|rainfall|harvest|november|december|january|february|march|april|may|june|july|august|september|october|based|because|also|during|check|consult|recommend|recommended|locally|area|district|report|according|limited|available|data|low|high|rice|mustard|aman|boro|aus|kharif|rabi|robi|decimal|acre|hectare|potential|profile|advisory|agriculture)\b/i;
         if (isBangla && englishProse.test(geminiOutput)) geminiOutput = null;
       }
     } catch (err) {
