@@ -23,7 +23,6 @@ import {
   Globe,
   Info,
   Languages,
-  Layers,
   Leaf,
   MapPin,
   MessageSquare,
@@ -124,6 +123,13 @@ const steps = [
   { n: "02", icon: Sprout, titleKey: "step2Title", descKey: "step2Desc" },
   { n: "03", icon: BarChart3, titleKey: "step3Title", descKey: "step3Desc" },
   { n: "04", icon: CalendarRange, titleKey: "step4Title", descKey: "step4Desc" },
+];
+
+const workflowCards = [
+  { icon: Satellite, image: "/img/photos/nasa-modis-bangladesh.jpg", titleBn: "তথ্য কোথা থেকে আসে", titleEn: "Where the information comes from", bodyBn: "আবহাওয়া, জলবায়ু, উপগ্রহ ও বাজারের তথ্য তাদের উৎস এবং তারিখসহ এক জায়গায় দেখানো হয়।", bodyEn: "Weather, climate, satellite and market information is presented with its source and date.", detailBn: "পূর্বাভাস, ঐতিহাসিক রেকর্ড ও স্যাটেলাইট পর্যবেক্ষণ আলাদা ধরনের তথ্য। কোন উৎস কোন এলাকা ও সময়কে বোঝায় তা দেখে ব্যবহার করুন।", detailEn: "Forecasts, historical records and satellite observations are different kinds of information. Check each source’s area and time coverage before using it.", tagsBn: "NASA POWER · SMAP · MODIS", tagsEn: "NASA POWER · SMAP · MODIS", href: "/data-sources", linkBn: "তথ্যের উৎস দেখুন", linkEn: "Explore data sources" },
+  { icon: MapPin, image: "/img/photos/soil-moisture-card.jpg", titleBn: "জমির তথ্য যোগ করুন", titleEn: "Add your farm context", bodyBn: "জেলা, মাটি, পানি এবং বর্তমানে যে ফসলের পর যে ফসল করেন—সেই তথ্য দিন।", bodyEn: "Enter your district, soil and water context, and the crops you currently grow in sequence.", detailBn: "যা জানা আছে শুধু সেটিই দিন। মাটি বা সেচের তথ্য অজানা হলে সেটি অজানাই থাকবে; সিস্টেম নিজে থেকে ধরে নেবে না।", detailEn: "Share what you know. Unknown soil or irrigation details stay unknown; the system does not assume them.", tagsBn: "জেলা · মাটি · ফসলের ক্রম", tagsEn: "District · Soil · Crop sequence", href: "/crop-rotation", linkBn: "পরিকল্পনা শুরু করুন", linkEn: "Start planning" },
+  { icon: Sprout, image: "/img/photos/transplanting.jpg", titleBn: "বিকল্পগুলো মিলিয়ে দেখুন", titleEn: "Compare the alternatives", bodyBn: "বর্তমান পদ্ধতির সঙ্গে বিকল্প ফসলের ক্রম, চাষের সময় ও আনুমানিক পানির চাহিদা তুলনা করুন।", bodyEn: "Compare crop sequences, growing times and estimated crop-water needs against your current plan.", detailBn: "ফসল পঞ্জিকার সময়ের সংঘাত, তাপমাত্রা যাচাইয়ের প্রয়োজন ও অনুপস্থিত তথ্যও ফলাফলে দেখানো হয়। এই তুলনা ফলন বা আয়ের নিশ্চয়তা নয়।", detailEn: "Results also flag possible calendar conflicts, temperature checks and missing data. The comparison does not guarantee yield or income.", tagsBn: "ফসল পঞ্জিকা · সময় · সতর্কতা", tagsEn: "Crop calendars · Timing · Checks", href: "/crop-rotation", linkBn: "ফসল তুলনা করুন", linkEn: "Compare crops" },
+  { icon: MessageSquare, image: "/img/photos/agricultural-field-guidance.jpg", titleBn: "AI সহায়তা নিয়ে সিদ্ধান্ত নিন", titleEn: "Use AI support, then decide", bodyBn: "বাংলা বা ইংরেজিতে প্রশ্ন করে উপলভ্য তথ্য ও ফলাফল সহজভাবে বুঝে নিন।", bodyEn: "Ask in Bangla or English to get help understanding available information and results.", detailBn: "সহকারী উৎসসহ তথ্য ব্যাখ্যা করতে পারে, তবে আপনার জমি সরাসরি পরীক্ষা করে না এবং আপনার হয়ে চাষের সিদ্ধান্ত নেয় না। স্থানীয় কৃষি কর্মকর্তার পরামর্শে মাঠের অবস্থা যাচাই করুন।", detailEn: "The assistant can explain information with sources, but it does not inspect your field or make the farming decision for you. Check local conditions with an agricultural officer.", tagsBn: "বাংলা সহকারী · স্থানীয় যাচাই", tagsEn: "Bangla assistant · Local review", href: "/assistant", linkBn: "সহকারীকে জিজ্ঞাসা করুন", linkEn: "Ask the assistant" },
 ];
 
 export default function LandingPage() {
@@ -489,73 +495,6 @@ export default function LandingPage() {
 
             {/* Empty hero stage gives Bondhu a measured first-visit landing area. */}
             <div className="kb-hero2-card-stage" id="landingBondhuStage" data-bondhu-anchor="home-hero" aria-hidden="true" />
-          </div>
-        </section>
-
-        {/* ============================================================
-            3-STEP STORY FLOW (Mati Kohon structural parity: Data -> Decision -> Action)
-            ============================================================ */}
-        <section className="kb-story-flow" id="how-it-works" aria-labelledby="how-it-works-title">
-          <div className="kb-flow-intro"><p>{locale === "bn" ? "কৃষিবন্ধুর কর্মধারা" : "THE KRISHIBONDHU WORKFLOW"}</p><h2 id="how-it-works-title">{locale === "bn" ? "তথ্য থেকে কৃষকের কাজে" : "From information to farm action"}</h2><span>{locale === "bn" ? "প্রতিটি ধাপে উৎস, প্রেক্ষাপট ও অনিশ্চয়তা স্পষ্ট রাখুন।" : "Keep sources, context, and uncertainty visible at every step."}</span></div>
-          <div className="kb-flow-card">
-            <div className="kb-flow-visual" aria-hidden="true"><Image src="/img/photos/nasa-modis-flood-2024.jpg" alt="" width={640} height={400} /></div>
-            <span className="kb-flow-step-tag">
-              <Satellite className="h-3.5 w-3.5" aria-hidden="true" />
-              {locale === "bn" ? "১. উপাত্ত পর্যবেক্ষণ" : "1. Scientific Data"}
-            </span>
-            <h3 className="kb-flow-title">{locale === "bn" ? "নাসা ও আবহাওয়া উপাত্ত" : "NASA & Agro Observations"}</h3>
-            <p className="kb-flow-desc">
-              {locale === "bn"
-                ? "উপলভ্য আবহাওয়া, ঐতিহাসিক জলবায়ু, উপগ্রহভিত্তিক মাটি ও বাজারের তথ্য উৎস ও তারিখসহ দেখা যায়।"
-                : "Available weather, historical climate, satellite soil context, and market information are shown with source and date details."}
-            </p>
-            <div className="kb-flow-chips">
-              <span className="kb-flow-chip">NASA POWER</span>
-              <span className="kb-flow-chip">GPM Rain</span>
-              <span className="kb-flow-chip">SMAP Moisture</span>
-              <span className="kb-flow-chip">DAM Market</span>
-            </div>
-            <Link href="/data-sources" className="kb-flow-link">{locale === "bn" ? "উৎস ও সময়সীমা দেখুন" : "Review sources and coverage"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
-          </div>
-
-          <div className="kb-flow-card">
-            <div className="kb-flow-visual" aria-hidden="true"><Image src="/img/photos/transplanting.jpg" alt="" width={640} height={400} /></div>
-            <span className="kb-flow-step-tag">
-              <Layers className="h-3.5 w-3.5" aria-hidden="true" />
-              {locale === "bn" ? "২. কৃষিবন্ধু সিদ্ধান্ত" : "2. Decision Engine"}
-            </span>
-            <h3 className="kb-flow-title">{locale === "bn" ? "ফসল চক্র ও হ্যান্ডঅফ" : "Crop Rotation & Handoff"}</h3>
-            <p className="kb-flow-desc">
-              {locale === "bn"
-                ? "ফসল পর্যায়ক্রম ও বপনের সময়ের বিকল্প তুলনা করুন। ফলাফল পরিকল্পনায় সহায়তা করে; স্থানীয় জমির অবস্থা যাচাই করুন।"
-                : "Compare crop sequences and sowing-time options. Results support planning and should be checked against local field conditions."}
-            </p>
-            <div className="kb-flow-chips">
-              <span className="kb-flow-chip">{locale === "bn" ? "ফসল পর্যায়ক্রম" : "Crop sequences"}</span>
-              <span className="kb-flow-chip">{locale === "bn" ? "বপনের সময়" : "Sowing timing"}</span>
-              <span className="kb-flow-chip">{locale === "bn" ? "পরিকল্পনা সহায়তা" : "Planning support"}</span>
-            </div>
-            <Link href="/crop-rotation" className="kb-flow-link">{locale === "bn" ? "পরিকল্পনা তৈরি করুন" : "Build a crop plan"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
-          </div>
-
-          <div className="kb-flow-card">
-            <div className="kb-flow-visual" aria-hidden="true"><Image src="/img/photos/agricultural-field-advisor.jpg" alt="" width={640} height={400} /></div>
-            <span className="kb-flow-step-tag">
-              <Tractor className="h-3.5 w-3.5" aria-hidden="true" />
-              {locale === "bn" ? "৩. কৃষকের হাতে সমাধান" : "3. Farmer Delivery"}
-            </span>
-            <h3 className="kb-flow-title">{locale === "bn" ? "সহজ বাংলা পরামর্শ ও খামার" : "Bangla Advisory & My Farm"}</h3>
-            <p className="kb-flow-desc">
-              {locale === "bn"
-                ? "বাংলা ভয়েস ও চ্যাট সহকারী এবং আমার খামারে নিজের কাজের তথ্য রাখুন। কর্মকর্তা পর্যালোচনা যেখানে চালু, সেখানে অনুরোধ পাঠান।"
-                : "Use Bangla voice or chat assistance and keep your own farm records. Request officer review where that workflow is enabled."}
-            </p>
-            <div className="kb-flow-chips">
-              <span className="kb-flow-chip">{locale === "bn" ? "বাংলা ভয়েস" : "Bangla Voice"}</span>
-              <span className="kb-flow-chip">{locale === "bn" ? "মাই ফার্ম" : "My Farm"}</span>
-              <span className="kb-flow-chip">{locale === "bn" ? "মানুষের সহায়তা" : "Human support"}</span>
-            </div>
-            <div className="kb-flow-actions"><Link href="/assistant" className="kb-flow-link">{locale === "bn" ? "সহকারী খুলুন" : "Ask the assistant"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link><Link href="/my-farm" className="kb-flow-link">{locale === "bn" ? "আমার খামার" : "Open My Farm"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link></div>
           </div>
         </section>
 
@@ -1088,7 +1027,7 @@ export default function LandingPage() {
                 );
               })}
             </div>
-            <div className="mt-6">
+            <div className="mt-6 flex justify-center">
               <Button href="/data-sources" variant="primary" size="sm">
                 <Database className="mr-2 h-4 w-4" aria-hidden="true" />
                 {t("landing.dataOverview.sources")}
@@ -1171,16 +1110,6 @@ export default function LandingPage() {
                       </div>
                     </div>
 
-                    <Image
-                      src={key === "short" ? "/img/photos/data-rainfall-observations.jpg" : "/img/photos/weather-climate.jpg"}
-                      alt={key === "short"
-                        ? (locale === "bn" ? "ফসলের জমিতে বৃষ্টির পানি" : "Rain falling over a field")
-                        : (locale === "bn" ? "রোদ ও শুষ্ক আবহাওয়ার দৃশ্য" : "Sunny and dry weather conditions")}
-                      width={680}
-                      height={320}
-                      className={`mt-4 h-28 w-full rounded-2xl border border-white/70 object-cover shadow-sm sm:h-32 ${key === "long" ? "object-[center_58%]" : "object-center"}`}
-                    />
-
                     <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
                       <div className="rounded-xl border border-orange-200/70 bg-orange-100/60 p-3 dark:border-orange-800/50 dark:bg-orange-950/30">
                         <span className="flex items-center gap-1.5 text-[10px] font-semibold text-orange-800 dark:text-orange-300">
@@ -1261,6 +1190,36 @@ export default function LandingPage() {
         {/* ============================================================
             SCIENTIFIC SCOPE & ABOUT (AUDIT CONTRACT PRESERVED)
             ============================================================ */}
+        <section id="how-it-works" aria-labelledby="how-it-works-title" className="scroll-mt-24 bg-bg px-4 py-16 sm:px-6 sm:py-20">
+          <div className="mx-auto max-w-7xl">
+            <div className="mx-auto mb-10 max-w-3xl text-center">
+              <p className="text-xs font-bold uppercase tracking-[.18em] text-emerald-strong">{locale === "bn" ? "কৃষিবন্ধুর কর্মধারা" : "THE KRISHIBONDHU WORKFLOW"}</p>
+              <h2 id="how-it-works-title" className="mt-3 text-3xl font-extrabold tracking-tight text-forest dark:text-green-100 sm:text-4xl">{locale === "bn" ? "তথ্য থেকে কৃষিকাজের সিদ্ধান্তে" : "From information to farm action"}</h2>
+              <p className="mt-3 text-base leading-7 text-muted">{locale === "bn" ? "প্রতিটি ধাপে কীভাবে সাহায্য করে জানতে card-এর বিস্তারিত খুলুন।" : "Open a card to see how each step can help."}</p>
+            </div>
+            <div className="grid items-start gap-5 sm:grid-cols-2 xl:grid-cols-4">
+              {workflowCards.map(({ icon: Icon, image, titleBn, titleEn, bodyBn, bodyEn, detailBn, detailEn, tagsBn, tagsEn, href, linkBn, linkEn }, index) => (
+                <article key={titleEn} className="group flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg">
+                  <div className="relative h-48 overflow-hidden">
+                    <Image src={image} alt="" fill sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw" className="object-cover transition duration-500 group-hover:scale-105" />
+                    <span className="absolute left-4 top-4 rounded-lg bg-[#123d2a]/90 px-3 py-1.5 text-xs font-extrabold tracking-wide text-white backdrop-blur">{String(index + 1).padStart(2, "0")}</span>
+                  </div>
+                  <div className="flex flex-1 flex-col p-5">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald/10 text-emerald-strong"><Icon className="h-5 w-5" aria-hidden="true" /></span>
+                    <h3 className="mt-4 text-lg font-bold text-forest dark:text-green-100">{locale === "bn" ? titleBn : titleEn}</h3>
+                    <p className="mt-2 min-h-[76px] text-sm leading-6 text-muted">{locale === "bn" ? bodyBn : bodyEn}</p>
+                    <span className="mt-4 inline-flex w-fit rounded-full bg-surface-2 px-3 py-1.5 text-xs font-semibold text-muted">{locale === "bn" ? tagsBn : tagsEn}</span>
+                    <div className="mt-5 border-t border-line pt-4">
+                      <p className="text-sm leading-7 text-muted">{locale === "bn" ? detailBn : detailEn}</p>
+                      <Link href={href} className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-emerald-strong hover:underline">{locale === "bn" ? linkBn : linkEn}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section id="about" aria-labelledby="about-title" className="scroll-mt-20 border-t border-line bg-surface px-4 py-14 dark:bg-bg sm:px-6 sm:py-16">
           <div className="mx-auto max-w-6xl">
             <div className="mx-auto max-w-2xl text-center">
@@ -1309,6 +1268,7 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
       </main>
 
       <PublicFooter />

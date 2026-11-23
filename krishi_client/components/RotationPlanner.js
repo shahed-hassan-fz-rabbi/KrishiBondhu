@@ -81,8 +81,8 @@ export function RotationPlanner({ publicMode = false, initialDistrict, initialPr
     try {
       const response = await (publicMode ? previewCropRotations : compareCropRotations)({ ...profile, baseline });
       if (response.success) setResult(response.data);
-      else setError(t(response.status === 401 ? "access.body" : "rotation.error"));
-    } catch { setError(t("rotation.error")); }
+      else setError(response.status === 401 ? t("access.body") : response.status === 0 ? t("rotation.serverUnavailable") : t("rotation.error"));
+    } catch (requestError) { setError(requestError?.code === "NETWORK_ERROR" || requestError?.code === "REQUEST_TIMEOUT" ? t("rotation.serverUnavailable") : t("rotation.error")); }
     finally { setBusy(false); }
   };
   const save = async (strategy) => {

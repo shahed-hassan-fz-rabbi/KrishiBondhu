@@ -113,7 +113,7 @@ export const translations = {
       heroHeadlineLine1: "Plan with confidence.",
       heroHeadlineLine2: "From seed to market.",
       heroHeadlineAlt1: "কৃষকের পাশে, প্রতিটি সিদ্ধান্তে।",
-      heroHeadlineAlt2: "বীজ থেকে বাজারে সহজ সমাধান।",
+      heroHeadlineAlt2: "স্মার্ট সমাধান আপনার হাতে।",
       heroDescription: "Know market prices, weather forecasts, and crop insights with ease. From choosing a crop and planning sowing to tracking farm work and preparing to sell, bring practical tools and dated information together in one farmer-friendly place.",
       heroDescriptionBn: "বাজারদর, আবহাওয়া ও ফসলের তথ্য জানুন সহজেই। কোন ফসল করবেন তা বাছা থেকে বপন, পরিচর্যা ও বিক্রির পরিকল্পনা—কৃষকের দরকারি তথ্য ও সরঞ্জাম এক জায়গায়, নিজের ভাষায়।",
       ctaMarket: "Check market prices",
@@ -672,7 +672,7 @@ export const translations = {
 
       login: "Login",
       register: "Register",
-      loginTitle: "Welcome back",
+      loginTitle: "Login",
       loginSubtitle: "Sign in to your KrishiBondhu account",
       loginServiceUnavailable: "We could not reach the sign-in service. Check your connection and try again.",
       loginBrandTitle: "Your farming companion, from seed to market",
@@ -1341,8 +1341,8 @@ export const translations = {
 
       // ===== PART 2 — Homepage Redesign =====
       heroEyebrow: "বাংলাদেশের কৃষকের জন্য · বাংলা ও ইংরেজিতে",
-      heroHeadlineLine1: "পরিকল্পনায় কৃষিবন্ধু পাশে।",
-      heroHeadlineLine2: "বীজ থেকে বাজারে সহজ সমাধান।",
+      heroHeadlineLine1: "কৃষির প্রতিটি ধাপে,",
+      heroHeadlineLine2: "স্মার্ট সমাধান আপনার হাতে।",
       heroDescriptionBn: "বাজারদর, আবহাওয়া ও ফসলের তথ্য জানুন সহজেই। কোন ফসল করবেন তা বাছা থেকে বপন, পরিচর্যা ও বিক্রির পরিকল্পনা—কৃষকের দরকারি তথ্য ও সরঞ্জাম এক জায়গায়, নিজের ভাষায়।",
       ctaMarketBn: "বাজারদর দেখুন",
       ctaAssistantBn: "এআই সহকারীকে জিজ্ঞাসা করুন",
@@ -1895,7 +1895,7 @@ export const translations = {
 
       login: "লগইন",
       register: "রেজিস্টার",
-      loginTitle: "আবার স্বাগতম",
+      loginTitle: "লগইন",
       loginSubtitle: "আপনার কৃষিবন্ধু অ্যাকাউন্টে সাইন ইন করুন",
       loginServiceUnavailable: "সাইন-ইন সেবায় সংযোগ করা যায়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।",
       loginBrandTitle: "বীজ থেকে বাজার—কৃষির সহযাত্রী",

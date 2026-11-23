@@ -161,7 +161,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex flex-col bg-bg">
       <header className="border-b border-line bg-surface/90 backdrop-blur-md sticky top-0 z-20">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 w-full items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <BrandMark />
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
@@ -171,17 +171,18 @@ export default function RegisterPage() {
       </header>
 
       <main className="relative isolate flex flex-1 items-center justify-center px-4 py-10 sm:px-6 lg:py-14">
-        {/* Subtle, premium atmospheric background */}
+        {/* Agricultural photo with layered tint overlays for contrast */}
         <Image
-          src="/images/auth-farmer.png"
+          src="/images/auth-agriculture.webp"
           alt=""
           fill
           sizes="100vw"
-          className="-z-20 object-cover object-center opacity-20 dark:opacity-15 filter blur-[1px]"
+          className="-z-20 object-cover object-[center_58%] opacity-75 dark:opacity-60"
           priority
         />
-        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-b from-[#021d13]/90 via-[#03261a]/85 to-[#01140e]/95" />
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.15),transparent_60%)]" />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[#062216]/20 mix-blend-multiply" />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-b from-[#061d14]/45 via-[#08281b]/58 to-[#04180f]/72" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,rgba(70,160,105,0.18),transparent_62%)]" />
 
         <div className="w-full max-w-lg">
           <div className="overflow-hidden rounded-3xl border border-line bg-surface/95 dark:bg-surface/95 shadow-2xl backdrop-blur-md">

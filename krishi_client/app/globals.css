@@ -334,8 +334,8 @@
 
 /* Reference-matched landing composition: full-width field, roomy masthead and orbiting globe. */
 .kb-story-home { padding:0 6px 24px; background:#eee8dc; }
-.kb-story-home>header { position:relative; top:auto; max-width:1780px; border:0; border-radius:0; background:transparent; box-shadow:none; }
-.kb-story-home>header>div { max-width:none; height:94px; padding-right:clamp(16px,2.7vw,48px); padding-left:clamp(16px,2.7vw,48px); }
+.kb-story-home>header { position:sticky; top:8px; z-index:50; width:100%; max-width:1780px; margin:0 auto; border:1px solid var(--km-border); border-radius:18px; background:color-mix(in srgb,var(--km-surface) 94%,transparent); color:var(--km-text); box-shadow:var(--km-shadow-sm); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); }
+.kb-story-home>header>div { max-width:none; height:76px; padding-right:clamp(12px,2vw,34px); padding-left:clamp(12px,2vw,34px); }
 .kb-story-hero { max-width:1780px; min-height:max(780px,calc(100svh - 112px)); grid-template-columns:minmax(0,1.08fr) minmax(390px,.92fr); margin:0 auto; padding:42px clamp(24px,2.7vw,52px) 40px; border-color:#e3dac8; border-radius:17px; background:#eee7d8; box-shadow:0 4px 14px #51432a0c; }
 .kb-story-pattern { opacity:.24; mask-image:linear-gradient(90deg,#000 0%,#000 74%,transparent 100%); }
 .kb-story-copy { max-width:850px; }
@@ -372,7 +372,8 @@
 }
 @media(max-width:760px) {
   .kb-story-home { padding:0 7px 15px; }
-  .kb-story-home>header>div { height:76px; padding-right:8px; padding-left:8px; }
+  .kb-story-home>header { top:5px; border-radius:15px; }
+  .kb-story-home>header>div { height:64px; gap:6px; padding-right:6px; padding-left:6px; }
   .kb-story-hero { min-height:unset; padding:32px 21px 16px; }
   .kb-story-eyebrow { padding:9px 12px; font-size:10px; }
   .kb-story-hero h1 { font-size:clamp(39px,10vw,54px); }
@@ -891,10 +892,7 @@
     display: none;
   }
   /* Keep the header inner row from expanding beyond the viewport */
-  .kb-story-home > header > div {
-    min-width: 0;
-    overflow: hidden;
-  }
+  .kb-story-home > header > div { min-width:0; }
 }
 @media (max-width: 640px) {
   .kb-hero { min-height: 760px; margin: 7px 7px 0; border-radius: 23px; }

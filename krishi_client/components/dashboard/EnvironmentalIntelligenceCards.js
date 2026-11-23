@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import {
   Sun,
   CloudRain,
@@ -234,6 +235,7 @@ export default function EnvironmentalIntelligenceCards({
     {
       id: "gpm",
       title: isBn ? "বৃষ্টিপাত" : "Precipitation",
+      image: "/img/photos/data-rainfall-observations.jpg",
       technicalCode: "NASA GPM · IMERG V07 Final",
       icon: CloudRain,
       topBorder: "border-t-sky-500",
@@ -308,6 +310,7 @@ export default function EnvironmentalIntelligenceCards({
     {
       id: "smap",
       title: isBn ? "মাটির আর্দ্রতা" : "Soil Moisture",
+      image: "/img/photos/data-soil-moisture.jpg",
       technicalCode: "NASA SMAP · SPL3SMP_E V006",
       icon: Droplets,
       topBorder: "border-t-teal-600",
@@ -393,6 +396,7 @@ export default function EnvironmentalIntelligenceCards({
     {
       id: "modis",
       title: isBn ? "গাছপালার সবুজত্ব" : "Vegetation Index",
+      image: "/img/photos/data-vegetation-condition.jpg",
       technicalCode: "NASA MODIS · 250m SIN",
       icon: Leaf,
       topBorder: "border-t-emerald-600",
@@ -502,6 +506,7 @@ export default function EnvironmentalIntelligenceCards({
               ? { surface: "border-teal-200 from-teal-50 to-emerald-50/60 dark:border-teal-900 dark:from-teal-950/30 dark:to-emerald-950/20", icon: "bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300", metric: "border-teal-100 bg-teal-100/60 dark:border-teal-900 dark:bg-teal-900/20" }
               : { surface: "border-lime-200 from-lime-50 to-green-50/60 dark:border-lime-900 dark:from-lime-950/30 dark:to-green-950/20", icon: "bg-lime-100 text-green-700 dark:bg-lime-900/50 dark:text-lime-300", metric: "border-lime-100 bg-lime-100/60 dark:border-lime-900 dark:bg-lime-900/20" };
           return <article key={card.id} className={`flex h-full min-w-0 flex-col justify-between overflow-hidden rounded-3xl border bg-gradient-to-br shadow-km-sm ${palette.surface}`}>
+            {card.image && <div className="relative h-24 w-full shrink-0 overflow-hidden sm:h-28"><Image src={card.image} alt="" fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" /></div>}
             <div className="flex-1 p-4 sm:p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex items-center gap-3"><span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${palette.icon}`}><CardIcon className="h-6 w-6" aria-hidden="true" /></span><h3 className="text-base font-semibold text-content">{card.title}</h3></div>

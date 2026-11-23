@@ -200,6 +200,7 @@ function pageTip(pathname, bn) {
 export function MiniGuide() {
   const router = useRouter();
   const pathname = usePathname();
+  const isAuthPage = pathname === "/login" || pathname === "/register";
   const { locale } = useLang();
   const { user, isLoading: authLoading } = useAuth();
   const isAuthenticated = Boolean(user);
@@ -776,6 +777,8 @@ export function MiniGuide() {
     : launcherStyle;
   const compactTourSheet = tourMode && typeof window !== "undefined" && window.innerWidth <= 760;
   const speechStyle = bubblePosition && !compactTourSheet ? { left: bubblePosition.left, top: bubblePosition.top, width: bubblePosition.width, right: "auto", bottom: "auto" } : undefined;
+
+  if (isAuthPage) return null;
 
   return <>
     {tourMode && targetRect && pathname === tourStep?.route && <svg className="kb-tour-spotlight" aria-hidden="true" focusable="false" viewBox={"0 0 " + targetRect.viewportWidth + " " + targetRect.viewportHeight} preserveAspectRatio="none"><path fillRule="evenodd" d={"M0 0H" + targetRect.viewportWidth + "V" + targetRect.viewportHeight + "H0Z M" + (targetRect.left - 8) + " " + (targetRect.top - 8) + "H" + (targetRect.left + targetRect.width + 8) + "V" + (targetRect.top + targetRect.height + 8) + "H" + (targetRect.left - 8) + "Z"} /></svg>}
