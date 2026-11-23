@@ -1,19 +1,14 @@
 "use client";
-import { useState } from "react";
 import { Bot, ChevronDown, Info } from "lucide-react";
 import { Button } from "@/components/ui/Button.js";
 import { useAuth } from "@/contexts/AuthContext.js";
 import { useLocation } from "@/contexts/LocationContext.js";
 import { useLang } from "@/lib/i18n/LanguageContext.js";
-import { createSavedAdvisory } from "@/services/api.js";
 
 export function RotationResults({ result, publicMode, onSave, saveBusy, explainBusy, question, setQuestion, onExplain, answer, onRemember }) {
   const { t, locale } = useLang();
   const { user } = useAuth();
   const { setSelectedDistrict } = useLocation();
-  const [savingAnswer, setSavingAnswer] = useState(false);
-  const [savedAnswer, setSavedAnswer] = useState("");
-  const [answerSaveError, setAnswerSaveError] = useState(false);
   const bn = locale === "bn";
   const num = (value, digits = 0) => Number.isFinite(value) ? new Intl.NumberFormat(bn ? "bn-BD" : "en-GB", { maximumFractionDigits: digits }).format(value) : "—";
   const month = (value) => new Intl.DateTimeFormat(bn ? "bn-BD" : "en-GB", { month: "long", timeZone: "UTC" }).format(new Date(Date.UTC(2001, value - 1, 1)));
@@ -23,24 +18,6 @@ export function RotationResults({ result, publicMode, onSave, saveBusy, explainB
   const rememberLink = () => onRemember(result.input);
   const sourceDistrict = () => setSelectedDistrict(result.input.districtCode);
   const area = result.areaClimate;
-  const handleSaveAnswer = async () => {
-    if (!answer || savingAnswer || savedAnswer === answer) return;
-    setSavingAnswer(true); setAnswerSaveError(false);
-    const baselineCrops = baseline?.cropCodes.map(cropName).join(" → ") || "";
-    try {
-      const response = await createSavedAdvisory({
-        title: `${t("rotationGuide.savedAnswerTitle")}: ${baselineCrops}`.slice(0, 180),
-        body: `${question ? `${t("rotationGuide.aiQuestion")}: ${question}\n\n` : ""}${answer}`.slice(0, 5000),
-        category: "rotation",
-        cropName: baselineCrops.slice(0, 120),
-        districtCode: result.input.districtCode,
-        sourceHref: "/rotation-planner",
-      });
-      if (response.success) setSavedAnswer(answer);
-      else setAnswerSaveError(true);
-    } catch { setAnswerSaveError(true); }
-    finally { setSavingAnswer(false); }
-  };
   const privateButton = (className = "") => <Button href={personalHref} onClick={rememberLink} variant="outline" className={className}>{t(user ? "rotationGuide.saveWorkspace" : "rotationGuide.saveLogin")}</Button>;
 
   return <section className="space-y-7" aria-live="polite">
@@ -93,7 +70,7 @@ export function RotationResults({ result, publicMode, onSave, saveBusy, explainB
 
     <section className="rounded-2xl border border-emerald/30 bg-surface p-5 sm:p-7">
       <Bot className="mb-3 h-7 w-7 text-emerald-strong" aria-hidden="true" /><h3 className="text-xl font-semibold text-content">{t("rotationGuide.aiTitle")}</h3><p className="my-3 max-w-3xl text-sm leading-7 text-muted">{t("rotationGuide.aiBody")}</p>
-      {user ? <><form onSubmit={onExplain}><label className="block text-sm text-content">{t("rotationGuide.aiQuestion")}<textarea required maxLength={1000} value={question} onChange={(e) => setQuestion(e.target.value)} rows={3} className="mt-2 w-full rounded-lg border border-line bg-surface p-3 text-content" /></label><Button as="submit" disabled={explainBusy || saveBusy} className="mt-3">{t(explainBusy ? "rotation.working" : "rotationGuide.aiSend")}</Button></form>{answer && <><p role="status" className="mt-5 whitespace-pre-wrap text-sm leading-8 text-content">{answer}</p><div className="mt-3 flex flex-wrap items-center gap-3"><button type="button" onClick={handleSaveAnswer} disabled={savingAnswer || savedAnswer === answer} className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-forest-300 bg-surface px-3 py-2 text-sm font-semibold text-forest-800 hover:bg-surface-2 disabled:opacity-65 dark:border-forest-700 dark:text-forest-200">{t(savedAnswer === answer ? "rotationGuide.answerSaved" : savingAnswer ? "rotationGuide.answerSaving" : "rotationGuide.saveAnswer")}</button>{answerSaveError && <span role="alert" className="text-sm text-danger-strong">{t("rotationGuide.answerSaveFailed")}</span>}</div></>}<p className="mt-4 text-xs leading-6 text-muted">{t("rotationGuide.aiMode")}</p></> : <><Button href={personalHref} onClick={rememberLink} className="mt-2 h-auto min-h-10 py-2 text-center">{t("rotationGuide.aiLogin")}</Button><p className="mt-3 text-xs leading-6 text-muted">{t("rotationGuide.aiLoginNote")}</p></>}
+      {user ? <><form onSubmit={onExplain}><label className="block text-sm text-content">{t("rotationGuide.aiQuestion")}<textarea required maxLength={1000} value={question} onChange={(e) => setQuestion(e.target.value)} rows={3} className="mt-2 w-full rounded-lg border border-line bg-surface p-3 text-content" /></label><Button as="submit" disabled={explainBusy || saveBusy} className="mt-3">{t(explainBusy ? "rotation.working" : "rotationGuide.aiSend")}</Button></form>{answer && <p role="status" className="mt-5 whitespace-pre-wrap text-sm leading-8 text-content">{answer}</p>}<p className="mt-4 text-xs leading-6 text-muted">{t("rotationGuide.aiMode")}</p></> : <><Button href={personalHref} onClick={rememberLink} className="mt-2 h-auto min-h-10 py-2 text-center">{t("rotationGuide.aiLogin")}</Button><p className="mt-3 text-xs leading-6 text-muted">{t("rotationGuide.aiLoginNote")}</p></>}
     </section>
 
     <aside className="flex gap-3 rounded-xl border border-line bg-surface-2 p-5"><Info className="mt-1 h-5 w-5 shrink-0 text-climate" aria-hidden="true" /><div><h3 className="font-semibold text-content">{t("rotationGuide.sharedTitle")}</h3><p className="mt-2 text-sm leading-7 text-muted">{t("rotationGuide.sharedBody")}</p></div></aside>

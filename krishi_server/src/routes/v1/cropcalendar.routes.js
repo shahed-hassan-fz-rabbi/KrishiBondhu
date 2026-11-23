@@ -6,13 +6,17 @@
 import { Router } from "express";
 import {
   getCropCalendarAlignment,
+  getCropCatalog,
   getCropCalendars,
+  getCropManagementGuide,
   getCropList,
 } from "../../controllers/cropcalendar.controller.js";
 
 const router = Router();
 
 router.get("/crops", getCropList);
+router.get("/catalog", getCropCatalog);
+router.get("/management/:crop", getCropManagementGuide);
 router.get("/alignment", getCropCalendarAlignment);
 router.get("/", getCropCalendars);
 

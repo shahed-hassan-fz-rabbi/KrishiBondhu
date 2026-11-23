@@ -463,6 +463,7 @@ function FarmDetailsContent() {
   const currentStageCodes = new Set(stages.filter(stage => stage.isCurrent).map(stage => stage.stageCode));
   const currentTasks = activities.filter(act => currentStageCodes.has(act.relatedStageCode) && act.status !== "COMPLETED" && act.status !== "SKIPPED");
   const fertilizerGuidance = getFarmFertilizerGuidance(farm, lang);
+  const sourceVerifiedLabel = new Intl.DateTimeFormat(lang === "bn" ? "bn-BD" : "en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${FERTILIZER_GUIDANCE_SOURCE.verifiedOn}T00:00:00Z`));
   const farmTabs = ["now", "timeline", "fertilizer", "land"];
 
   return (
@@ -525,6 +526,40 @@ function FarmDetailsContent() {
         </div>
         </div>
       </header>
+
+      <section aria-labelledby="farm-snapshot-heading" className="rounded-2xl border border-line bg-surface p-4 shadow-km-sm sm:p-5">
+        <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 id="farm-snapshot-heading" className="text-base font-bold text-content">{lang === "bn" ? "আপনার মাঠ এক নজরে" : "Your field at a glance"}</h2>
+            <p className="mt-1 text-xs leading-5 text-muted">{lang === "bn" ? "পরিকল্পনা ও পরামর্শে ব্যবহৃত মূল তথ্য। কোনো তথ্য না দিলে তা আলাদাভাবে দেখানো হয়েছে।" : "Key details used for plans and guidance. Missing information is shown clearly."}</p>
+          </div>
+          <button type="button" onClick={() => { setActiveFarmTab("land"); document.getElementById("field-tab-land")?.scrollIntoView({ behavior: "smooth", block: "center" }); }} className="inline-flex min-h-9 w-fit items-center gap-1 text-xs font-semibold text-forest hover:underline dark:text-emerald-300">
+            {lang === "bn" ? "জমির তথ্য দেখুন" : "Review field details"}<ChevronRight className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-xl border border-line bg-bg/60 p-3.5">
+            <div className="flex items-center gap-2 text-xs font-medium text-muted"><Sprout className="h-4 w-4 text-forest" aria-hidden="true" />{lang === "bn" ? "চলতি ফসল" : "Current crop"}</div>
+            <p className="mt-2 text-sm font-bold text-content">{fertilizerGuidance.cropLabel}</p>
+            <p className="mt-1 text-xs text-muted">{lang === "bn" ? "রোপণের তারিখ" : "Planting date"}: {farm.crop?.plantingDate ? localDigits(farm.crop.plantingDate) : t("farmUi.notRecorded")}</p>
+          </div>
+          <div className="rounded-xl border border-line bg-bg/60 p-3.5">
+            <div className="flex items-center gap-2 text-xs font-medium text-muted"><Layers className="h-4 w-4 text-forest" aria-hidden="true" />{lang === "bn" ? "জমির পরিমাণ" : "Field size"}</div>
+            <p className="mt-2 text-sm font-bold text-content">{localDigits(farm.land?.area)} {unitLabel}</p>
+            <p className="mt-1 text-xs text-muted">{t(`myFarm.landTypes.${farm.land?.landType || "unspecified"}`)}</p>
+          </div>
+          <div className="rounded-xl border border-line bg-bg/60 p-3.5">
+            <div className="flex items-center gap-2 text-xs font-medium text-muted"><Leaf className="h-4 w-4 text-forest" aria-hidden="true" />{lang === "bn" ? "মাটির ধরন" : "Soil type"}</div>
+            <p className="mt-2 text-sm font-bold text-content">{t(`myFarm.soilTypes.${farm.soil?.type || "unknown"}`)}</p>
+            <p className="mt-1 text-xs text-muted">{lang === "bn" ? "পুষ্টির মাটি পরীক্ষা: নথিভুক্ত নয়" : "Soil nutrient test: not recorded"}</p>
+          </div>
+          <div className="rounded-xl border border-line bg-bg/60 p-3.5">
+            <div className="flex items-center gap-2 text-xs font-medium text-muted"><Droplets className="h-4 w-4 text-forest" aria-hidden="true" />{lang === "bn" ? "সেচের পানি" : "Irrigation water"}</div>
+            <p className="mt-2 text-sm font-bold text-content">{farm.water?.irrigationAvailability ? t(`myFarm.irrigationOptions.${farm.water.irrigationAvailability}`) : t("farmUi.notRecorded")}</p>
+            <p className="mt-1 text-xs text-muted">{farm.water?.waterSource || (lang === "bn" ? "পানির উৎস নথিভুক্ত নয়" : "Water source not recorded")}</p>
+          </div>
+        </div>
+      </section>
 
       {dataError && (
         <div role="status" className="flex flex-col gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 sm:flex-row sm:items-center sm:justify-between dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
@@ -667,10 +702,11 @@ function FarmDetailsContent() {
               </div>
 
               <div className="rounded-2xl border border-line bg-bg/70 p-4">
+                <p className="mb-3 text-xs leading-5 text-muted">{lang === "bn" ? "BARC-এর নির্দেশিকা ফসল ও মাটিভেদে আলাদা। স্থানীয় AEZ, জমির অবস্থা ও পরীক্ষার ফল মিলিয়ে চূড়ান্ত পরিমাণ ঠিক করুন।" : "BARC guidance varies by crop and soil. Confirm final amounts against local AEZ, field conditions, and soil-test results."}</p>
                 <h3 className="text-xs font-bold uppercase tracking-wide text-content-muted">{lang === "bn" ? "যাচাই করা উৎস" : "Verified source"}</h3>
                 <p className="mt-2 text-sm font-semibold text-content">{FERTILIZER_GUIDANCE_SOURCE.organization}</p>
                 <p className="mt-1 text-xs leading-5 text-muted">{FERTILIZER_GUIDANCE_SOURCE.title} · {lang === "bn" ? "ফসলের নির্দেশিকা পৃষ্ঠা" : "Crop guidance page"} {localDigits(fertilizerGuidance.page || "—")}</p>
-                <p className="mt-1 text-xs text-muted">{lang === "bn" ? "সর্বশেষ উৎস যাচাই:" : "Source last checked:"} {lang === "bn" ? "২৪ নভেম্বর ২০২৬" : "24 November 2026"}</p>
+                <p className="mt-1 text-xs text-muted">{lang === "bn" ? "সর্বশেষ উৎস যাচাই:" : "Source last checked:"} {sourceVerifiedLabel}</p>
                 <a href={FERTILIZER_GUIDANCE_SOURCE.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex min-h-9 items-center gap-1.5 text-xs font-semibold text-forest hover:underline dark:text-emerald-300">{lang === "bn" ? "মূল নির্দেশিকা খুলুন" : "Open original guide"}<ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /></a>
               </div>
             </aside>
@@ -682,7 +718,7 @@ function FarmDetailsContent() {
           </div>
         </div>
       </section>
-      <section id={`field-panel-${activeFarmTab === "land" ? "inactive" : activeFarmTab}`} role="tabpanel" aria-labelledby={`field-tab-${activeFarmTab}`} hidden={activeFarmTab === "land" || activeFarmTab === "fertilizer"}>
+      <section id={`field-panel-${activeFarmTab === "land" || activeFarmTab === "fertilizer" ? "inactive" : activeFarmTab}`} role="tabpanel" aria-labelledby={`field-tab-${activeFarmTab}`} hidden={activeFarmTab === "land" || activeFarmTab === "fertilizer"}>
       {/* PHASE 9.2: CROP LIFECYCLE ENGINE TIMELINE */}
       <div className="rounded-2xl border border-line bg-surface p-5 shadow-km-sm sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-stone-100 pb-4 dark:border-line">

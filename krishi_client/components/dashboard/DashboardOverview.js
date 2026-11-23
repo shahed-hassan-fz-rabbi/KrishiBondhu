@@ -3,7 +3,6 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  Bookmark,
   CloudRain,
   Droplets,
   Map,
@@ -24,7 +23,6 @@ const actions = [
   { href: "/my-farm", icon: Sprout, en: "My field", bn: "আমার মাঠ", detailEn: "Review your field records", detailBn: "মাঠের তথ্য ও কাজ দেখুন" },
   { href: "/assistant", icon: MessageCircle, en: "Ask the assistant", bn: "সহকারীর পরামর্শ নিন", detailEn: "Continue with an agricultural question", detailBn: "কৃষি বিষয়ে প্রশ্ন করুন" },
   { href: "/market", icon: Store, en: "Market information", bn: "বাজার তথ্য", detailEn: "Browse available market records", detailBn: "বাজারদর ও লাভ হিসাব দেখুন" },
-  { href: "/saved-advisories", icon: Bookmark, en: "Saved advisories", bn: "সংরক্ষিত পরামর্শ", detailEn: "Return to saved guidance", detailBn: "সংরক্ষিত পরামর্শ দেখুন" },
 ];
 
 export default function DashboardOverview({

@@ -29,7 +29,7 @@ import {
 import { SUPPORTED_CROPS, LAND_UNITS, getUpazilasForDistrict } from "@/lib/upazilas.js";
 import { useLang } from "@/lib/i18n/LanguageContext.js";
 import { useAuth } from "@/contexts/AuthContext.js";
-import { fetchFarms, deleteFarm, fetchActivitiesOverview, updateFarmActivity } from "@/services/api.js";
+import { fetchCropCatalog, fetchFarms, deleteFarm, fetchActivitiesOverview, updateFarmActivity } from "@/services/api.js";
 import { dispatchFarmNotificationUpdate } from "@/lib/farmNotificationEvents.js";
 
 function MyFarmPage() {
@@ -47,11 +47,20 @@ function MyFarmPage() {
   const [updatingTaskId, setUpdatingTaskId] = useState(null);
   const [farmSearch, setFarmSearch] = useState("");
   const [farmStatusFilter, setFarmStatusFilter] = useState("all");
+  const [cropCatalog, setCropCatalog] = useState(SUPPORTED_CROPS);
+
+  useEffect(() => {
+    let active = true;
+    fetchCropCatalog().then((response) => {
+      if (active && response.success && Array.isArray(response.data)) setCropCatalog(response.data);
+    }).catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   const digits = value => lang === "bn" ? String(value ?? "—").replace(/[0-9]/g, digit => "০১২৩৪৫৬৭৮৯"[Number(digit)]) : String(value ?? "—");
   const farmLabel = (farm, kind) => {
     let entry;
-    if (kind === "crop") entry = SUPPORTED_CROPS.find(item => item.code === farm.crop?.cropCode || item.nameEn === farm.crop?.cropName);
+    if (kind === "crop") entry = cropCatalog.find(item => item.code === farm.crop?.cropCode || item.nameEn === farm.crop?.cropName);
     if (kind === "unit") entry = LAND_UNITS.find(item => item.code === farm.land?.unit);
     if (kind === "upazila") entry = getUpazilasForDistrict(farm.location?.districtCode).find(item => item.code === farm.location?.upazila || item.nameEn.toLowerCase() === farm.location?.upazila?.toLowerCase());
     if (entry) return lang === "bn" ? entry.nameBn : entry.nameEn;

@@ -7,9 +7,9 @@
 import { DISTRICTS } from "../config/climate.config.js";
 import { getUpazilasForDistrict } from "../config/upazilas.config.js";
 import { ownershipPayloadErrors } from "../security/farm-ownership.js";
+import { isRegisteredCropCode } from "../services/cropcatalog.service.js";
 
 const VALID_DISTRICT_CODES = new Set(DISTRICTS.map((d) => d.code));
-const VALID_CROP_CODES = new Set(["monsoon_aman", "boro_rice", "aus_rice", "mustard"]);
 const VALID_LAND_UNITS = new Set(["decimal", "acre", "hectare", "bigha", "katha"]);
 const VALID_LAND_TYPES = new Set(["high", "medium_high", "medium_low", "low", "unspecified"]);
 const VALID_SOIL_TYPES = new Set(["clay", "loam", "clay_loam", "sandy_loam", "sandy", "silt", "alluvial", "other", "unknown"]);
@@ -106,10 +106,10 @@ export function validateCreateFarmInput(body = {}) {
   const cropCode = (crop.cropCode || "").trim().toLowerCase();
   if (!cropCode) {
     errors.push({ field: "crop.cropCode", message: "Crop selection is required." });
-  } else if (!VALID_CROP_CODES.has(cropCode)) {
+  } else if (!isRegisteredCropCode(cropCode)) {
     errors.push({
       field: "crop.cropCode",
-      message: `Crop '${cropCode}' is not supported in the official crop calendar. Supported crops: ${[...VALID_CROP_CODES].join(", ")}.`,
+      message: `Crop '${cropCode}' is not in the KrishiBondhu crop catalog.`,
     });
   }
 
@@ -158,8 +158,8 @@ export function validateUpdateFarmInput(body = {}) {
 
   if (body.crop?.cropCode !== undefined) {
     const cc = String(body.crop.cropCode).trim().toLowerCase();
-    if (!VALID_CROP_CODES.has(cc)) {
-      errors.push({ field: "crop.cropCode", message: `Unsupported crop '${cc}'.` });
+    if (!isRegisteredCropCode(cc)) {
+      errors.push({ field: "crop.cropCode", message: `Crop '${cc}' is not in the KrishiBondhu crop catalog.` });
     }
   }
 

@@ -95,10 +95,8 @@ const farmSchema = new mongoose.Schema(
       cropCode: {
         type: String,
         required: [true, "Crop code is required"],
-        enum: {
-          values: ["monsoon_aman", "boro_rice", "aus_rice", "mustard"],
-          message: "Crop '{VALUE}' is not verified in the official crop calendar",
-        },
+        trim: true,
+        lowercase: true,
       },
       cropName: {
         type: String,

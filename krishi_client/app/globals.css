@@ -544,16 +544,16 @@
 .dark .kb-mini-ask { background:#22483f; color:#d6e8d7; }
 @media(max-width:760px) {
   .kb-mini-guide { right:8px; bottom:calc(76px + env(safe-area-inset-bottom)); gap:9px; }
-  .kb-mini-launcher { width:132px; height:154px; }
-  .kb-mini-launcher .kb-mini-face { width:126px; height:148px; }
+  .kb-mini-launcher { width:82px; height:96px; }
+  .kb-mini-launcher .kb-mini-face { width:76px; height:90px; }
   .kb-mini-panel { width:min(360px,calc(100vw - 22px)); max-height:min(67vh,560px); border-radius:19px; }
   .kb-mini-guide:not(.is-tour-active) .kb-mini-panel { right:11px; bottom:calc(86px + env(safe-area-inset-bottom)); }
   .kb-mini-panel-head { padding:11px 13px; }
   .kb-mini-panel-body { padding:13px; }
   .kb-mini-panel-body h2 { font-size:16px; }
   .kb-mini-panel.is-tour-panel { max-height:min(66vh,500px); }
-  .kb-mini-guide.is-tour-active .kb-mini-launcher { width:86px; height:100px; }
-  .kb-mini-guide.is-tour-active .kb-mini-launcher .kb-mini-face { width:82px; height:96px; }
+  .kb-mini-guide.is-tour-active .kb-mini-launcher { width:66px; height:76px; }
+  .kb-mini-guide.is-tour-active .kb-mini-launcher .kb-mini-face { width:62px; height:72px; }
   .kb-tour-outline { border-radius:11px; }
   .kb-mini-places nav { max-height:175px; }
   .kb-mini-bubble { right:11px; bottom:calc(154px + env(safe-area-inset-bottom)); width:min(320px,calc(100vw - 22px)); max-height:min(58dvh,440px); border-radius:16px; }
@@ -1232,6 +1232,45 @@
   transition: background var(--kb-duration) var(--kb-ease), transform var(--kb-duration) var(--kb-ease);
 }
 .kb-hero2-cta-tour:hover { background: rgba(7,31,21,0.82); transform: translateY(-1px); }
+.kb-hero2-market-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 1px solid rgba(255,255,255,0.58);
+  border-radius: 999px;
+  background: rgba(255,253,247,0.95);
+  box-shadow: 0 5px 18px rgba(0,0,0,0.14);
+  color: #14512F;
+  font-size: 13px;
+  font-weight: 750;
+  text-decoration: none;
+  transition: transform var(--kb-duration) var(--kb-ease), box-shadow var(--kb-duration) var(--kb-ease), background var(--kb-duration) var(--kb-ease);
+}
+.kb-hero2-market-link:hover { transform: translateY(-2px); background: #fff; box-shadow: 0 9px 24px rgba(0,0,0,0.2); }
+.kb-hero2-market-link:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.kb-mobile-preview-row { display: flex; justify-content: center; padding: 14px 16px 0; }
+.kb-mobile-preview-button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 18px;
+  border: 1px solid rgba(29,112,68,0.2);
+  border-radius: 999px;
+  background: var(--km-surface, #fffdf7);
+  color: #1d7044;
+  box-shadow: 0 3px 12px rgba(15,55,35,0.08);
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: transform var(--kb-duration) var(--kb-ease), box-shadow var(--kb-duration) var(--kb-ease);
+}
+.kb-mobile-preview-button:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(15,55,35,0.14); }
+.kb-mobile-preview-button:focus-visible { outline: 2px solid #247a4b; outline-offset: 3px; }
 .kb-hero2-cta-assistant {
   display: inline-flex;
   min-height: 50px;
@@ -1677,12 +1716,6 @@
   box-shadow: 0 8px 22px rgba(4, 28, 17, 0.2);
 }
 .kb-hero2-cta-tour { backdrop-filter: blur(8px); }
-.kb-hero2-actions > a:last-child {
-  color: #d3f0b2;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 4px;
-}
-.kb-hero2-actions > a:last-child:hover { color: #fff2bd; }
 .kb-hero2-proof { gap: 9px; }
 .kb-hero2-proof-item { color: rgba(245, 251, 246, 0.92); }
 .kb-hero-path-card {
@@ -1750,64 +1783,6 @@
 .kb-featured-card:nth-child(5) .kb-featured-visual img { object-position: center 48%; }
 .kb-featured-card:nth-child(8) .kb-featured-visual img { object-position: center 56%; }
 @media (max-width: 780px) { .kb-featured-visual { height: 158px; } }
-.kb-featured-visual-ai { position: relative; isolation: isolate; }
-.kb-featured-visual-ai::after {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: linear-gradient(90deg, transparent 35%, rgba(6, 39, 26, 0.2));
-  content: "";
-  pointer-events: none;
-}
-.kb-featured-ai-overlay {
-  position: absolute;
-  z-index: 2;
-  inset: 0 16px 0 auto;
-  display: flex;
-  width: 142px;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-}
-.kb-featured-ai-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 12px;
-  border: 1px solid rgba(220, 255, 231, 0.5);
-  border-radius: 999px;
-  background: rgba(8, 66, 43, 0.88);
-  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.25);
-  color: #f4fff6;
-  font-size: 12px;
-  font-weight: 800;
-  backdrop-filter: blur(8px);
-}
-.kb-featured-ai-badge svg { color: #b8f17c; }
-.kb-featured-ai-chat {
-  display: flex;
-  width: 104px;
-  min-height: 54px;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.78);
-  border-radius: 14px 14px 4px 14px;
-  background: rgba(255, 253, 247, 0.94);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
-  color: #17623d;
-}
-.kb-featured-ai-chat > span { display: grid; gap: 4px; }
-.kb-featured-ai-chat i {
-  display: block;
-  width: 38px;
-  height: 3px;
-  border-radius: 9px;
-  background: #b8d9c5;
-}
-.kb-featured-ai-chat i:nth-child(2) { width: 29px; }
-.kb-featured-ai-chat i:nth-child(3) { width: 34px; }
 .kb-preview-tab-banner {
   height: clamp(132px, 14vw, 184px);
   margin: -24px -24px 24px;
@@ -1888,4 +1863,89 @@ article:hover > .kb-dataset-visual img { transform: scale(1.035); }
 html.kb-marketplace-sell-page-visible .kb-mini-guide {
   visibility: hidden !important;
   pointer-events: none !important;
+}
+
+/* Keep the public landing page touch-friendly and app-like on phones. */
+@media (max-width: 780px) {
+  .kb-hero2 { min-height: auto; border-radius: 0 0 22px 22px; }
+  .kb-hero2-inner { grid-template-columns: minmax(0, 1fr); min-height: 0; gap: 18px; padding: 28px 16px 24px; }
+  .kb-hero2-copy { width: 100%; max-width: none; min-width: 0; }
+  .kb-hero2-actions { gap: 9px; margin-top: 18px; }
+  .kb-hero2-card, .kb-hero2-cta-tour { min-height: 48px; }
+  .kb-hero2-card-stage { min-height: 120px; }
+  .kb-featured-grid { gap: 14px; }
+}
+@media (max-width: 500px) {
+  html, body { max-width: 100%; overflow-x: clip; }
+  .kb-hero2-inner { padding: 22px 14px 20px; }
+  .kb-hero2-card-stage { min-height: 96px; }
+  .kb-featured { padding: 32px 14px 0; }
+  .kb-featured-card { min-width: 0; border-radius: 18px; padding: 16px; }
+  .kb-featured-visual { width: calc(100% + 32px); height: 148px; margin: -16px -16px 14px; }
+  .kb-hero2-market-link { width: 100%; }
+  .kb-mobile-preview-row { padding-top: 12px; }
+  #about { padding: 36px 12px; }
+  #about .max-w-5xl { padding: 18px 16px 88px; border-radius: 22px; }
+  #about .max-w-5xl > div.relative { max-width: none; min-width: 0; }
+  #about h3 { font-size: 1.25rem; line-height: 1.35; }
+  #about p { overflow-wrap: anywhere; line-height: 1.65; }
+  #about .max-w-5xl .flex.flex-wrap { gap: 8px; }
+  #about .max-w-5xl .flex.flex-wrap a { max-width: 100%; white-space: normal; }
+}
+
+@media (max-width: 639px) {
+  .kb-public-dashboard-link,
+  .kb-mobile-profile-name,
+  .kb-mobile-profile-chevron { display: none !important; }
+}
+
+html.kb-mobile-preview-frame nextjs-portal { display: none !important; }
+
+/* Final phone refinements: keep the hero readable, the actions inside the viewport,
+   and Bondhu clear of the copy. Placed last so earlier generations of hero rules
+   cannot override it. */
+@media (max-width: 780px) {
+  .kb-hero2-inner { gap: 14px; }
+  .kb-hero2 h1 {
+    max-width: 100%;
+    font-size: clamp(29px, 7vw, 37px);
+    line-height: 1.1;
+    overflow-wrap: break-word;
+    text-wrap: pretty;
+  }
+  .kb-hero2-desc { max-width: 100%; font-size: 14px; line-height: 1.6; }
+  .kb-hero2-card-stage { min-height: 140px; }
+}
+@media (max-width: 500px) {
+  .kb-hero2-inner { padding: 20px 14px 18px; }
+  .kb-hero2 h1 { font-size: clamp(27px, 6.8vw, 32px); }
+  .kb-hero2-desc { font-size: 13px; line-height: 1.58; padding-right: 64px; }
+  .kb-hero2-actions { gap: 8px; margin-top: 16px; }
+  .kb-hero2-card, .kb-hero2-cta-tour {
+    min-height: 44px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    line-height: 1.25;
+    text-align: center;
+  }
+  .kb-hero2-card span, .kb-hero2-cta-tour span { white-space: normal; overflow-wrap: anywhere; }
+  .kb-hero2-card-stage { min-height: 120px; }
+}
+
+/* Featured cards: breathing room under the cover image for a cleaner, more
+   deliberate three-tier card layout. */
+.kb-featured-icon {
+  margin-top: 18px;
+  box-shadow: 0 4px 12px rgba(18, 61, 42, 0.08);
+  border: 1px solid rgba(36, 122, 75, 0.1);
+}
+
+/* Subtle world-climate-map overlay for the district location card. */
+.kb-district-map-overlay {
+  background-image: url("/images/climate%20bg.png");
+  background-repeat: no-repeat;
+  background-position: center right;
+  background-size: cover;
+  mask-image: linear-gradient(90deg, transparent 20%, transparent 40%, #000 68%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 20%, transparent 40%, #000 68%);
 }

@@ -131,7 +131,27 @@ export function deleteSavedAdvisory(id) {
 export function createOfficerReviewRequest(payload) {
   return request("/officer-reviews", { method: "POST", body: JSON.stringify(payload) });
 }
-export function fetchMyOfficerReviews() { return request("/officer-reviews/mine"); }
+export function fetchMyOfficerReviews(filters = {}) {
+  const query = new URLSearchParams();
+  if (filters?.category) query.set("category", filters.category);
+  if (filters?.status) query.set("status", filters.status);
+  const qs = query.toString() ? `?${query.toString()}` : "";
+  return request(`/officer-reviews/mine${qs}`);
+}
+export function fetchOfficerReviewById(id) {
+  return request(`/officer-reviews/${encodeURIComponent(id)}`);
+}
+export function updateOfficerReview(id, payload) {
+  return request(`/officer-reviews/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+export function deleteOfficerReview(id) {
+  return request(`/officer-reviews/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}
 export function fetchOfficerReviewQueue(status = "PENDING") {
   return request(`/officer-reviews/queue?status=${encodeURIComponent(status)}`);
 }
@@ -510,6 +530,16 @@ export async function fetchGisLayers(district = "cumilla") {
  */
 export async function fetchCropList() {
   return request("/crop-calendar/crops");
+}
+
+/** GET /api/v1/crop-calendar/catalog — all selectable crops and guidance readiness. */
+export async function fetchCropCatalog() {
+  return request("/crop-calendar/catalog");
+}
+
+/** GET /api/v1/crop-calendar/management/:crop — official source-linked crop guide. */
+export async function fetchCropManagementGuide(crop) {
+  return request(`/crop-calendar/management/${encodeURIComponent(crop)}`);
 }
 
 /**

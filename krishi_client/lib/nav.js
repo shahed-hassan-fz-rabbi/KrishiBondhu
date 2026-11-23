@@ -12,14 +12,13 @@ export const appNav = [
   { href: "/crop-calendar", key: "nav.cropCalendar" },
   { href: "/data-sources", key: "nav.dataSources" },
   { href: "/my-farm/reviews", key: "nav.myReviews", roles: ["farmer"] },
-  { href: "/saved-advisories", key: "publicHeader.savedAdvisories" },
   { href: "/officer/reviews", key: "nav.officerReviews", roles: ["extension_officer", "admin"] },
 ];
 
 /** Sidebar groups keep the existing route list and role rules as the source of truth. */
 export const appNavGroups = [
   { key: "Work", keyBn: "কাজ", hrefs: ["/dashboard", "/my-farm", "/assistant", "/my-farm/reviews", "/officer/reviews"] },
-  { key: "Plan", keyBn: "পরিকল্পনা", hrefs: ["/crop-calendar", "/rotation-planner", "/handoff", "/saved-advisories"] },
+  { key: "Plan", keyBn: "পরিকল্পনা", hrefs: ["/crop-calendar", "/rotation-planner", "/handoff"] },
   { key: "Field", keyBn: "মাঠ", hrefs: ["/climate", "/map"] },
   { key: "Data & evidence", keyBn: "তথ্য ও প্রমাণ", hrefs: ["/market", "/marketplace/my-listings", "/data-sources"] },
 ];

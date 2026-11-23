@@ -10,14 +10,20 @@ function BondhuFallback() {
     <path d="M41 73Q20 58 17 76q-1 13 20 15m42-18q21-15 24 3 1 13-20 15" fill="#82d796" stroke="#287f55" strokeWidth="3" strokeLinejoin="round" />
     <path d="M40 80q-17 7-15 19 2 7 11 3m44-22q17 7 15 19-2 7-11 3" fill="#329d62" stroke="#176447" strokeWidth="3" strokeLinecap="round" />
     <ellipse cx="60" cy="79" rx="24" ry="27" fill="#329d62" />
-    <ellipse cx="60" cy="81" rx="15" ry="20" fill="#f2dfb4" />
+    <ellipse cx="60" cy="81" rx="15" ry="20" fill="#f7efd6" />
+    <path d="M47 70h26M46 76h28M46 82h28M47 88h26" stroke="#dcc79c" strokeWidth="1.6" strokeLinecap="round" />
     <ellipse cx="46" cy="98" rx="7" ry="5" fill="#176447" /><ellipse cx="72" cy="98" rx="7" ry="5" fill="#176447" />
-    <path d="M43 41q-4-17-12-19 10-4 18 13m27 6q7-19 15-19-2 12-11 20" fill="#f2dfb4" stroke="#c6a77a" strokeWidth="3" strokeLinejoin="round" />
+    <path d="M44 42q-6-22-14-24 3 14 12 24m34 0q6-22 14-24-3 14-12 24" fill="#9ab95e" stroke="#6f9b45" strokeWidth="3" strokeLinejoin="round" />
     <ellipse cx="60" cy="55" rx="32" ry="28" fill="#329d62" />
-    <ellipse cx="48" cy="54" rx="8" ry="10" fill="#fffdf6" /><ellipse cx="72" cy="54" rx="8" ry="10" fill="#fffdf6" />
-    <ellipse cx="50" cy="55" rx="3.5" ry="5" fill="#132d29" /><ellipse cx="74" cy="55" rx="3.5" ry="5" fill="#132d29" />
+    <ellipse cx="48" cy="54" rx="9" ry="11" fill="#fffdf6" /><ellipse cx="72" cy="54" rx="9" ry="11" fill="#fffdf6" />
+    <ellipse cx="49" cy="55" rx="6.5" ry="8.5" fill="#f3e3b6" /><ellipse cx="73" cy="55" rx="6.5" ry="8.5" fill="#f3e3b6" />
+    <ellipse cx="50" cy="55" rx="4.8" ry="6.6" fill="#3e4b28" /><ellipse cx="74" cy="55" rx="4.8" ry="6.6" fill="#3e4b28" />
+    <ellipse cx="51" cy="55" rx="3" ry="4.6" fill="#132d29" /><ellipse cx="75" cy="55" rx="3" ry="4.6" fill="#132d29" />
     <circle cx="49" cy="52" r="2" fill="#fff" /><circle cx="73" cy="52" r="2" fill="#fff" />
+    <circle cx="48" cy="54" r="10" fill="#f7ffff" fillOpacity=".18" stroke="#e0ae3c" strokeWidth="2.4" /><circle cx="72" cy="54" r="10" fill="#f7ffff" fillOpacity=".18" stroke="#e0ae3c" strokeWidth="2.4" /><path d="M58 54h4" stroke="#e0ae3c" strokeWidth="2.4" strokeLinecap="round" />
+    <path d="M38 55l-7-2m59 2l7-2" stroke="#e0ae3c" strokeWidth="2" strokeLinecap="round" />
     <ellipse cx="60" cy="68" rx="12" ry="7" fill="#58bd73" /><circle cx="56" cy="67" r="1.5" fill="#18553d" /><circle cx="64" cy="67" r="1.5" fill="#18553d" />
+    <ellipse cx="60" cy="81" rx="20" ry="4.5" fill="none" stroke="#e0ae3c" strokeWidth="3" />
     <path d="M54 73q6 5 12 0" fill="none" stroke="#176447" strokeWidth="2.5" strokeLinecap="round" />
   </svg>;
 }

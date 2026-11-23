@@ -1,13 +1,12 @@
 "use client";
 import { PrivateAccess } from "@/components/auth/PrivateAccess.js";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
-  CheckCircle2,
   Check,
   AlertCircle,
   Tractor,
@@ -21,7 +20,7 @@ import {
 
 import { useLang } from "@/lib/i18n/LanguageContext.js";
 import { useAuth } from "@/contexts/AuthContext.js";
-import { createFarm } from "@/services/api.js";
+import { createFarm, fetchCropCatalog } from "@/services/api.js";
 import { getBangladeshDateKey } from "@/lib/bangladeshDate.js";
 import { dispatchFarmNotificationUpdate } from "@/lib/farmNotificationEvents.js";
 import {
@@ -44,6 +43,7 @@ function NewFarmWizardPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [customVariety, setCustomVariety] = useState(false);
+  const [cropOptions, setCropOptions] = useState(SUPPORTED_CROPS.map((crop) => ({ ...crop, calendarAvailable: true })));
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState("");
 
@@ -76,6 +76,14 @@ function NewFarmWizardPage() {
   const availableUpazilas = useMemo(() => {
     return getUpazilasForDistrict(formData.districtCode);
   }, [formData.districtCode]);
+
+  useEffect(() => {
+    let active = true;
+    fetchCropCatalog().then((result) => {
+      if (active && result.success && Array.isArray(result.data)) setCropOptions(result.data);
+    }).catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   const updateField = (field, value) => {
     if (field === "cropCode") setCustomVariety(false);
@@ -205,7 +213,7 @@ function NewFarmWizardPage() {
     }
   };
 
-  const selectedCrop = SUPPORTED_CROPS.find((c) => c.code === formData.cropCode);
+  const selectedCrop = cropOptions.find((c) => c.code === formData.cropCode);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 py-2 sm:space-y-7">
@@ -540,40 +548,20 @@ function NewFarmWizardPage() {
               </p>
             </div>
 
-            {/* Verified Crop Selector Cards */}
+            {/* Crop catalog is supplied by the backend. */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-stone-700 dark:text-muted">
                 {t("myFarm.fields.cropCode")} <span className="text-red-500">*</span>
               </label>
-              <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {SUPPORTED_CROPS.map((crop) => {
-                  const isSelected = formData.cropCode === crop.code;
-                  return (
-                    <button
-                      key={crop.code}
-                      type="button"
-                      onClick={() => updateField("cropCode", crop.code)}
-                      className={`flex flex-col items-start rounded-xl border p-4 text-left transition ${
-                        isSelected
-                          ? "border-forest-600 bg-forest-50/60 ring-2 ring-forest-500/20 dark:border-forest-500 dark:bg-forest-950/40"
-                          : "border-stone-200 hover:bg-stone-50 dark:border-line dark:hover:bg-surface-2"
-                      }`}
-                    >
-                      <div className="flex w-full items-center justify-between">
-                        <span className="font-bold text-stone-900 dark:text-content">
-                          {lang === "bn" ? crop.nameBn : crop.nameEn}
-                        </span>
-                        {isSelected && (
-                          <CheckCircle2 className="h-4 w-4 text-forest-700 dark:text-forest-400" />
-                        )}
-                      </div>
-                      <span className="mt-1 text-xs text-stone-500 dark:text-muted">
-                        {lang === "bn" ? crop.seasonBn : crop.seasonEn} • ~{crop.durationDays} days
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              <select value={formData.cropCode} onChange={(event) => updateField("cropCode", event.target.value)} className="mt-2 w-full rounded-xl border border-stone-200 bg-white px-3.5 py-3 text-sm text-stone-900 shadow-xs focus:border-forest-500 focus:outline-none focus:ring-1 focus:ring-forest-500 dark:border-line dark:bg-surface-2 dark:text-content">
+                {cropOptions.map((crop) => <option key={crop.code} value={crop.code}>{lang === "bn" ? crop.nameBn : crop.nameEn}{!crop.calendarAvailable ? (crop.knowledgeAvailable ? (lang === "bn" ? " · সাধারণ তথ্য আছে" : " · general guide available") : (lang === "bn" ? " · তথ্য যাচাইাধীন" : " · information pending")) : ""}</option>)}
+              </select>
+              {selectedCrop && <p className="mt-2 text-xs leading-5 text-stone-600 dark:text-muted">{selectedCrop.calendarAvailable
+                ? (lang === "bn" ? "এই ফসলের জন্য সরকারি ফসল পঞ্জিকা পাওয়া যায়।" : "An official crop calendar is available for this crop.")
+                : selectedCrop.knowledgeAvailable
+                  ? (lang === "bn" ? "সাধারণ সরকারি চাষতথ্য পাওয়া যায়; তবে আপনার জেলার পঞ্জিকা ও জমিভিত্তিক সুপারিশ এখনো যাচাই করা হয়নি।" : "General government crop information is available; a district calendar and field-specific recommendation are not verified yet.")
+                  : (lang === "bn" ? "এই ফসলের নাম ও মাঠের রেকর্ড রাখা যাবে; সরকারি চাষের সময়সূচি ও সুপারিশ এখনো যাচাইাধীন।" : "You can record this crop for your field; its official schedule and recommendations are still being verified.")}</p>}
+              {selectedCrop?.knowledgeSources?.[0]?.url && <a href={selectedCrop.knowledgeSources[0].url} target="_blank" rel="noreferrer" className="mt-1 inline-flex text-xs font-semibold text-forest-700 underline underline-offset-2 hover:text-forest-900 dark:text-forest-300 dark:hover:text-forest-100">{lang === "bn" ? "সরকারি চাষতথ্য দেখুন" : "View government crop guide"}</a>}
             </div>
 
             {/* Variety: existing crop catalog options, or a farmer-entered name. */}

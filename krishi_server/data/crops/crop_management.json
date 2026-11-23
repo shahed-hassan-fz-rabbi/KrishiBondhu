@@ -1,0 +1,247 @@
+{
+  "metadata": {
+    "title": "Bangladesh crop management reference",
+    "version": "1.0.0",
+    "sourceCheckedOn": "2026-11-24",
+    "authority": "Bangladesh Agro-Meteorological Information Service (BAMIS), Department of Agricultural Extension (DAE)",
+    "scope": "Retrieval reference for crop guidance. Rates below are transcribed from the linked BAMIS package pages and retain their stated crop/season/unit context. They are not personalized soil-test recommendations. Missing fields are explicitly unverified.",
+    "fertilizerCaution": "BARC Fertilizer Recommendation Guide 2024 requires soil-test interpretation and location/AEZ context. Do not use blanket rates where soil fertility and location have not been checked.",
+    "barcGuideUrl": "https://apps.barc.gov.bd/fertilizer_recommendation/FRG%20English%2030.10.2024.pdf",
+    "trainingNote": "This is source-linked deterministic retrieval, not machine-learning training or fine-tuning."
+  },
+  "crops": {
+    "monsoon_aman": {
+      "fields": {
+        "lifecycle": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "timing": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "water": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "fertilizer": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "compost": { "status": "not_verified", "value": null, "sourceIds": [] }
+      },
+      "sources": []
+    },
+    "aus_rice": {
+      "fields": {
+        "lifecycle": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "timing": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "water": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "fertilizer": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "compost": { "status": "not_verified", "value": null, "sourceIds": [] }
+      },
+      "sources": []
+    },
+    "boro_rice": {
+      "fields": {
+        "lifecycle": { "status": "verified_limited", "value": "BAMIS package distinguishes long-duration (>150 days) and short-duration (<150 days) lowland Boro types; variety-specific crop duration should be checked in the calendar/seed label.", "unit": "days; duration class only", "sourceIds": ["bamis_boro_package"] },
+        "timing": { "status": "verified_limited", "value": "See the BAMIS Boro package and the district calendar; timing varies by variety and district.", "sourceIds": ["bamis_boro_package"] },
+        "water": { "status": "verified", "value": "BAMIS package: do not assume continuous standing water is always needed; maintain 2–3 cm up to 12–15 days after transplanting, then alternate wetting and drying with 5–7 cm water depth until panicle emergence; maintain 2–5 cm from panicle formation to grain hardening.", "unit": "field water depth", "sourceIds": ["bamis_boro_package"] },
+        "fertilizer": { "status": "verified_limited", "value": "For lowland long-duration (>150-day) Boro, BAMIS lists per bigha: urea 40 kg, TSP 13 kg, MP 22 kg, gypsum 15 kg, zinc sulphate 1.5 kg. It says apply TSP, MP, gypsum and zinc at final land preparation; split urea into thirds: basal, tillering, and 5–7 days before panicle initiation. Short-duration/medium-land rates differ; consult the source package.", "unit": "kg per bigha; product rates", "sourceIds": ["bamis_boro_package"] },
+        "compost": { "status": "not_verified", "value": null, "sourceIds": [] }
+      },
+      "sources": [{ "id": "bamis_boro_package", "organization": "BAMIS / DAE", "title": "Boro Paddy package and practices", "url": "https://www.bamis.gov.bd/croppnp/1/all/75", "checkedOn": "2026-11-24" }]
+    },
+    "wheat": {
+      "fields": {
+        "lifecycle": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "timing": { "status": "verified", "value": "Ideal sowing: 15–30 November; BAMIS says it may be extended to 15–20 December.", "sourceIds": ["bamis_wheat_package"] },
+        "water": { "status": "verified", "value": "BAMIS generally calls for 2–3 irrigations: first 17–21 days after sowing (three-leaf stage), second 50–55 days (start of tillering), and third 75–80 days (grain formation). First two should be light irrigations.", "unit": "irrigation timing; not a volume", "sourceIds": ["bamis_wheat_package"] },
+        "fertilizer": { "status": "verified_limited", "value": "BAMIS package lists per hectare at final land preparation: urea 150–175 kg, TSP 135–150 kg, potash 100–110 kg, gypsum 110–125 kg; additionally boric acid 6.5 kg/ha and zinc sulphate 12.5 kg/ha. For irrigated fields it separately says apply 75–90 kg urea/ha at three-leaf stage with first irrigation. Confirm local soil and package applicability before use.", "unit": "kg/ha; product rates", "sourceIds": ["bamis_wheat_package"] },
+        "compost": { "status": "verified", "value": "Apply 7.5–10 tonnes of cow dung/compost per hectare at the beginning of land preparation.", "unit": "tonnes/ha", "sourceIds": ["bamis_wheat_package"] }
+      },
+      "sources": [{ "id": "bamis_wheat_package", "organization": "BAMIS / DAE", "title": "Wheat package and practices of cultivation", "url": "https://www.bamis.gov.bd/en/croppnp/1/all/9/", "checkedOn": "2026-11-24" }]
+    },
+    "maize": {
+      "fields": {
+        "lifecycle": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "timing": { "status": "verified", "value": "BAMIS: Rabi sowing 15 October–15 November; Kharif-1 sowing 15 February–15 March.", "sourceIds": ["bamis_maize_package"] },
+        "water": { "status": "verified_limited", "value": "BAMIS schedule: irrigate around 15–20 days (4–6 leaves), 30–35 days (8–12 leaves), 60–70 days (cob emergence), and 85–89 days (grain formation). This is a stage schedule, not a fixed volume; adjust for rainfall and soil moisture, and prevent waterlogging.", "unit": "days after sowing; irrigation events", "sourceIds": ["bamis_maize_package"] },
+        "fertilizer": { "status": "verified_limited", "value": "BAMIS product rates in kg/ha (Rabi / Kharif-1): urea 172–312 / 216–268; TSP 168–216 / 132–216; MP 96–144 / 72–120; gypsum 144–168 / 96–144; zinc sulphate 10–15 / 7–12; boric acid 5–7 / 5–7 as required. It directs 1/3 urea basal and the remainder in two top dressings at 25–30 and 40–50 days after germination. Ranges are broad and require local/soil-test selection.", "unit": "kg/ha; product rates", "sourceIds": ["bamis_maize_package"] },
+        "compost": { "status": "verified", "value": "BAMIS lists 4–6 tonnes of cow dung/organic manure per hectare for both Rabi and Kharif-1.", "unit": "tonnes/ha", "sourceIds": ["bamis_maize_package"] }
+      },
+      "sources": [{ "id": "bamis_maize_package", "organization": "BAMIS / DAE", "title": "Maize package and practices of cultivation", "url": "https://www.bamis.gov.bd/croppnp/1/all/8", "checkedOn": "2026-11-24" }]
+    },
+    "carrot": {
+      "fields": {
+        "lifecycle": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "timing": { "status": "verified", "value": "BAMIS lists Ashwin–Poush (approximately mid-September to mid-December) as a suitable sowing period.", "sourceIds": ["bamis_carrot_page"] },
+        "water": { "status": "verified_limited", "value": "BAMIS recommends irrigation when needed and mentions irrigation during sowing/dry conditions; it does not provide a fixed water volume. Check soil moisture and rainfall rather than irrigating to a fixed amount.", "sourceIds": ["bamis_carrot_page"] },
+        "fertilizer": { "status": "verified_limited", "value": "BAMIS lists per শতক (century): urea 500 g, DAP/TSP 600 g, MOP 500 g, gypsum 600 g. It also lists urea 80–100 g and MOP 80–100 g at 3 weeks, then again at 6 weeks after sowing. Reduce amounts when soil fertility has been checked or fertilizer already applied; confirm the DAP/TSP alternative in the original package.", "unit": "g per শতক; product rates", "sourceIds": ["bamis_carrot_page"] },
+        "compost": { "status": "verified", "value": "BAMIS lists 40 kg dung/compost per শতক (century).", "unit": "kg per শতক", "sourceIds": ["bamis_carrot_page"] }
+      },
+      "sources": [{ "id": "bamis_carrot_page", "organization": "BAMIS / DAE", "title": "Carrot cultivation information", "url": "https://www.bamis.gov.bd/en/crops/view/55/", "checkedOn": "2026-11-24" }]
+    },
+    "tomato": {
+      "fields": {
+        "lifecycle": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "timing": { "status": "verified_limited", "value": "BAMIS: sowing varies by variety; January is the general Rabi period. Its source page lists distinct summer, winter and year-round varieties, so choose a locally recommended variety and season.", "sourceIds": ["bamis_tomato_page"] },
+        "water": { "status": "verified_limited", "value": "BAMIS advises light irrigation after transplanting and irrigation after top-dressed fertilizer; it says summer crops need more frequent irrigation, while monsoon crops usually need less. Use furrows/drains and avoid waterlogging; no fixed water volume is given.", "sourceIds": ["bamis_tomato_page"] },
+        "fertilizer": { "status": "verified_limited", "value": "BAMIS lists per শতক (century): urea 1.20 kg, TSP 810 g, MOP/potash 970 g. Apply all compost, TSP and 360 g potash at final land preparation. It describes urea top-dressings after transplanting at 10, 25 and 40 days, with remaining potash split; check the source page and local DAE for the exact split before use.", "unit": "product rates per শতক", "sourceIds": ["bamis_tomato_page"] },
+        "compost": { "status": "verified", "value": "BAMIS lists 40 kg rotten cow dung/compost per শতক (century).", "unit": "kg per শতক", "sourceIds": ["bamis_tomato_page"] }
+      },
+      "sources": [{ "id": "bamis_tomato_page", "organization": "BAMIS / DAE", "title": "Tomato cultivation information", "url": "https://www.bamis.gov.bd/crops/view/13", "checkedOn": "2026-11-24" }]
+    },
+    "garlic": {
+      "fields": {
+        "lifecycle": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "timing": { "status": "verified", "value": "BAMIS lists the first week of mid-October to November (Rabi) as a suitable planting period.", "sourceIds": ["bamis_garlic_page"] },
+        "water": { "status": "verified_limited", "value": "BAMIS recommends 4–5 cm straw/rice-straw mulch to reduce moisture loss, irrigation when needed, and stopping irrigation about 3 weeks before harvest. The frequency text on the page is unclear, so no fixed interval is used here.", "unit": "mulch depth; stop irrigation 3 weeks before harvest", "sourceIds": ["bamis_garlic_page"] },
+        "fertilizer": { "status": "verified_limited", "value": "BAMIS lists per hectare: urea 200 kg, TSP 250 kg, potash 250 kg, gypsum 110 kg. It says apply TSP, gypsum and half the urea/potash at final land preparation; apply the remainder in two equal splits at 25 and 50 days after sowing. Soil-test/local selection still required.", "unit": "kg/ha; product rates", "sourceIds": ["bamis_garlic_page"] },
+        "compost": { "status": "verified", "value": "BAMIS lists 5 tonnes compost per hectare (also 20 kg per শতক).", "unit": "tonnes/ha or kg per শতক", "sourceIds": ["bamis_garlic_page"] }
+      },
+      "sources": [{ "id": "bamis_garlic_page", "organization": "BAMIS / DAE", "title": "Garlic cultivation information", "url": "https://www.bamis.gov.bd/en/crops/view/48/", "checkedOn": "2026-11-24" }]
+    },
+    "ginger": {
+      "fields": {
+        "lifecycle": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "timing": { "status": "verified", "value": "BAMIS lists Boishakh–Jaistha (approximately April–May) as suitable sowing time.", "sourceIds": ["bamis_ginger_page"] },
+        "water": { "status": "verified_limited", "value": "BAMIS says rainfall may make irrigation unnecessary at planting; irrigate only when rainfall is absent and soil moisture is low, and drain excess water promptly. No fixed amount is given.", "sourceIds": ["bamis_ginger_page"] },
+        "fertilizer": { "status": "verified_limited", "value": "BAMIS lists per hectare: urea 300 kg, TSP 270 kg, potash 230 kg, gypsum 110 kg and zinc 2.5 kg. It describes basal application and top-dressing stages around 50, 80 and 100 days; the English translation is unclear about exact split quantities, so confirm the original package/local DAE before applying.", "unit": "kg/ha; product rates", "sourceIds": ["bamis_ginger_page"] },
+        "compost": { "status": "verified_limited", "value": "BAMIS lists 10 tonnes compost per hectare (also 20–40 kg per শতক); the stated area conversions do not align exactly, so use the original local package/soil-test guidance and do not scale automatically.", "unit": "source-reported tonnes/ha and kg per শতক; conversion needs review", "sourceIds": ["bamis_ginger_page"] }
+      },
+      "sources": [{ "id": "bamis_ginger_page", "organization": "BAMIS / DAE", "title": "Ginger cultivation information", "url": "https://www.bamis.gov.bd/en/crops/view/47/", "checkedOn": "2026-11-24" }]
+    },
+    "papaya": {
+      "fields": {
+        "lifecycle": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "timing": { "status": "verified_limited", "value": "BAMIS lists Ashwin (September–October) and Poush (December–January) sowing periods. Variety and local planting conditions matter.", "sourceIds": ["bamis_papaya_page"] },
+        "water": { "status": "verified_limited", "value": "BAMIS advises irrigation according to soil moisture, generally 2–3 times after about two weeks, and quick drainage of excess rainwater. The source does not state a fixed volume; avoid excess water.", "sourceIds": ["bamis_papaya_page"] },
+        "fertilizer": { "status": "verified_limited", "value": "The BAMIS page gives per-plant amounts in its table (urea 400–500 g, TSP 500 g, MOP 450–500 g, gypsum 250 g, zinc and boron 20 g each). It describes manure and selected fertilizers per planting pit and monthly urea/MOP after planting; quantities are plant/pit-based, not per hectare. Check the source page and DAE for the correct sequence before use.", "unit": "g per plant/pit as stated; not an area rate", "sourceIds": ["bamis_papaya_page"] },
+        "compost": { "status": "verified_limited", "value": "BAMIS describes 15 kg dung manure per planting pit 15–20 days before planting. Do not scale per hectare without plant spacing and confirmed pit guidance.", "unit": "kg per planting pit", "sourceIds": ["bamis_papaya_page"] }
+      },
+      "sources": [{ "id": "bamis_papaya_page", "organization": "BAMIS / DAE", "title": "Papaya cultivation information", "url": "https://www.bamis.gov.bd/en/crops/view/67/", "checkedOn": "2026-11-24" }]
+    },
+    "sunflower": {
+      "fields": {
+        "lifecycle": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "timing": { "status": "verified", "value": "BAMIS lists Bhadra–Ashwin (approximately mid-August to mid-October) as a suitable sowing period.", "sourceIds": ["bamis_sunflower_page"] },
+        "water": { "status": "verified_limited", "value": "BAMIS describes irrigation around 25–30 days after planting, again around 40–45 days/before flowering, and once before seed filling; adjust for rainfall and soil moisture. No fixed volume is specified.", "unit": "stage timing, no volume", "sourceIds": ["bamis_sunflower_page"] },
+        "fertilizer": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "compost": { "status": "not_verified", "value": null, "sourceIds": [] }
+      },
+      "sources": [{ "id": "bamis_sunflower_page", "organization": "BAMIS / DAE", "title": "Sunflower cultivation information", "url": "https://www.bamis.gov.bd/en/crops/view/35/", "checkedOn": "2026-11-24" }]
+    },
+    "chili": {
+      "fields": {
+        "lifecycle": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "timing": { "status": "verified", "value": "BAMIS lists Kharif-1: 15 February–15 March; Kharif-2: 15 July–15 September; and Rabi: September–October. Variety matters; BARI pepper-1 is described as year-round, while other varieties have seasonal suitability.", "sourceIds": ["bamis_chili_page"] },
+        "water": { "status": "verified_limited", "value": "BAMIS advises irrigation when moisture is insufficient, maintaining moisture during flowering and fruit growth, and providing drainage after heavy rain. Its translated page does not specify a reliable volume or universal interval.", "sourceIds": ["bamis_chili_page"] },
+        "fertilizer": { "status": "verified_limited", "value": "BAMIS lists per শতক (century): urea 1.6 kg, TSP 1 kg, potash 600 g and gypsum 200 g. It says dung, TSP and part of the potash are basal, with later splits; wording on exact split amounts is unclear in the English source, so confirm the application schedule with the Bangla source/DAE before use.", "unit": "product rates per শতক", "sourceIds": ["bamis_chili_page"] },
+        "compost": { "status": "verified", "value": "BAMIS lists 40 kg dung per শতক (century).", "unit": "kg per শতক", "sourceIds": ["bamis_chili_page"] }
+      },
+      "sources": [{ "id": "bamis_chili_page", "organization": "BAMIS / DAE", "title": "Pepper (chili) cultivation information", "url": "https://www.bamis.gov.bd/en/crops/view/45/", "checkedOn": "2026-11-24" }]
+    },
+    "mustard": {
+      "fields": {
+        "lifecycle": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "timing": { "status": "verified_limited", "value": "District calendar dates are available for Cumilla and Chattogram only. BAMIS regional bulletins also describe mid-October to mid-November as an optimum general sowing period; use the local crop calendar and variety.", "sourceIds": ["bamis_mustard_bulletin"] },
+        "water": { "status": "verified_limited", "value": "BAMIS says use residual soil moisture; if moisture is inadequate, apply light irrigation. A regional bulletin suggests irrigation around 20–25 days before flowering and 50–55 days during fruiting when needed. This is conditional timing, not a fixed volume.", "sourceIds": ["bamis_mustard_bulletin"] },
+        "fertilizer": { "status": "verified_limited", "value": "A BAMIS germination-stage advisory lists per hectare: urea 125–150 kg, TSP 170–180 kg and MOP 85–100 kg before sowing; it is an advisory note, not an individualized or soil-test recommendation. The cited advisory's cow-dung unit is unclear, so no manure quantity is reported.", "unit": "kg/ha; product rates; regional stage advisory", "sourceIds": ["bamis_mustard_bulletin"] },
+        "compost": { "status": "not_verified", "value": null, "sourceIds": [] }
+      },
+      "sources": [{ "id": "bamis_mustard_bulletin", "organization": "BAMIS / DAE", "title": "Mustard germination-stage agrometeorological advisory", "url": "https://www.bamis.gov.bd/en/bulletin/view/31421/", "checkedOn": "2026-11-24" }]
+    },
+    "radish": {
+      "fields": {
+        "lifecycle": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "timing": { "status": "verified", "value": "BAMIS lists Ashwin–Kartik (approximately mid-September to mid-November) as a suitable sowing period; it lists particular improved varieties for Rabi.", "sourceIds": ["bamis_radish_page"] },
+        "water": { "status": "verified_limited", "value": "BAMIS advises irrigation when moisture is insufficient and mentions irrigation about every 15 days during winter/dry conditions. This is conditional guidance with no fixed volume; check actual soil moisture and rainfall.", "sourceIds": ["bamis_radish_page"] },
+        "fertilizer": { "status": "verified_limited", "value": "BAMIS lists per শতক (century): urea 200 g, TSP 1 kg, potash 400 g and boric acid 40 g. Apply compost/dung, TSP and half urea/potash at final land preparation; the remaining urea/potash in two equal splits during weeks 3 and 5 after sowing. Soil-test/local adjustment is needed.", "unit": "g per শতক; product rates", "sourceIds": ["bamis_radish_page"] },
+        "compost": { "status": "verified", "value": "BAMIS lists 40–50 kg dung/compost per শতক (century).", "unit": "kg per শতক", "sourceIds": ["bamis_radish_page"] }
+      },
+      "sources": [{ "id": "bamis_radish_page", "organization": "BAMIS / DAE", "title": "Radish cultivation information", "url": "https://www.bamis.gov.bd/en/crops/view/56/", "checkedOn": "2026-11-24" }]
+    },
+    "bottle_gourd": {
+      "fields": {
+        "lifecycle": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "timing": { "status": "verified", "value": "BAMIS lists Shravan–Kartik (approximately August–October) and Falgun–Jaistha (approximately February–May) as suitable sowing periods.", "sourceIds": ["bamis_bottle_gourd_page"] },
+        "water": { "status": "verified_limited", "value": "BAMIS says bottle gourd is sensitive to water shortage; in dry season, irrigation may be needed every 5–7 days. Use furrow irrigation rather than flooding the whole field, and drain excess rainwater.", "unit": "conditional interval; no volume", "sourceIds": ["bamis_bottle_gourd_page"] },
+        "fertilizer": { "status": "verified_limited", "value": "BAMIS lists per শতক (century): urea 2 kg, TSP 1.6 kg, potash 1.2 kg, boron 10 g. It describes basal application and splitting remaining urea/potash in four rounds; check local soil and source package before use.", "unit": "product rates per শতক", "sourceIds": ["bamis_bottle_gourd_page"] },
+        "compost": { "status": "verified", "value": "BAMIS lists 40 kg dung/compost per শতক (century).", "unit": "kg per শতক", "sourceIds": ["bamis_bottle_gourd_page"] }
+      },
+      "sources": [{ "id": "bamis_bottle_gourd_page", "organization": "BAMIS / DAE", "title": "Bottle gourd cultivation information", "url": "https://www.bamis.gov.bd/en/crops/view/14/", "checkedOn": "2026-11-24" }]
+    },
+    "pumpkin": {
+      "identityNote": "This record applies only to sweet pumpkin (BAMIS crop page 32). It must not be used for ash gourd or another pumpkin type; clarify the crop identity first.",
+      "fields": {
+        "lifecycle": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "timing": { "status": "verified_limited", "value": "For sweet pumpkin only, BAMIS lists Kartik–Agrahayan (approximately October–November) as a suitable sowing period.", "sourceIds": ["bamis_sweet_pumpkin_page"] },
+        "water": { "status": "verified_limited", "value": "For sweet pumpkin, BAMIS says it is sensitive to water shortage; irrigate in the furrow rather than flooding the whole field. In dry season irrigation may be needed every 5–7 days; drain excess rainwater.", "unit": "conditional interval; no volume", "sourceIds": ["bamis_sweet_pumpkin_page"] },
+        "fertilizer": { "status": "verified_limited", "value": "For sweet pumpkin only, BAMIS lists per শতক (century): urea 2 kg, TSP 1.6 kg and potash 1.2 kg. It describes basal fertilizer and later split applications; verify the exact schedule and soil-test need locally.", "unit": "product rates per শতক", "sourceIds": ["bamis_sweet_pumpkin_page"] },
+        "compost": { "status": "verified", "value": "For sweet pumpkin only, BAMIS lists 40 kg compost per শতক (century), equivalent in the same table to 10 tonnes/ha.", "unit": "kg per শতক / tonnes per hectare as source-listed", "sourceIds": ["bamis_sweet_pumpkin_page"] }
+      },
+      "sources": [{ "id": "bamis_sweet_pumpkin_page", "organization": "BAMIS / DAE", "title": "Sweet pumpkin cultivation information", "url": "https://www.bamis.gov.bd/en/crops/view/32/", "checkedOn": "2026-11-24" }]
+    },
+    "pulses": {
+      "identityNote": "‘Pulse’ is a crop group, not one crop. Lentil, mung bean, chickpea and mashkalai have different crop calendars and input requirements. Ask the farmer to identify the pulse before giving a crop-specific rate.",
+      "fields": {
+        "lifecycle": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "timing": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "water": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "fertilizer": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "compost": { "status": "not_verified", "value": null, "sourceIds": [] }
+      },
+      "sources": [{ "id": "bamis_pulse_category", "organization": "BAMIS / DAE", "title": "Pulse crop list; crop-specific guidance differs", "url": "https://www.bamis.gov.bd/en/crops/category/6/", "checkedOn": "2026-11-24" }]
+    },
+    "turnip": {
+      "identityNote": "No crop-specific Bangladesh government cultivation package was verified for this catalog entry. Do not substitute radish or another root crop's rates.",
+      "fields": {
+        "lifecycle": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "timing": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "water": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "fertilizer": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "compost": { "status": "not_verified", "value": null, "sourceIds": [] }
+      },
+      "sources": []
+    },
+    "cauliflower": {
+      "fields": {
+        "lifecycle": { "status": "verified_limited", "value": "The BAMIS page citing BARI Agricultural Technology Handbook (2017) lists 65- and 100-day varieties. It also says harvest may occur 60–75 days after planting; timing depends on variety.", "unit": "days; variety-specific", "sourceIds": ["bamis_cauliflower_page"] },
+        "timing": { "status": "verified_limited", "value": "BAMIS/BARI source: sow seed in Bhadra–Ashwin (mid-August to mid-October) and transplant around Kartik–Agrahayan (mid-November to December); the page also notes August–September as an appropriate sowing time. Match the selected variety and local district calendar.", "sourceIds": ["bamis_cauliflower_page"] },
+        "water": { "status": "verified_limited", "value": "BAMIS describes cauliflower as suitable on land with irrigation and drainage facilities; no fixed irrigation volume/schedule was verified.", "sourceIds": ["bamis_cauliflower_page"] },
+        "fertilizer": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "compost": { "status": "not_verified", "value": null, "sourceIds": [] }
+      },
+      "sources": [{ "id": "bamis_cauliflower_page", "organization": "BAMIS / DAE, citing BARI Agricultural Technology Handbook (6th ed., 2017)", "title": "Cauliflower cultivation information", "url": "https://www.bamis.gov.bd/en/crops/view/17/", "checkedOn": "2026-11-24" }]
+    },
+    "potato": {
+      "fields": {
+        "lifecycle": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "timing": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "water": { "status": "verified_limited", "value": "BAMIS says early varieties may need about 400–600 mm well-distributed rainfall during the vegetative period; this is not a universal irrigation target. Avoid heavy rain/waterlogging and alternating very wet/dry conditions; soil moisture guidance is 65–80% of field capacity.", "unit": "mm rainfall for early varieties; field-capacity fraction", "sourceIds": ["bamis_potato_page"] },
+        "fertilizer": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "compost": { "status": "not_verified", "value": null, "sourceIds": [] }
+      },
+      "sources": [{ "id": "bamis_potato_page", "organization": "BAMIS / DAE", "title": "Potato cultivation information", "url": "https://www.bamis.gov.bd/en/crops/view/52/", "checkedOn": "2026-11-24" }]
+    },
+    "onion": {
+      "fields": {
+        "lifecycle": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "timing": { "status": "verified_limited", "value": "BAMIS describes seed sowing for Kharif in February–March and for Rabi in July–August; source wording and variety distinctions should be checked with local DAE before planting.", "sourceIds": ["bamis_onion_page"] },
+        "water": { "status": "verified_limited", "value": "BAMIS says irrigate lightly after sowing and then as needed; it does not supply a fixed volume. Avoid over-irrigation and use field moisture/rainfall to guide irrigation.", "sourceIds": ["bamis_onion_page"] },
+        "fertilizer": { "status": "verified_limited", "value": "BAMIS lists per শতক (century): urea 970 g, TSP 890 g, potash 610 g, gypsum 440 g. It instructs to apply compost/dung, TSP, gypsum and half of urea/potash at final land preparation; the remaining half urea/potash in two installments at 25 and 50 days. Confirm the source page with DAE because its English translation has ambiguous wording.", "unit": "g per শতক; product rates", "sourceIds": ["bamis_onion_page"] },
+        "compost": { "status": "verified", "value": "BAMIS lists 32–40 kg dung per শতক (century).", "unit": "kg per শতক", "sourceIds": ["bamis_onion_page"] }
+      },
+      "sources": [{ "id": "bamis_onion_page", "organization": "BAMIS / DAE", "title": "Onion cultivation information", "url": "https://www.bamis.gov.bd/en/crops/view/46/", "checkedOn": "2026-11-24" }]
+    },
+    "cabbage": {
+      "fields": {
+        "lifecycle": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "timing": { "status": "verified_limited", "value": "BAMIS page gives nursery/transplanting guidance; a district-specific crop lifecycle was not extracted for this record.", "sourceIds": ["bamis_cabbage_page"] },
+        "water": { "status": "verified_limited", "value": "BAMIS says to give light irrigation after fertilizer application; a full seasonal volume/schedule is not verified in this record.", "sourceIds": ["bamis_cabbage_page"] },
+        "fertilizer": { "status": "verified_limited", "value": "BAMIS lists per hectare: urea 350 kg, TSP 250 kg, potash 250 kg. It says apply dung and TSP during land preparation; urea and MOP are top-dressed in two rounds around 20–25 and 30–40 days after transplanting. Soil-test/local applicability must be checked.", "unit": "kg/ha; product rates", "sourceIds": ["bamis_cabbage_page"] },
+        "compost": { "status": "verified", "value": "BAMIS lists 5–10 tonnes compost per hectare.", "unit": "kg/ha (source range: 5,000–10,000 kg/ha)", "sourceIds": ["bamis_cabbage_page"] }
+      },
+      "sources": [{ "id": "bamis_cabbage_page", "organization": "BAMIS / DAE", "title": "Cabbage cultivation information", "url": "https://www.bamis.gov.bd/en/crops/view/26/", "checkedOn": "2026-11-24" }]
+    },
+    "radish": {
+      "fields": {
+        "lifecycle": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "timing": { "status": "verified", "value": "BAMIS lists Ashwin–Kartik (approximately mid-September to mid-November) as suitable sowing time.", "sourceIds": ["bamis_radish_page"] },
+        "water": { "status": "verified_limited", "value": "BAMIS discusses irrigation when moisture is insufficient; fixed crop water volume was not verified.", "sourceIds": ["bamis_radish_page"] },
+        "fertilizer": { "status": "not_verified", "value": null, "sourceIds": [] },
+        "compost": { "status": "not_verified", "value": null, "sourceIds": [] }
+      },
+      "sources": [{ "id": "bamis_radish_page", "organization": "BAMIS / DAE", "title": "Radish cultivation information", "url": "https://www.bamis.gov.bd/en/crops/view/56/", "checkedOn": "2026-11-24" }]
+    }
+  }
+}

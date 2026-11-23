@@ -102,7 +102,7 @@ function measureCompanionSafeArea() {
     const topHeader = element.tagName === "HEADER" || element.getAttribute("role") === "banner";
     const bottomFooter = element.tagName === "FOOTER" || element.getAttribute("role") === "contentinfo";
     const fixed = style.position === "fixed" || style.position === "sticky";
-    if (rect.top <= 1 && rect.bottom <= window.innerHeight * 0.45 && (topHeader || fixed)) {
+    if (rect.top <= 16 && rect.bottom <= window.innerHeight * 0.45 && (topHeader || fixed)) {
       const controls = topHeader ? [...element.querySelectorAll("button,a,[role=button],input,select")]
         .map((control) => control.getBoundingClientRect())
         .filter((controlRect) => controlRect.width && controlRect.height)
@@ -127,7 +127,7 @@ function measureCompanionSafeArea() {
 function findSafeTourLanding(targetRect, bottomNavHeight = 0) {
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
-  const size = viewportWidth <= 760 ? { width: 86, height: 100 } : { width: 140, height: 156 };
+  const size = viewportWidth <= 760 ? { width: 66, height: 76 } : { width: 140, height: 156 };
   const gap = 14;
   const centeredY = targetRect.top + (targetRect.height - size.height) / 2;
   const centeredX = targetRect.left + (targetRect.width - size.width) / 2;
@@ -347,6 +347,7 @@ export function MiniGuide() {
   }, [bottomNavHeight]);
 
   useEffect(() => {
+    // Show the welcome message on the first homepage load, before any click or hover.
     if (pathname !== "/" || hidden || authLoading) return undefined;
     const key = "krishibondhu.bondhu.welcome-seen";
     try { if (window.localStorage.getItem(key)) return undefined; } catch { return undefined; }
@@ -354,7 +355,7 @@ export function MiniGuide() {
       setGreeting(true);
       setOpen(true);
       try { window.localStorage.setItem(key, "1"); } catch { /* the greeting is optional */ }
-    }, 900);
+    }, 600);
     return () => window.clearTimeout(timer);
   }, [authLoading, hidden, pathname]);
 
@@ -389,7 +390,7 @@ export function MiniGuide() {
     const current = launcherRef.current?.getBoundingClientRect();
     if (current?.width && current?.height) return { width: current.width, height: current.height };
     const compact = window.innerWidth <= 760;
-    return { width: compact ? 132 : 160, height: compact ? 154 : 176 };
+    return { width: compact ? 82 : 160, height: compact ? 96 : 176 };
   };
   const defaultPosition = () => {
     const bounds = launcherBounds();
@@ -432,7 +433,10 @@ export function MiniGuide() {
         safeArea,
         bottomNavHeight,
       });
-      const safe = validSaved ?? candidate;
+      // Run saved coordinates through the same collision score as fresh
+      // placements. A saved position may still be inside text after a layout
+      // change (for example when the phone preview becomes narrower).
+      const safe = candidate;
       const currentBounds = launcherRef.current?.getBoundingClientRect();
       const currentPosition = position || contentPosition || savedPosition || (currentBounds ? { x: currentBounds.left, y: currentBounds.top } : null);
       if (currentPosition && Math.hypot(currentPosition.x - safe.x, currentPosition.y - safe.y) > 24) beginFlight();
@@ -790,7 +794,10 @@ export function MiniGuide() {
     {open && <section ref={bubbleRef} className={`kb-mini-bubble${tourMode ? " is-tour-bubble" : ""}${greeting && !tourMode ? " is-greeting" : ""}`} data-side={bubblePosition?.side || "above"} style={speechStyle} role="dialog" aria-label={bn ? "বন্ধুর কৃষি নির্দেশনা" : "Bondhu’s field guide"} aria-describedby={tourMode ? "bondhu-tour-description" : undefined} onPointerEnter={() => { bubbleHoveredRef.current = true; }} onPointerLeave={() => { bubbleHoveredRef.current = false; }}>
       <header className="kb-mini-bubble-head"><div className="kb-mini-kicker">{tourMode ? (bn ? `ধাপ ${visibleTourIndex + 1} / ${eligibleTourSteps.length}` : `STEP ${visibleTourIndex + 1} OF ${eligibleTourSteps.length}`) : (bn ? "বন্ধু · আপনার মাঠের সঙ্গী" : "BONDHU · YOUR FIELD GUIDE")}</div><button type="button" aria-label={bn ? "বন্ধ করুন" : "Close"} onClick={closeGuide} className="kb-mini-close"><X size={17}/></button></header>
       <div className="kb-mini-bubble-body">
-        {greeting && !tourMode ? <p className="kb-mini-greeting-copy">{bn ? "হ্যালো! আমি বন্ধু—কৃষির কাজে পাশে আছি।" : "Hi! I’m Bondhu. I’m here to help with farming."}</p> : tourMode ? <>
+        {greeting && !tourMode ? <>
+          <h2>How can I help you today?</h2>
+          <p className="kb-mini-greeting-copy">Hello, I’m Bondhu. I can help you explore your farming tools.</p>
+        </> : tourMode ? <>
           <h2>{bn ? "বন্ধুর সাথে ঘুরে দেখুন" : "Explore with Bondhu"}</h2>
           <p id="bondhu-tour-description" className="kb-mini-tour-description" aria-live="polite">{bn ? tourStep?.bn : tourStep?.en}</p>
           {tourNotice && <p className="kb-mini-tour-notice" role="status">{tourNotice}</p>}
@@ -831,7 +838,7 @@ export function MiniGuide() {
         </>)}
       </div>
     </section>}
-    <button ref={launcherRef} type="button" className={`kb-mini-launcher ${flying ? "is-flying" : ""} ${hidden ? "is-hidden" : ""}`} onPointerEnter={() => setHovered(true)} onPointerLeave={() => setHovered(false)} onPointerDown={startDrag} onPointerMove={drag} onPointerUp={endDrag} onPointerCancel={endDrag} onKeyDown={moveWithKeyboard} onClick={tapCompanion} aria-expanded={open} aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight" aria-label={bn ? (hidden ? "বন্ধুকে দেখান" : "বন্ধুর কাছে সাহায্য চান") : (hidden ? "Show Bondhu" : "Ask Bondhu for help")}>
+    <button ref={launcherRef} type="button" className={`kb-mini-launcher ${flying ? "is-flying" : ""} ${hidden ? "is-hidden" : ""}`} onPointerEnter={() => { setHovered(true); if (greeting) { setGreeting(false); setOpen(false); } }} onPointerLeave={() => setHovered(false)} onPointerDown={startDrag} onPointerMove={drag} onPointerUp={endDrag} onPointerCancel={endDrag} onKeyDown={moveWithKeyboard} onClick={tapCompanion} aria-expanded={open} aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight" aria-label={bn ? (hidden ? "বন্ধুকে দেখান" : "বন্ধুর কাছে সাহায্য চান") : (hidden ? "Show Bondhu" : "Ask Bondhu for help")}>
       <BondhuMascot active={!hidden && animationEnabled} className="kb-mini-face" state={characterState} facing={facing} label={bn ? "বন্ধু, কৃষকের সহায়ক ড্রাগন" : "Bondhu, a friendly farmer companion"}/>
       {!hidden && <span className="kb-mini-hit-area" aria-hidden="true" />}
       {(hidden || tourMode) && <span>{hidden ? (bn ? "বন্ধুকে দেখান" : "Show Bondhu") : "Bondhu"}</span>}

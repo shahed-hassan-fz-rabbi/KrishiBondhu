@@ -6,7 +6,6 @@ export const BONDHU_TOUR_STEPS = Object.freeze([
   { id: "planning", route: "/crop-rotation", target: "planning.rotation", requiresAuth: false, en: "Compare crop choices using your land and season details.", bn: "জমি ও মৌসুমের তথ্য দিয়ে ফসলের তুলনা করুন।" },
   { id: "map", route: "/map", target: "map.overview", requiresAuth: true, en: "Explore the agricultural map after signing in.", bn: "সাইন ইন করে কৃষি মানচিত্র দেখুন।" },
   { id: "farm", route: "/my-farm", target: "farm.overview", requiresAuth: true, en: "Add your field and keep its crop work together.", bn: "আপনার মাঠ যোগ করে কাজের তথ্য রাখুন।" },
-  { id: "saved", route: "/saved-advisories", target: "advisories.overview", requiresAuth: true, en: "Return to guidance you saved for later.", bn: "পরে দেখার জন্য রাখা পরামর্শ এখানে পাবেন।" },
   { id: "assistant", route: "/assistant", target: "assistant.overview", requiresAuth: true, en: "Ask the existing field assistant in Bangla or English.", bn: "বিদ্যমান কৃষি সহকারীকে বাংলায় বা ইংরেজিতে প্রশ্ন করুন।" },
 ]);
 

@@ -8,12 +8,11 @@ import {
   ArrowDown,
   ArrowRight,
   BarChart3,
-  Bookmark,
+  BatteryFull,
   CalendarRange,
   Check,
   CheckCircle2,
   ChevronDown,
-  Clock,
   CloudRain,
   CloudSun,
   Compass,
@@ -32,8 +31,8 @@ import {
   RotateCw,
   Satellite,
   ScanLine,
+  Smartphone,
   ShieldCheck,
-  Sparkles,
   Sprout,
   Store,
   Sun,
@@ -44,6 +43,7 @@ import {
   UserCheck,
   Users,
   Volume2,
+  Wifi,
   Wind,
 } from "lucide-react";
 
@@ -70,7 +70,6 @@ const featuredCards = [
   { icon: Tractor, objKey: "cardCrops", href: "/crop-rotation", image: "/img/photos/crop-rotation-cycle.jpg" },
   { icon: MessageSquare, objKey: "cardAssistant", href: "/assistant", image: "/img/photos/ai-assistant.avif" },
   { icon: Globe, objKey: "cardMap", href: "/map", image: "/img/photos/nasa-modis-bangladesh.jpg" },
-  { icon: Bookmark, objKey: "cardAdvisories", href: "/saved-advisories", image: "/img/farmer-call.svg" },
   { icon: Tractor, objKey: "cardMyFarm", href: "/my-farm", image: "/img/photos/farmer-rajshahi.jpg" },
   { icon: Database, objKey: "cardData", href: "/data-sources", image: "/img/photos/trusted-agri-data.jpg" },
 ];
@@ -144,8 +143,29 @@ export default function LandingPage() {
   const [marketObservations, setMarketObservations] = useState({});
   const [marketObservationsStatus, setMarketObservationsStatus] = useState("loading");
   const [soilMoistureResult, setSoilMoistureResult] = useState({ district: null, status: "loading", data: null });
+  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+  const [isMobilePreviewFrame, setIsMobilePreviewFrame] = useState(false);
 
   const [activePreviewTab, setActivePreviewTab] = useState("market"); // "market" | "weather" | "planner" | "assistant"
+
+  useEffect(() => {
+    const previewMode = new URLSearchParams(window.location.search).has("mobilePreview");
+    if (previewMode) document.documentElement.classList.add("kb-mobile-preview-frame");
+    const frame = window.requestAnimationFrame(() => setIsMobilePreviewFrame(previewMode));
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.documentElement.classList.remove("kb-mobile-preview-frame");
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mobilePreviewOpen) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setMobilePreviewOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [mobilePreviewOpen]);
 
   useEffect(() => {
     let isMounted = true;
@@ -468,35 +488,27 @@ export default function LandingPage() {
                   <Play className="h-4 w-4 shrink-0 fill-current text-forest" aria-hidden="true" />
                   <span>{locale === "bn" ? "বন্ধুর সাথে পুরো সফর" : "Tour with Bondhu"}</span>
                 </button>
-                <Link href="/market" className="text-xs font-semibold text-forest hover:underline">
-                  {locale === "bn" ? t("landing.ctaMarketBn") : t("landing.ctaMarket")} &rarr;
+                <Link href="/market" className="kb-hero2-market-link">
+                  <span>{locale === "bn" ? t("landing.ctaMarketBn") : t("landing.ctaMarket")}</span>
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
               </div>
 
-              <div className="kb-hero2-proof">
-                <div className="kb-hero2-proof-item">
-                  <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  <span>
-                    {locale === "bn"
-                      ? "পাওয়া তথ্যের সঙ্গে উৎস ও পর্যবেক্ষণের তারিখ দেখুন।"
-                      : "Review available information with its source and observation date."}
-                  </span>
-                </div>
-                <div className="kb-hero2-proof-item">
-                  <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  <span>
-                    {locale === "bn"
-                      ? "নির্দেশিকা সফর যেকোনো সময় থামান বা আবার শুরু করুন।"
-                      : "Pause, skip, or replay the guided tour at any time."}
-                  </span>
-                </div>
-              </div>
             </div>
 
             {/* Empty hero stage gives Bondhu a measured first-visit landing area. */}
             <div className="kb-hero2-card-stage" id="landingBondhuStage" data-bondhu-anchor="home-hero" aria-hidden="true" />
           </div>
         </section>
+
+        {!isMobilePreviewFrame ? (
+          <div className="kb-mobile-preview-row">
+            <button type="button" onClick={() => setMobilePreviewOpen(true)} className="kb-mobile-preview-button">
+              <Smartphone className="h-4 w-4" aria-hidden="true" />
+              {locale === "bn" ? "মোবাইল ভিউ দেখুন" : "See mobile view"}
+            </button>
+          </div>
+        ) : null}
 
         {/* ============================================================
             FEATURED SERVICES (Feature discovery — modern)
@@ -509,14 +521,8 @@ export default function LandingPage() {
               const data = cardData(card.objKey);
               return (
                 <a key={card.objKey} href={card.href} className="kb-featured-card">
-                  <span className={`kb-featured-visual ${card.objKey === "cardAssistant" ? "kb-featured-visual-ai" : ""}`} aria-hidden="true">
+                  <span className="kb-featured-visual" aria-hidden="true">
                     <Image src={card.image} alt="" width={640} height={400} />
-                    {card.objKey === "cardAssistant" && (
-                      <span className="kb-featured-ai-overlay">
-                        <span className="kb-featured-ai-badge"><Sparkles className="h-3.5 w-3.5" />Krishi AI</span>
-                        <span className="kb-featured-ai-chat"><MessageSquare className="h-4 w-4" /><span><i /><i /><i /></span></span>
-                      </span>
-                    )}
                   </span>
                   <span className="kb-featured-icon"><card.icon className="h-6 w-6" strokeWidth={1.7} aria-hidden="true" /></span>
                   <span className="kb-featured-title-2">{data.title}</span>
@@ -671,14 +677,9 @@ export default function LandingPage() {
                       { nameBn: "পাকা লাল টমেটো", nameEn: "Ripe Tomato", retail: "৳৪৫", wholesale: "৳৩৮", diff: "+৳৩", trend: "up" },
                     ].map((item) => (
                       <div key={item.nameEn} className="rounded-2xl border border-line bg-surface-2/60 p-4 hover:border-emerald/40 transition-colors">
-                        <div className="flex items-center justify-between">
-                          <p className="font-bold text-sm text-content">{locale === "bn" ? item.nameBn : item.nameEn}</p>
-                          <span className="inline-flex items-center rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
-                            {locale === "bn" ? "ডেমো · নমুনা তথ্য" : "DEMO · SAMPLE DATA"}
-                          </span>
-                        </div>
+                        <p className="font-bold text-sm text-content">{locale === "bn" ? item.nameBn : item.nameEn}</p>
                         <p className="text-[11px] text-muted mt-0.5">
-                          {locale === "bn" ? "নমুনা ফরম্যাট · বাস্তব দর নয়" : "Sample format · Not a live quote"}
+                          {locale === "bn" ? "জাত ও এলাকাভেদে দাম ভিন্ন হতে পারে।" : "Prices vary by variety and area."}
                         </p>
                         <div className="mt-3 flex items-baseline justify-between border-t border-line/60 pt-2.5">
                           <div>
@@ -1272,6 +1273,28 @@ export default function LandingPage() {
       </main>
 
       <PublicFooter />
+
+      {mobilePreviewOpen ? (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm sm:p-6" role="dialog" aria-modal="true" aria-label={locale === "bn" ? "ওয়েবসাইটের মোবাইল ভিউ" : "Mobile website preview"} onMouseDown={(event) => { if (event.target === event.currentTarget) setMobilePreviewOpen(false); }}>
+          <div className="flex max-h-full w-full max-w-[440px] flex-col items-center gap-3">
+            <div className="flex w-full items-center justify-between text-white">
+              <p className="text-sm font-semibold">{locale === "bn" ? "মোবাইল ভিউ" : "Mobile view"}</p>
+              <button type="button" autoFocus onClick={() => setMobilePreviewOpen(false)} className="rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+                {locale === "bn" ? "বন্ধ করুন" : "Close preview"}
+              </button>
+            </div>
+            <div className="relative aspect-[9/19.5] max-h-[82dvh] w-[min(390px,82vw,38dvh)] shrink-0 overflow-hidden rounded-[42px] border-[8px] border-neutral-900 bg-white shadow-2xl ring-1 ring-white/20">
+              <div className="absolute inset-x-0 top-0 z-20 flex h-8 items-center justify-between bg-[#f8faf8] px-5 text-[10px] font-semibold text-neutral-900">
+                <span>9:41</span>
+                <span className="pointer-events-none absolute left-1/2 top-1/2 h-[14px] w-[68px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-neutral-950" aria-hidden="true" />
+                <span className="flex items-center gap-1" aria-hidden="true"><Wifi className="h-3.5 w-3.5" /><BatteryFull className="h-3.5 w-3.5" /></span>
+              </div>
+              <iframe title={locale === "bn" ? "কৃষিবন্ধু ওয়েবসাইটের মোবাইল প্রিভিউ" : "KrishiBondhu mobile website preview"} src="/?mobilePreview=1" onLoad={(event) => event.currentTarget.contentWindow?.scrollTo(0, 0)} className="absolute inset-x-0 bottom-0 top-8 h-[calc(100%-2rem)] w-full border-0 bg-white" />
+              <span className="pointer-events-none absolute bottom-1.5 left-1/2 z-20 h-1 w-20 -translate-x-1/2 rounded-full bg-neutral-950/85" aria-hidden="true" />
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

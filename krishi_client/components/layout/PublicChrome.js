@@ -5,9 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowRight,
-  Bookmark,
   ChevronDown,
-  CloudSun,
   Layers,
   Leaf,
   LogOut,
@@ -19,7 +17,6 @@ import {
   SlidersHorizontal,
   Sparkles,
   Sprout,
-  Store,
   TrendingUp,
   UserRound,
   X,
@@ -130,7 +127,6 @@ export function PublicHeader() {
     { href: "/settings", label: t("publicHeader.myProfile"), Icon: UserRound },
     { href: "/my-farm", label: t("nav.myFarm"), Icon: Sprout },
     { href: "/assistant", label: t("publicHeader.chatHistory"), Icon: MessageSquareText },
-    { href: "/saved-advisories", disabled: true, label: t("publicHeader.savedAdvisories"), Icon: Bookmark },
     { href: "/settings", label: t("publicHeader.alertPreferences"), Icon: SlidersHorizontal },
     { href: "/settings", label: t("publicHeader.accountSettings"), Icon: Settings2 },
   ];
@@ -248,7 +244,7 @@ export function PublicHeader() {
           <div className="flex items-center gap-1.5 sm:gap-2">
             {isAuthenticated && user ? (
               <>
-                <Button href="/dashboard" size="sm" variant="primary" className="h-9 rounded-full px-4 text-xs font-bold shadow-xs">
+                <Button href="/dashboard" size="sm" variant="primary" className="kb-public-dashboard-link h-9 rounded-full px-4 text-xs font-bold shadow-xs">
                   {dashboardLabel}
                 </Button>
 
@@ -265,8 +261,8 @@ export function PublicHeader() {
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#123D2A] text-[11px] font-bold text-white shadow-xs">
                       {avatarInitial}
                     </span>
-                    <span className="max-w-20 sm:max-w-24 truncate font-semibold">{displayName}</span>
-                    <ChevronDown className={`h-3 w-3 shrink-0 text-muted transition-transform duration-200 ${profileOpen ? "rotate-180" : ""}`} aria-hidden="true" />
+                    <span className="kb-mobile-profile-name max-w-20 truncate font-semibold sm:max-w-24">{displayName}</span>
+                    <ChevronDown className={`kb-mobile-profile-chevron h-3 w-3 shrink-0 text-muted transition-transform duration-200 ${profileOpen ? "rotate-180" : ""}`} aria-hidden="true" />
                   </button>
 
                   {profileOpen && (

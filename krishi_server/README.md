@@ -282,8 +282,11 @@ All backend endpoints are mounted under `/api/v1` and return standardized JSON e
 | `GET` | `/api/v1/gis/boundaries` | BBS 2020 Admin-2 GeoJSON boundary polygons (`EPSG:4326`). | `district` (`cumilla` \| `chattogram`) |
 | `GET` | `/api/v1/gis/layers` | Coordinated GeoJSON spatial observation layers with SMAP/MODIS footprints. | `district` (`cumilla` \| `chattogram`) |
 | `GET` | `/api/v1/crop-calendar/crops` | List of supported crops with DAE regional taxonomy. | None |
+| `GET` | `/api/v1/crop-calendar/catalog` | Canonical crop names plus separate general-source and district-calendar coverage status. | None |
 | `GET` | `/api/v1/crop-calendar` | Verified BAMIS/DAE/BRRI crop phenology calendar by district. | `district`, `crop` |
 | `GET` | `/api/v1/crop-calendar/alignment` | Alignment of official crop calendar stages with live NASA satellite datasets. | `district`, `crop` |
+
+The crop catalog is maintained in `data/crops/crop_catalog.json`. Curated, source-linked general crop notes are in `data/crops/crop_knowledge.json` and are retrieved for the AI through `getCropKnowledge`; district-specific scheduling remains restricted to the crops and districts recorded in `data/crops/official_crop_calendars.json`. Catalog membership or a general BAMIS page does not mean that a localized planting or fertilizer recommendation is available. Do not add rates or schedules until the original official source is reviewed and entered with provenance.
 
 ### Authentication Endpoints
 
