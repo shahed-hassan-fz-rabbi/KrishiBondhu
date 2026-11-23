@@ -31,51 +31,82 @@ function measureCompanionObstacles() {
   if (!main) return [];
   const width = window.innerWidth;
   const height = window.innerHeight;
-  const boundarySelector = 'article, aside, [role="region"], [data-bondhu-obstacle], [class*="-card"], [class*="-panel"], [class*="-strip"]';
+  const boundarySelector = 'article, aside, section, [role="region"], [data-bondhu-obstacle], [class*="-card"], [class*="-panel"], [class*="-strip"]';
   const boundaries = [...main.querySelectorAll(boundarySelector)]
     .filter((element) => !element.closest(".kb-mini-guide") && element.getAttribute("aria-hidden") !== "true")
     .filter((element) => ![...element.classList].some((name) => name.includes("stage")))
+    .filter((element) => ![...element.classList].some((name) => name.includes("hero")))
+    .filter((element) => {
+      if (element.tagName !== "SECTION" || element.id === "home") return true;
+      const style = window.getComputedStyle(element);
+      const rounded = Number.parseFloat(style.borderTopLeftRadius) >= 8;
+      const bordered = style.borderTopWidth !== "0px" && style.borderTopStyle !== "none";
+      const colored = style.backgroundColor !== "transparent" && style.backgroundColor !== "rgba(0, 0, 0, 0)";
+      return rounded && (bordered || colored);
+    })
     .map((element) => ({ element, rect: element.getBoundingClientRect() }))
     .filter(({ rect }) => rect.width >= 100 && rect.height >= 76 && rect.bottom > 0 && rect.top < height)
     .sort((a, b) => (b.rect.width * b.rect.height) - (a.rect.width * a.rect.height));
   const obstacles = [];
   for (const { element, rect } of boundaries) {
     if (boundaries.some((candidate) => candidate.element !== element && candidate.element.contains(element) && obstacles.some((obstacle) => obstacle.element === candidate.element))) continue;
+    const gap = 10;
     obstacles.push({
       element,
-      left: Math.max(0, rect.left),
-      right: Math.min(width, rect.right),
-      top: Math.max(0, rect.top),
-      bottom: Math.min(height, rect.bottom),
+      left: Math.max(0, rect.left - gap),
+      right: Math.min(width, rect.right + gap),
+      top: Math.max(0, rect.top - gap),
+      bottom: Math.min(height, rect.bottom + gap),
       weight: 3,
+      soft: true,
     });
   }
-  const textAndControls = main.querySelectorAll("h1,h2,h3,p,a,button,input,select,textarea,summary,[role=button]");
+  const textAndControls = main.querySelectorAll("h1,h2,h3,p,span,label,strong,li,a,button,input,select,textarea,summary,[role=button]");
   for (const element of textAndControls) {
-    if (element.closest(".kb-mini-guide,[aria-hidden='true']") || obstacles.some((obstacle) => obstacle.element.contains(element))) continue;
-    const rect = element.getBoundingClientRect();
-    if (!rect.width || !rect.height || rect.bottom <= 0 || rect.top >= height) continue;
+    if (element.closest(".kb-mini-guide,[aria-hidden='true']") || (element.closest("a,button,summary,[role=button]") && !/^(A|BUTTON|SUMMARY)$/.test(element.tagName) && element.getAttribute("role") !== "button")) continue;
     const interactive = /^(A|BUTTON|INPUT|SELECT|TEXTAREA|SUMMARY)$/.test(element.tagName) || element.getAttribute("role") === "button";
-    obstacles.push({
-      left: Math.max(0, rect.left),
-      right: Math.min(width, rect.right),
-      top: Math.max(0, rect.top),
-      bottom: Math.min(height, rect.bottom),
-      weight: interactive ? 5 : element.matches("h1,h2,h3") ? 3 : 1.5,
-    });
+    const gap = interactive ? 8 : 4;
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    const rects = interactive ? [element.getBoundingClientRect()] : [...range.getClientRects()];
+    for (const rect of rects) {
+      if (!rect.width || !rect.height || rect.bottom <= 0 || rect.top >= height) continue;
+      obstacles.push({
+        left: Math.max(0, rect.left - gap),
+        right: Math.min(width, rect.right + gap),
+        top: Math.max(0, rect.top - gap),
+        bottom: Math.min(height, rect.bottom + gap),
+        weight: interactive ? 5 : element.matches("h1,h2,h3") ? 3 : 1.5,
+      });
+    }
   }
   return obstacles.filter((obstacle) => obstacle.right > obstacle.left && obstacle.bottom > obstacle.top);
 }
 
 function measureCompanionSafeArea() {
   const area = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
-  for (const element of document.querySelectorAll("header, nav, [role=banner], [data-bondhu-safe-edge]")) {
+  for (const element of document.querySelectorAll("header, nav, aside, [role=banner], [data-bondhu-safe-edge]")) {
     if (element.closest(".kb-mini-guide") || element.getAttribute("aria-hidden") === "true") continue;
     const style = window.getComputedStyle(element);
-    if (style.position !== "fixed" && style.position !== "sticky") continue;
     const rect = element.getBoundingClientRect();
     if (!rect.width || !rect.height) continue;
-    if (rect.top <= 1 && rect.bottom <= window.innerHeight * 0.45) area.top = Math.max(area.top, rect.bottom);
+    const topHeader = element.tagName === "HEADER" || element.getAttribute("role") === "banner";
+    const fixed = style.position === "fixed" || style.position === "sticky";
+    if (rect.top <= 1 && rect.bottom <= window.innerHeight * 0.45 && (topHeader || fixed)) {
+      const controls = topHeader ? [...element.querySelectorAll("button,a,[role=button],input,select")]
+        .map((control) => control.getBoundingClientRect())
+        .filter((controlRect) => controlRect.width && controlRect.height)
+        .map((controlRect) => controlRect.bottom) : [];
+      let textBottom = 0;
+      if (topHeader) {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        textBottom = Math.max(0, ...[...range.getClientRects()].filter((textRect) => textRect.width && textRect.height).map((textRect) => textRect.bottom));
+      }
+      const visibleControlBottom = fixed ? rect.bottom : controls.length || textBottom ? Math.max(...controls, textBottom) : rect.bottom;
+      area.top = Math.max(area.top, Math.min(rect.bottom, visibleControlBottom));
+    }
+    if (!fixed && !topHeader) continue;
     if (rect.bottom >= window.innerHeight - 1 && rect.top >= window.innerHeight * 0.55) area.bottom = Math.min(area.bottom, rect.top);
     if (rect.left <= 1 && rect.right <= window.innerWidth * 0.4 && rect.height >= window.innerHeight * 0.55) area.left = Math.max(area.left, rect.right);
     if (rect.right >= window.innerWidth - 1 && rect.left >= window.innerWidth * 0.6 && rect.height >= window.innerHeight * 0.55) area.right = Math.min(area.right, rect.left);
@@ -260,9 +291,9 @@ export function MiniGuide() {
     saveMascotPreferences(updates);
   };
 
-  const savedPosition = Number.isFinite(preferences.x) && Number.isFinite(preferences.y)
+  const savedPosition = useMemo(() => Number.isFinite(preferences.x) && Number.isFinite(preferences.y)
     ? { x: preferences.x, y: preferences.y }
-    : null;
+    : null, [preferences.x, preferences.y]);
   const launcherBounds = () => {
     const current = launcherRef.current?.getBoundingClientRect();
     if (current?.width && current?.height) return { width: current.width, height: current.height };
@@ -305,6 +336,7 @@ export function MiniGuide() {
         viewportWidth: window.innerWidth,
         viewportHeight: window.innerHeight,
         size,
+        collisionBounds: { x: 2, y: 0, width: Math.max(1, size.width - 4), height: Math.max(1, size.height - 12) },
         obstacles,
         preferredPositions,
         candidatePositions,
@@ -329,16 +361,19 @@ export function MiniGuide() {
     const main = document.querySelector("main");
     const resizeObserver = typeof ResizeObserver === "undefined" || !main ? null : new ResizeObserver(schedule);
     if (main) resizeObserver?.observe(main);
-    for (const element of main?.querySelectorAll('article, aside, [role="region"], [data-bondhu-obstacle], [class*="-card"], [class*="-panel"], [class*="-strip"]') || []) {
-      if (![...element.classList].some((name) => name.includes("stage"))) resizeObserver?.observe(element);
+    for (const element of main?.querySelectorAll('article, aside, section, [role="region"], [data-bondhu-obstacle], [class*="-card"], [class*="-panel"], [class*="-strip"]') || []) {
+      if (![...element.classList].some((name) => name.includes("stage") || name.includes("hero"))) resizeObserver?.observe(element);
     }
+    const mutationObserver = typeof MutationObserver === "undefined" || !main ? null : new MutationObserver(schedule);
+    mutationObserver?.observe(main, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style", "aria-hidden"] });
     return () => {
       window.cancelAnimationFrame(frame);
       window.removeEventListener("scroll", schedule, true);
       window.removeEventListener("resize", schedule);
       resizeObserver?.disconnect();
+      mutationObserver?.disconnect();
     };
-  }, [pathname, preferences.x, preferences.y, savedPosition?.x, savedPosition?.y, position, contentPosition, tourMode, hidden, isDragging]);
+  }, [pathname, preferences.x, preferences.y, savedPosition, position, contentPosition, tourMode, hidden, isDragging]);
 
   useLayoutEffect(() => {
     if (!open || !launcherRef.current || !bubbleRef.current) {

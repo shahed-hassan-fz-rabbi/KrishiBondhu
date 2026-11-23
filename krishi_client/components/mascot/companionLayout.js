@@ -8,7 +8,9 @@ function intersectionArea(a, b) {
 
 export function getCompanionPositionBounds({ viewportWidth, viewportHeight, size, safeArea = {}, margin = 12 }) {
   const left = Math.max(margin, (safeArea.left || 0) + (safeArea.left ? margin : 0));
-  const top = Math.max(margin, (safeArea.top || 0) + (safeArea.top ? margin : 0));
+  // Safe edge measurements already end at the visible control bounds; do not
+  // add another margin that can push the character into the first content row.
+  const top = Math.max(margin, safeArea.top || 0);
   const right = Math.min(viewportWidth - margin, (safeArea.right ?? viewportWidth) - (safeArea.right < viewportWidth ? margin : 0));
   const bottom = Math.min(viewportHeight - margin, (safeArea.bottom ?? viewportHeight) - (safeArea.bottom < viewportHeight ? margin : 0));
   return {
@@ -28,6 +30,7 @@ export function chooseCompanionPosition({
   preferredPositions = [],
   candidatePositions = [],
   safeArea = {},
+  collisionBounds = null,
   margin = 12,
 }) {
   const { minX: left, minY: top, maxX, maxY } = getCompanionPositionBounds({ viewportWidth, viewportHeight, size, safeArea, margin });
@@ -36,15 +39,31 @@ export function chooseCompanionPosition({
     y: clamp(point.y, top, maxY),
   });
   const overlapAt = (point) => {
-    const rect = { left: point.x, top: point.y, right: point.x + size.width, bottom: point.y + size.height };
+    const visible = collisionBounds || { x: 0, y: 0, width: size.width, height: size.height };
+    const rect = {
+      left: point.x + visible.x,
+      top: point.y + visible.y,
+      right: point.x + visible.x + visible.width,
+      bottom: point.y + visible.y + visible.height,
+    };
     return obstacles.reduce((sum, obstacle) => sum + intersectionArea(rect, obstacle) * (obstacle.weight || 1), 0);
   };
-  const isSafe = (point) => overlapAt(point) < 1;
+  const hardOverlapAt = (point) => {
+    const visible = collisionBounds || { x: 0, y: 0, width: size.width, height: size.height };
+    const rect = {
+      left: point.x + visible.x,
+      top: point.y + visible.y,
+      right: point.x + visible.x + visible.width,
+      bottom: point.y + visible.y + visible.height,
+    };
+    return obstacles.reduce((sum, obstacle) => obstacle.soft ? sum : sum + intersectionArea(rect, obstacle) * (obstacle.weight || 1), 0);
+  };
+  const isSafe = (point) => hardOverlapAt(point) < 1;
 
   for (const preferred of preferredPositions) {
     if (!preferred || !Number.isFinite(preferred.x) || !Number.isFinite(preferred.y)) continue;
     const point = clampPosition(preferred);
-    if (isSafe(point)) return point;
+    if (isSafe(point) && overlapAt(point) < 1) return point;
   }
 
   const defaultPoint = { x: maxX, y: maxY };
@@ -68,18 +87,45 @@ export function chooseCompanionPosition({
       { x: clamp(obstacle.right + margin, left, maxX), y: centerY },
       { x: centerX, y: clamp(obstacle.top - size.height - margin, top, maxY) },
       { x: centerX, y: clamp(obstacle.bottom + margin, top, maxY) },
+      { x: maxX, y: clamp(obstacle.top - size.height - margin, top, maxY) },
+      { x: left, y: clamp(obstacle.top - size.height - margin, top, maxY) },
+      { x: clamp(obstacle.left - size.width - margin, left, maxX), y: maxY },
+      { x: clamp(obstacle.right + margin, left, maxX), y: maxY },
     );
   }
 
   let best = null;
+  let bestWithoutTextOverlap = null;
   for (const candidate of candidates) {
     const point = clampPosition(candidate);
     const overlap = overlapAt(point);
+    const hardOverlap = hardOverlapAt(point);
     const distanceFromDefault = Math.abs(point.x - defaultPoint.x) + Math.abs(point.y - defaultPoint.y);
     const cost = overlap + distanceFromDefault * 0.25;
     if (!best || cost < best.cost) best = { ...point, cost, overlap };
-    if (overlap < 1) return point;
+    if (isSafe(point)) {
+      const safeCost = hardOverlap * 10000 + overlap + distanceFromDefault * 0.02;
+      if (!bestWithoutTextOverlap || safeCost < bestWithoutTextOverlap.cost) bestWithoutTextOverlap = { ...point, cost: safeCost };
+      if (overlap < 1) return point;
+    }
   }
+
+  // If the viewport is dense, search the remaining usable space for a clear
+  // rectangle. Coarse steps keep scroll/resize reflows inexpensive, while the
+  // final coordinates remain clamped to the exact measured safe bounds.
+  const step = Math.max(16, Math.min(32, Math.floor(Math.min(size.width, size.height) / 5)));
+  let nearestSafe = null;
+  for (let y = top; y <= maxY; y += step) {
+    for (let x = left; x <= maxX; x += step) {
+      const point = clampPosition({ x, y });
+      if (!isSafe(point)) continue;
+      const distance = Math.abs(point.x - defaultPoint.x) + Math.abs(point.y - defaultPoint.y);
+      const cost = overlapAt(point) + distance * 0.02;
+      if (!nearestSafe || cost < nearestSafe.cost) nearestSafe = { ...point, cost };
+    }
+  }
+  if (nearestSafe) return { x: nearestSafe.x, y: nearestSafe.y };
+  if (bestWithoutTextOverlap) return { x: bestWithoutTextOverlap.x, y: bestWithoutTextOverlap.y };
   return { x: best.x, y: best.y };
 }
 

@@ -75,6 +75,8 @@ test("Bondhu stays character-first at rest and opens a compact speech bubble onl
   assert.match(guide, /new ResizeObserver\(schedule\)/, "placement updates when content cards resize");
   assert.match(guide, /position \|\| visibleContentPosition \|\| contentPosition \|\| savedPosition/, "internal pages apply collision-aware placement before a saved default position");
   assert.match(guide, /setPosition\(safe\);\s*savePreferences\(safe\)/, "unsafe saved positions are relocated and saved");
+  assert.match(guide, /new MutationObserver\(schedule\)/, "late page content changes trigger a fresh safe-placement measurement");
+  assert.match(guide, /range\.getClientRects\(\)/, "text placement checks use actual text bounds rather than full-width paragraph boxes");
   assert.match(guide, /kb-mini-hit-area/, "the pointer target follows Bondhu's visible silhouette rather than the transparent canvas bounds");
   assert.match(css, /\.kb-mini-launcher:not\(\.is-hidden\)\s*\{[^}]*pointer-events:none!important/);
   assert.match(css, /\.kb-mini-hit-area\s*\{[^}]*clip-path:polygon/);
@@ -146,7 +148,7 @@ test("content-aware companion placement avoids copy and keeps Bondhu inside the 
     size: { width: 132, height: 154 },
     safeArea: { top: 64, bottom: 780 },
   });
-  assert.deepEqual(mobileBounds, { minX: 12, minY: 76, maxX: 246, maxY: 614 }, "mobile position bounds clear the sticky top bar and fixed bottom navigation");
+  assert.deepEqual(mobileBounds, { minX: 12, minY: 64, maxX: 246, maxY: 614 }, "measured top control bounds and fixed bottom navigation constrain mobile placement");
 
   const savedPositionIsUnsafe = chooseCompanionPosition({
     viewportWidth: 1440,
@@ -157,6 +159,35 @@ test("content-aware companion placement avoids copy and keeps Bondhu inside the 
     obstacles: [{ left: 1200, right: 1440, top: 640, bottom: 900, weight: 3 }],
   });
   assert.ok(savedPositionIsUnsafe.y + 176 <= 628 || savedPositionIsUnsafe.x + 160 <= 1188, "unsafe saved placement relocates outside the measured data card and viewport bounds");
+
+  const tabletPlacement = chooseCompanionPosition({
+    viewportWidth: 768,
+    viewportHeight: 1024,
+    size: { width: 160, height: 176 },
+    obstacles: [
+      { left: 0, right: 768, top: 0, bottom: 100, weight: 3 },
+      { left: 188, right: 736, top: 820, bottom: 920, weight: 3 },
+      { left: 28, right: 740, top: 936, bottom: 1024, weight: 3 },
+    ],
+  });
+  const tabletRect = { left: tabletPlacement.x, right: tabletPlacement.x + 160, top: tabletPlacement.y, bottom: tabletPlacement.y + 176 };
+  const tabletOverlap = [
+    { left: 0, right: 768, top: 0, bottom: 100 },
+    { left: 188, right: 736, top: 820, bottom: 920 },
+    { left: 28, right: 740, top: 936, bottom: 1024 },
+  ].some((obstacle) => tabletRect.left < obstacle.right && tabletRect.right > obstacle.left && tabletRect.top < obstacle.bottom && tabletRect.bottom > obstacle.top);
+  assert.equal(tabletOverlap, false, "dense tablet content triggers a search for a clear viewport rectangle");
+
+  const transparentCanvasMargin = chooseCompanionPosition({
+    viewportWidth: 390,
+    viewportHeight: 844,
+    size: { width: 132, height: 154 },
+    safeArea: { top: 92, bottom: 780 },
+    preferredPositions: [{ x: 246, y: 101 }],
+    collisionBounds: { x: 2, y: 0, width: 128, height: 142 },
+    obstacles: [{ left: 113, right: 268, top: 248, bottom: 265, weight: 1.5 }],
+  });
+  assert.deepEqual(transparentCanvasMargin, { x: 246, y: 101 }, "transparent canvas padding is excluded from visible mascot collision checks");
 });
 
 test("one shared Bondhu scene replaces the old launcher without changing tour or voice integration", () => {
