@@ -94,7 +94,8 @@ test("dedupe key is stable for equivalent alerts", () => {
   const a = evaluateWeatherForecast({ forecast: f, districtCode: "cumilla", now: NOW }).alert;
   const b = evaluateWeatherForecast({ forecast: f, districtCode: "cumilla", now: NOW }).alert;
   assert.equal(buildWeatherDedupeKey({ districtCode: "cumilla", alert: a }), buildWeatherDedupeKey({ districtCode: "cumilla", alert: b }));
-  assert.match(buildWeatherDedupeKey({ districtCode: "cumilla", alert: a }), /^weather:cumilla:HEAVY_RAINFALL:2026-11-24$/);
+  assert.match(buildWeatherDedupeKey({ districtCode: "cumilla", alert: a }), /^weather:any:cumilla:HEAVY_RAINFALL:2026-11-24$/);
+  assert.match(buildWeatherDedupeKey({ districtCode: "cumilla", alert: a, userId: "u1" }), /^weather:u1:cumilla:HEAVY_RAINFALL:2026-11-24$/);
 });
 
 function memoryLogger(existing = []) {

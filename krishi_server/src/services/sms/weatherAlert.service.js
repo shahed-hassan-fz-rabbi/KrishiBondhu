@@ -65,7 +65,7 @@ export async function evaluateFarmerWeatherAlert({
   }
 
   // 4. Duplicate suppression for an equivalent alert.
-  const dedupeKey = buildWeatherDedupeKey({ districtCode, alert: evaluation.alert });
+  const dedupeKey = buildWeatherDedupeKey({ districtCode, alert: evaluation.alert, userId });
   const duplicate = await findRecentAlert({ dedupeKey, userId, windowMs, logger });
   if (duplicate) {
     return { created: false, reason: "DUPLICATE", evaluation, delivery: null };

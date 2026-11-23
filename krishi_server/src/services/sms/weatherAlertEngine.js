@@ -125,8 +125,18 @@ export function evaluateWeatherForecast({ forecast, districtCode, now = new Date
   return { ...result, reason: "NO_WARNING_CONDITION" };
 }
 
-/** Stable dedupe key so an equivalent alert is not created twice. */
-export function buildWeatherDedupeKey({ districtCode, alert }) {
+/**
+ * Stable dedupe key so an equivalent alert is not created twice.
+ * The key is scoped to the farmer: one farmer's alert can never suppress an
+ * equivalent alert for another farmer in the same district.
+ */
+export function buildWeatherDedupeKey({ districtCode, alert, userId = null }) {
   if (!alert?.type) return null;
-  return `weather:${normalise(districtCode)}:${alert.type}:${alert.date || "unknown"}`;
+  return [
+    "weather",
+    userId ? String(userId) : "any",
+    normalise(districtCode),
+    alert.type,
+    alert.date || "unknown",
+  ].join(":");
 }
