@@ -14,6 +14,21 @@ test("Login only displays fixed OAuth errors and never reflects query message te
   assert.match(login, /safeReturnTo\(searchParams\.get\(["']redirect["']\)\)/);
 });
 
+test("Google sign-in keeps the GIS flow and offers the configured backend OAuth redirect as fallback", () => {
+  const button = read("components/auth/GoogleSignInButton.js");
+  const login = read("app/login/page.js");
+  const register = read("app/register/page.js");
+  assert.match(button, /verifyGoogleIdTokenDirect/);
+  assert.match(button, /getGoogleAuthEndpoint\(\)/);
+  assert.match(button, /AUTH_RETURN_KEY/);
+  assert.match(button, /scriptLoadTimer/);
+  assert.match(button, /alternate sign-in option/);
+  assert.match(login, /redirectTo=\{returnTo\}/);
+  assert.match(login, /redirectLabel=\{t\("auth\.googleRedirectFallback"\)\}/);
+  assert.match(register, /redirectLabel=\{t\("auth\.googleRedirectFallback"\)\}/);
+  assert.match(register, /redirectTo=\{safeReturnTo\(typeof window === "undefined" \? null/);
+});
+
 test("Profile settings only expose current persisted preferences and existing account actions", () => {
   const settings = read("app/(app)/settings/page.js");
   assert.match(settings, /updateProfile\(\{ name: nextName \}\)/);
