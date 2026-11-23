@@ -37,6 +37,9 @@ function job(overrides = {}) {
     messageRef: outboxMessageRef({ dedupeKey: KEY, text: TEXT }),
     parts: 1,
     attempts: 0,
+    maxAttempts: 3,
+    nextAttemptAt: null,
+    failureCategory: null,
     phoneLast4: "5678",
     status: "pending",
     leaseOwner: null,
@@ -70,10 +73,9 @@ function fakeOutboxModel(items = []) {
 }
 
 function matches(item, filter) {
-  if (filter.$or) {
-    return filter.$or.some((branch) => matches(item, branch));
-  }
   return Object.entries(filter).every(([key, expected]) => {
+    if (key === "$or") return expected.some((branch) => matches(item, branch));
+    if (key === "$and") return expected.every((branch) => matches(item, branch));
     if (expected && typeof expected === "object" && "$lte" in expected) {
       return item[key] != null && new Date(item[key]) <= new Date(expected.$lte);
     }
@@ -176,16 +178,18 @@ test("expired leases are reclaimed; live leases are not", async () => {
   assert.equal(model.store[0].leaseOwner, null);
 });
 
-test("failed processing clears the lease without promoting the job", async () => {
+test("temporary processing failure schedules a retry instead of a terminal failure", async () => {
   const model = fakeOutboxModel([job()]);
   const summary = await processSmsOutboxBatch({
     model, now: NOW, leaseOwner: "worker-a", ...fakeModels({ userThrows: true }),
   });
-  assert.equal(summary.failed, 1);
+  assert.equal(summary.retryScheduled, 1);
+  assert.equal(summary.failed, 0);
   assert.equal(summary.dryRuns, 0);
-  assert.equal(model.store[0].status, "failed");
+  assert.equal(model.store[0].status, "pending");
   assert.equal(model.store[0].leaseOwner, null);
-  assert.equal(model.store[0].lastError, "PROCESSING_ERROR");
+  assert.equal(model.store[0].failureCategory, "temporary");
+  assert.equal(model.store[0].nextAttemptAt.getTime(), NOW.getTime() + 60_000);
 });
 
 test("repeated processing never creates duplicate dry-run results", async () => {
