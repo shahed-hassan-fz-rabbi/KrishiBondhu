@@ -77,9 +77,15 @@ export async function claimNextOutboxJob({
   leaseOwner,
   now = new Date(),
   leaseTtlMs = DEFAULT_LEASE_TTL_MS,
+  onlyDedupeKey = null,
+  onlyJobId = null,
 } = {}) {
+  const targeted = onlyDedupeKey || onlyJobId
+    ? { ...(onlyDedupeKey ? { dedupeKey: onlyDedupeKey } : {}), ...(onlyJobId ? { _id: onlyJobId } : {}) }
+    : {};
   const query = model.findOneAndUpdate(
     {
+      ...targeted,
       $or: [
         {
           status: "pending",
@@ -183,6 +189,8 @@ export async function processSmsOutboxBatch({
   deliveryMode,
   configureGateway = configureSmsGatewayFromEnv,
   send = sendSms,
+  onlyDedupeKey = null,
+  onlyJobId = null,
 } = {}) {
   const summary = {
     claimed: 0,
@@ -247,7 +255,9 @@ export async function processSmsOutboxBatch({
   for (let index = 0; index < size; index += 1) {
     let job;
     try {
-      job = await claimNextOutboxJob({ model, leaseOwner, now, leaseTtlMs });
+      job = await claimNextOutboxJob({
+        model, leaseOwner, now, leaseTtlMs, onlyDedupeKey, onlyJobId,
+      });
     } catch {
       summary.errors += 1;
       break;

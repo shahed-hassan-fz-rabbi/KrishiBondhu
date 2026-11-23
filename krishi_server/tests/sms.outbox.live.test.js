@@ -212,6 +212,23 @@ test("concurrent live workers cannot submit the same job twice", async () => {
   resetSmsGatewayForTests();
 });
 
+test("targeted claim selects only the authorized dedupe key", async () => {
+  const { claimNextOutboxJob } = await import("../src/services/sms/smsOutboxWorker.service.js");
+  const fakes = workerFakes([
+    job({ _id: "job-a", dedupeKey: "authorized" }),
+    job({ _id: "job-b", dedupeKey: "other" }),
+  ]);
+  const claimed = await claimNextOutboxJob({
+    model: fakes.model, leaseOwner: "test", now: NOW, onlyDedupeKey: "authorized",
+  });
+  assert.equal(claimed.dedupeKey, "authorized");
+  assert.equal(claimed._id, "job-a");
+  const second = await claimNextOutboxJob({
+    model: fakes.model, leaseOwner: "test", now: NOW, onlyDedupeKey: "authorized",
+  });
+  assert.equal(second, null, "the same targeted job must not be claimed twice");
+});
+
 test("source review: no gateway import in adapters and no confirmed-delivery claim", () => {
   const worker = readFileSync(new URL("../src/services/sms/smsOutboxWorker.service.js", import.meta.url), "utf8");
   const log = readFileSync(new URL("../src/models/smsNotificationLog.model.js", import.meta.url), "utf8");
