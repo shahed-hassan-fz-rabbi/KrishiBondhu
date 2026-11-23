@@ -408,7 +408,7 @@ function CropPlanningPageContent() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 py-2">
+    <div className="kb-crop-planning-backdrop mx-auto max-w-5xl space-y-8 rounded-3xl px-2 py-3 sm:px-4 sm:py-5">
       {/* Top Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <Link
