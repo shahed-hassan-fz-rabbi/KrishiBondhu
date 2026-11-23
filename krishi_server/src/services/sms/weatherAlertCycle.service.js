@@ -26,7 +26,7 @@ const DEFAULT_LOCK_TTL_MS = 10 * 60 * 1000;
 const LOCK_SAFETY_MARGIN_MS = 2 * 60 * 1000;
 const DEFAULT_WINDOW_MS = 12 * 60 * 60 * 1000;
 
-function createDbCycleLock(model = WeatherAlertCycleLock) {
+export function createDbCycleLock(model = WeatherAlertCycleLock) {
   return {
     async acquire({ runId, now, ttlMs }) {
       await model.updateOne(
@@ -58,6 +58,31 @@ function createDbCycleLock(model = WeatherAlertCycleLock) {
       );
     },
   };
+}
+
+/**
+ * Bound a single awaited operation to the cycle deadline. This is a bounded
+ * wait, not a true cancellation: the underlying promise keeps running, but the
+ * cycle stops and releases its lock before the lease can expire.
+ */
+async function withDeadline(operation, { deadlineAt, clock, timers, label }) {
+  const remaining = deadlineAt - clock();
+  if (remaining <= 0) return { timedOut: true, label };
+
+  let handle = null;
+  const timeout = new Promise((resolve) => {
+    handle = timers.setTimeout(() => resolve({ timedOut: true, label }), remaining);
+  });
+  const work = Promise.resolve()
+    .then(operation)
+    .then((value) => ({ timedOut: false, value }));
+  // Avoid an unhandled rejection if the work settles after the deadline.
+  work.catch(() => {});
+  try {
+    return await Promise.race([work, timeout]);
+  } finally {
+    timers.clearTimeout(handle);
+  }
 }
 
 function emptySummary(runId, now) {
@@ -126,6 +151,7 @@ export async function runWeatherAlertCycle({
   deadlineMs = Math.max(30_000, lockTtlMs - LOCK_SAFETY_MARGIN_MS),
   runId = `weather-cycle-${now.getTime()}`,
   clock = () => Date.now(),
+  timers = { setTimeout, clearTimeout },
 } = {}) {
   const summary = emptySummary(runId, now);
   const cycleLock = lock || createDbCycleLock(lockModel);
@@ -150,14 +176,25 @@ export async function runWeatherAlertCycle({
   let deadlineHit = false;
   let lastId = null;
   let processed = 0;
+  const bounded = (operation, label) => withDeadline(operation, { deadlineAt, clock, timers, label });
+  // Forecast and evaluation errors are handled locally (skip that farmer),
+  // not treated as a whole-cycle failure.
+  const safeBounded = async (operation, label) => {
+    try { return await bounded(operation, label); }
+    catch (error) { return { timedOut: false, error, value: null }; }
+  };
 
   try {
     while (processed < cap) {
       if (clock() >= deadlineAt) { deadlineHit = true; break; }
-      const batch = await loadCandidateBatch(preferencesModel, lastId, size, now);
+      const batchResult = await bounded(() => loadCandidateBatch(preferencesModel, lastId, size, now), "batch_load");
+      if (batchResult.timedOut) { deadlineHit = true; break; }
+      const batch = batchResult.value;
       if (!batch.length) break;
 
-      const users = await loadUsers(userModel, batch.map((prefs) => prefs.userId || prefs._id));
+      const usersResult = await bounded(() => loadUsers(userModel, batch.map((prefs) => prefs.userId || prefs._id)), "user_load");
+      if (usersResult.timedOut) { deadlineHit = true; break; }
+      const users = usersResult.value;
       let reachedCap = false;
 
       for (const preferences of batch) {
@@ -183,32 +220,43 @@ export async function runWeatherAlertCycle({
         processed += 1;
 
         if (!forecasts.has(districtCode)) {
-          try {
-            const forecast = await getForecast({ locationIdentifier: districtCode });
-            forecasts.set(districtCode, {
-              ok: forecastIsUsable(forecast, districtCode, now),
-              forecast,
-            });
-          } catch (error) {
+          const forecastResult = await safeBounded(() => getForecast({ locationIdentifier: districtCode }), "forecast");
+          if (forecastResult.timedOut) { deadlineHit = true; break; }
+          if (forecastResult.error) {
             summary.errors += 1;
             forecasts.set(districtCode, { ok: false, forecast: null });
+          } else {
+            try {
+              const forecast = forecastResult.value;
+              forecasts.set(districtCode, {
+                ok: forecastIsUsable(forecast, districtCode, now),
+                forecast,
+              });
+            } catch (error) {
+              summary.errors += 1;
+              forecasts.set(districtCode, { ok: false, forecast: null });
+            }
           }
         }
+        if (deadlineHit) break;
 
         const entry = forecasts.get(districtCode);
         if (!entry.ok) { bump(summary, "FORECAST_UNAVAILABLE"); continue; }
 
         summary.evaluated += 1;
+        const evaluationResult = await safeBounded(() => evaluate({
+          user,
+          preferences,
+          forecast: entry.forecast,
+          districtCode,
+          now,
+          windowMs,
+          logger,
+        }), "evaluation");
+        if (evaluationResult.timedOut) { deadlineHit = true; break; }
         try {
-          const result = await evaluate({
-            user,
-            preferences,
-            forecast: entry.forecast,
-            districtCode,
-            now,
-            windowMs,
-            logger,
-          });
+          if (evaluationResult.error) throw evaluationResult.error;
+          const result = evaluationResult.value;
           if (result.created) summary.dryRunAlerts += 1;
           else bump(summary, result.reason || "NOT_CREATED");
         } catch (error) {

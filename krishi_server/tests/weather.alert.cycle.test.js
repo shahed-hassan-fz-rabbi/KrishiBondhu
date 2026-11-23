@@ -237,6 +237,44 @@ test("evaluation errors are counted, the lock is released, and the summary has n
   assert.equal(JSON.stringify(summary).includes("5678"), false);
 });
 
+function deferred() {
+  let resolve;
+  const promise = new Promise((res) => { resolve = res; });
+  return { promise, resolve };
+}
+
+function boundTimers() {
+  let callback = null;
+  return {
+    setTimeout(fn) { callback = fn; return 1; },
+    clearTimeout() { callback = null; },
+    expire() { const fn = callback; callback = null; fn?.(); },
+  };
+}
+
+test("a slow forecast is bounded by the deadline and cannot outlive the lock", async () => {
+  const lock = fakeLock();
+  const cycle = await makeCycle({ lock });
+  const timers = boundTimers();
+  const gate = deferred();
+  let forecastStarted;
+  const forecastStartedPromise = new Promise((resolve) => { forecastStarted = resolve; });
+  const running = cycle.run({
+    deadlineMs: 1000,
+    timers,
+    getForecast: () => { forecastStarted(); return gate.promise; },
+  });
+  await forecastStartedPromise;
+  await Promise.resolve(); await Promise.resolve();
+  timers.expire();
+  const summary = await running;
+
+  gate.resolve(forecast());
+  assert.equal(summary.stoppedEarly, "DEADLINE");
+  assert.equal(summary.evaluated, 0);
+  assert.equal(lock.state.released, 1);
+});
+
 test("a bounded deadline stops the cycle before the lock lease expires", async () => {
   const fixtures = ["u1", "u2", "u3"].map((id) => farmer({ id }));
   const lock = fakeLock();
