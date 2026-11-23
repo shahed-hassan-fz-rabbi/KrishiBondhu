@@ -59,7 +59,7 @@ export function BottomNav() {
                   strokeWidth={active ? 2.0 : 1.75}
                   aria-hidden="true"
                 />
-                <span className="max-w-[9ch] truncate">{t(key)}</span>
+                <span className="max-w-[14ch] truncate">{t(key)}</span>
               </Link>
             </li>
           );

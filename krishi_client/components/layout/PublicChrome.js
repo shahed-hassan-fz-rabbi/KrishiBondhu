@@ -234,7 +234,7 @@ export function PublicHeader() {
             href="/"
             onClick={(e) => handleNavClick(e, "/")}
             aria-current={isActive("/") ? "page" : undefined}
-            className={navClass("/")}
+            className={`kb-nav-link ${navClass("/")}`}
           >
             {t("common.home")}
           </Link>
@@ -246,7 +246,7 @@ export function PublicHeader() {
               aria-expanded={servicesOpen}
               aria-haspopup="true"
               onClick={() => setServicesOpen((v) => !v)}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs xl:text-sm font-medium transition-all duration-200 cursor-pointer ${
+              className={`kb-nav-link inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs xl:text-sm font-medium transition-all duration-200 cursor-pointer ${
                 servicesOpen || ["/crop-rotation", "/market", "/climate", "/map", "/assistant"].includes(pathname)
                   ? "bg-[#247A4B]/15 text-[#123D2A] font-bold dark:bg-emerald-950/60 dark:text-emerald-300"
                   : "text-muted hover:text-content hover:bg-surface-2"
@@ -298,7 +298,7 @@ export function PublicHeader() {
             href="/crop-rotation"
             onClick={(e) => handleNavClick(e, "/crop-rotation")}
             aria-current={isActive("/crop-rotation") ? "page" : undefined}
-            className={navClass("/crop-rotation")}
+            className={`kb-nav-link ${navClass("/crop-rotation")}`}
           >
             {t("publicHeader.cropRotation")}
           </Link>
@@ -307,7 +307,7 @@ export function PublicHeader() {
             href="/market"
             onClick={(e) => handleNavClick(e, "/market")}
             aria-current={isActive("/market") ? "page" : undefined}
-            className={navClass("/market")}
+            className={`kb-nav-link ${navClass("/market")}`}
           >
             {t("publicHeader.market")}
           </Link>
@@ -316,7 +316,7 @@ export function PublicHeader() {
             href="/climate"
             onClick={(e) => handleNavClick(e, "/climate")}
             aria-current={isActive("/climate") ? "page" : undefined}
-            className={navClass("/climate")}
+            className={`kb-nav-link ${navClass("/climate")}`}
           >
             {t("publicHeader.climateData")}
           </Link>
@@ -325,7 +325,7 @@ export function PublicHeader() {
             href="/#how-it-works"
             onClick={(e) => handleNavClick(e, "/#how-it-works")}
             aria-current={isActive("/#how-it-works") ? "location" : undefined}
-            className={navClass("/#how-it-works")}
+            className={`kb-nav-link ${navClass("/#how-it-works")}`}
           >
             {t("common.howItWorks")}
           </Link>
@@ -334,7 +334,7 @@ export function PublicHeader() {
             href="/#about"
             onClick={(e) => handleNavClick(e, "/#about")}
             aria-current={isActive("/#about") ? "location" : undefined}
-            className={navClass("/#about")}
+            className={`kb-nav-link ${navClass("/#about")}`}
           >
             {t("common.about")}
           </Link>
