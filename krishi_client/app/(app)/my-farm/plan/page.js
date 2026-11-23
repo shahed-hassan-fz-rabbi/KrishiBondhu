@@ -418,10 +418,6 @@ function CropPlanningPageContent() {
           <ArrowLeft className="h-4 w-4" />
           {t("myFarm.backToList")}
         </Link>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-forest-100 px-3 py-1 text-xs font-semibold text-forest-800 dark:bg-forest-950/60 dark:text-forest-300">
-          <Sparkles className="h-3.5 w-3.5 text-forest-600 dark:text-forest-400" />
-          BAMIS & NASA Grounded
-        </span>
       </div>
 
       {user && (
@@ -707,7 +703,7 @@ function CropPlanningPageContent() {
               aria-describedby={error ? "crop-planning-error" : undefined}
               className="inline-flex items-center gap-2 rounded-xl bg-forest-700 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-forest-800 focus:outline-none focus:ring-2 focus:ring-forest-500 focus:ring-offset-2 disabled:opacity-60 dark:bg-forest-600 dark:hover:bg-forest-500"
             >
-              {loading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {loading && <LoaderCircle className="h-4 w-4 animate-spin" />}
               {loading
                 ? t("myFarm.planning.analyzing")
                 : t("myFarm.planning.analyzeButton")}
