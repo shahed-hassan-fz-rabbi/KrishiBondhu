@@ -6,6 +6,7 @@ import {
 } from "./marketPriceAlertEngine.js";
 import { farmerLocationMatches } from "./marketPriceAlert.service.js";
 import { enqueueSmsAlert } from "./smsOutbox.service.js";
+import { MARKET_ALERT_POLICY } from "../../config/marketAlert.config.js";
 
 /**
  * Market price alert -> SMS outbox adapter (Part 3D.4G).
@@ -64,6 +65,9 @@ export async function evaluateFarmerMarketPriceAlertForOutbox({
     text: evaluation.alert.messageBn,
     dedupeKey,
     now,
+    // Revalidated at delivery time by the worker.
+    sourceObservedAt: evaluation.alert.observedOn || null,
+    freshnessMaxAgeMs: (MARKET_ALERT_POLICY.maxObservationAgeDays[evaluation.alert.frequency] || 7) * 86_400_000,
     ...(outboxModel ? { model: outboxModel } : {}),
   });
 

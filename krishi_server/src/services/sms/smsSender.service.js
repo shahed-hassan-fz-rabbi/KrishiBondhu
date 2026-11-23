@@ -1,5 +1,6 @@
 import { SmsNotificationLog } from "../../models/smsNotificationLog.model.js";
 import { hasSmsConsent, maskPhone, smsParts } from "./smsPreferences.js";
+import { extractVerifiedPhone } from "./smsRecipient.service.js";
 
 /**
  * Reusable, provider-agnostic SMS interface.
@@ -157,31 +158,56 @@ export async function sendSms({
   }
 
   // 4. Live adapter path (only reached with explicit SMS_LIVE activation).
+  // Re-derive the verified E164 number here; consent alone is not a recipient.
+  const recipient = extractVerifiedPhone(user, { now });
+  if (!recipient) {
+    const entry = createLogEntry({
+      ...base, status: "skipped", mode, attempts: 0, nextRetryAt: null,
+      lastError: "unverified_recipient", metadata: { reason: "recipient" },
+    });
+    const log = await persistLog(entry, logger);
+    return { status: "skipped", dryRun: mode !== "live", provider: entry.provider, parts, log, reason: "unverified_recipient" };
+  }
+
+  // An ambiguous submission (timeout/network/unknown HTTP) must never be
+  // retried automatically: the provider may already have accepted the SMS.
+  const isAmbiguous = (error) =>
+    ["provider_timeout", "provider_network_error", "provider_http_error", "unrecognised_provider_response"]
+      .includes(error);
+
   try {
-    const result = await gatewayAdapter.send({ to: user.phone, text, category, dedupeKey });
+    const result = await gatewayAdapter.send({ to: recipient.e164, text, category, dedupeKey });
     const ok = result?.ok === true;
+    const ambiguous = !ok && isAmbiguous(result?.error);
     const entry = createLogEntry({
       ...base,
       status: ok ? "sent" : "failed",
       mode: "live",
       attempts: 1,
-      nextRetryAt: ok ? null : new Date(now.getTime() + 15 * 60 * 1000),
-      lastError: ok ? null : (result?.error || "provider_error"),
-      metadata: { providerMessageId: result?.messageId || null },
+      nextRetryAt: null, // no automatic retry, including clear provider rejections
+      lastError: ok ? null : (ambiguous ? "ambiguous_submission_no_retry" : (result?.error || "provider_error")),
+      metadata: {
+        providerMessageId: result?.messageId || null,
+        providerStatus: result?.providerStatus || (ok ? "submitted" : null),
+        deliveryConfirmed: false,
+        ambiguous,
+        providerErrorCode: result?.responseCode || null,
+        maxAttempts,
+      },
     });
     const log = await persistLog(entry, logger);
-    return { status: ok ? "sent" : "failed", dryRun: false, provider: gatewayAdapter.name, parts, log };
+    return { status: ok ? "sent" : "failed", dryRun: false, provider: gatewayAdapter.name, parts, log, reason: ambiguous ? "ambiguous_submission_no_retry" : undefined };
   } catch (error) {
     const entry = createLogEntry({
       ...base,
       status: "failed",
       mode: "live",
       attempts: 1,
-      nextRetryAt: new Date(now.getTime() + 15 * 60 * 1000),
-      lastError: error?.message || "provider_exception",
-      metadata: { maxAttempts },
+      nextRetryAt: null,
+      lastError: "ambiguous_submission_no_retry",
+      metadata: { deliveryConfirmed: false, ambiguous: true, maxAttempts },
     });
     const log = await persistLog(entry, logger);
-    return { status: "failed", dryRun: false, provider: gatewayAdapter.name, parts, log, reason: "provider_error" };
+    return { status: "failed", dryRun: false, provider: gatewayAdapter.name, parts, log, reason: "ambiguous_submission_no_retry" };
   }
 }

@@ -143,6 +143,8 @@ export async function processSmsOutboxBatch({
   retryScheduler = scheduleOutboxRetry,
   retryBaseMs = DEFAULT_RETRY_BASE_MS,
   retryMaxMs = DEFAULT_RETRY_MAX_MS,
+  maxPerFarmerPerDay = 5,
+  globalDailyLimit = 200,
 } = {}) {
   const summary = {
     claimed: 0,
@@ -154,8 +156,10 @@ export async function processSmsOutboxBatch({
     errors: 0,
     retryScheduled: 0,
     retriesExhausted: 0,
+    limitSkipped: 0,
     refused: false,
     reason: null,
+    stoppedEarly: null,
     results: [],
   };
 
@@ -166,6 +170,25 @@ export async function processSmsOutboxBatch({
 
   const size = Math.max(1, Math.min(100, Number(limit) || DEFAULT_LIMIT));
   const seenIds = new Set();
+  const startOfDay = new Date(now.getTime());
+  startOfDay.setUTCHours(0, 0, 0, 0);
+
+  // Daily counters from the notification log. Only aggregate counts are used;
+  // no phone numbers or message bodies are read into memory here.
+  let globalCount = 0;
+  const farmerCounts = new Map();
+  try {
+    if (notificationLogModel?.aggregate) {
+      const rows = await notificationLogModel.aggregate([
+        { $match: { occurredAt: { $gte: startOfDay }, status: { $ne: "skipped" } } },
+        { $group: { _id: "$userId", count: { $sum: 1 } } },
+      ]);
+      for (const row of rows) {
+        globalCount += Number(row.count) || 0;
+        if (row._id) farmerCounts.set(String(row._id), Number(row.count) || 0);
+      }
+    }
+  } catch { /* fail closed to local in-batch counters only */ }
 
   for (let index = 0; index < size; index += 1) {
     let job;
@@ -200,6 +223,27 @@ export async function processSmsOutboxBatch({
         continue;
       }
 
+      // Delivery-time freshness: a queued alert whose source observation has
+      // expired must be cancelled, never simulated or sent.
+      if (job.expiresAt && new Date(job.expiresAt) <= now) {
+        const stale = await transitionOutboxStatus({
+          id: job._id, from: "processing", to: "cancelled", leaseOwner, now,
+          extra: {
+            lastError: "STALE_ALERT_AT_DELIVERY",
+            cancellationReason: "STALE_ALERT_AT_DELIVERY",
+            failureCategory: "permanent",
+            nextAttemptAt: null,
+          }, model,
+        });
+        if (stale.ok) {
+          summary.cancelled += 1;
+          summary.results.push(safeResult(job, "cancelled", "STALE_ALERT_AT_DELIVERY"));
+        } else {
+          summary.conflicts += 1;
+        }
+        continue;
+      }
+
       const [user, preferences] = await Promise.all([
         userModel.findById(job.userId).select("phone phoneVerifiedAt role preferredDistrict").lean(),
         preferencesModel.findOne({ userId: job.userId }).lean(),
@@ -231,6 +275,33 @@ export async function processSmsOutboxBatch({
         continue;
       }
 
+      // Per-farmer and global daily caps (aggregate counts only).
+      if (globalCount >= globalDailyLimit) {
+        summary.stoppedEarly = "GLOBAL_DAILY_LIMIT";
+        break;
+      }
+      const farmerKey = String(job.userId || "unknown");
+      const farmerCount = farmerCounts.get(farmerKey) || 0;
+      if (farmerCount >= maxPerFarmerPerDay) {
+        const limited = await transitionOutboxStatus({
+          id: job._id, from: "processing", to: "cancelled", leaseOwner, now,
+          extra: {
+            lastError: "FARMER_DAILY_LIMIT",
+            cancellationReason: "FARMER_DAILY_LIMIT",
+            failureCategory: "permanent",
+            nextAttemptAt: null,
+          }, model,
+        });
+        if (limited.ok) {
+          summary.cancelled += 1;
+          summary.limitSkipped += 1;
+          summary.results.push(safeResult(job, "cancelled", "FARMER_DAILY_LIMIT"));
+        } else {
+          summary.conflicts += 1;
+        }
+        continue;
+      }
+
       const simulated = simulateDryRun({ job, now });
       const done = await transitionOutboxStatus({
         id: job._id, from: "processing", to: "dry_run", leaseOwner, now,
@@ -245,6 +316,8 @@ export async function processSmsOutboxBatch({
       if (!done.ok) { summary.conflicts += 1; continue; }
 
       await recordDryRunLog({ job, check: { ...check, phoneLast4: job.phoneLast4 }, now, notificationLogModel });
+      globalCount += 1;
+      farmerCounts.set(farmerKey, farmerCount + 1);
       summary.dryRuns += 1;
       summary.processed += 1;
       summary.results.push(safeResult(job, "dry_run", "DRY_RUN_RECORDED"));

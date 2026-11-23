@@ -50,8 +50,17 @@ const smsOutboxSchema = new mongoose.Schema(
     dedupeKey: { type: String, trim: true, required: true, maxlength: 240 },
     /** Integrity reference. Never a credential or a phone number. */
     messageRef: { type: String, required: true, maxlength: 64 },
-    /** Protected content: excluded from default queries, logs and API views. */
+    /**
+     * Protected content: excluded from default queries, logs and API views.
+     * PRODUCTION REQUIREMENT: this field is plaintext at rest. Before enabling
+     * live delivery, enforce field-level encryption (KMS), encrypted storage,
+     * a retention TTL, and strict read auditing for the delivery worker.
+     */
     message: { type: String, select: false, maxlength: 2000 },
+    /** Source observation time and delivery-time freshness deadline. */
+    sourceObservedAt: { type: Date, default: null },
+    freshnessMaxAgeMs: { type: Number, min: 0, default: null },
+    expiresAt: { type: Date, default: null },
     parts: { type: Number, min: 0, default: 0 },
     status: {
       type: String,

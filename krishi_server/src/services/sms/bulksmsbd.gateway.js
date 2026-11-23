@@ -55,13 +55,22 @@ export function parseBulkSmsBdResponse(body) {
   }
   const code = Number(parsed?.response_code ?? parsed?.responseCode ?? NaN);
   if (code === BULKSMSBD_SUCCESS_CODE) {
-    return { ok: true, responseCode: code, messageId: parsed?.response_id || parsed?.responseId || null };
+    return {
+      ok: true,
+      responseCode: code,
+      messageId: parsed?.response_id || parsed?.responseId || null,
+      // 202 means ACCEPTED/SUBMITTED — not a confirmed handset delivery.
+      providerStatus: "submitted",
+      deliveryConfirmed: false,
+    };
   }
   if (Number.isFinite(code)) {
     return { ok: false, responseCode: code, error: ERROR_CODES[code] || "provider_rejected" };
   }
   const message = String(parsed?.response_message || parsed?.message || "").toLowerCase();
-  if (message.includes("success") || message.includes("submitted")) return { ok: true, responseCode: null, messageId: null };
+  if (message.includes("success") || message.includes("submitted")) {
+    return { ok: true, responseCode: null, messageId: null, providerStatus: "submitted", deliveryConfirmed: false };
+  }
   return { ok: false, error: "unrecognised_provider_response" };
 }
 
@@ -81,6 +90,9 @@ export function createBulkSmsBdGateway({ config = readBulkSmsBdConfig(), fetchIm
       // Defensive: the adapter itself must never be called from dry-run paths.
       if (!config.live) return { ok: false, error: "live_mode_disabled" };
       if (!to || !text) return { ok: false, error: "missing_recipient_or_message" };
+      // Provider format: 8801XXXXXXXXX (no '+', exactly 11 digits).
+      if (!/^8801[3-9]\d{8}$/.test(String(to))) return { ok: false, error: "invalid_provider_number" };
+      if (!/^[A-Za-z0-9]{1,20}$/.test(String(config.senderId))) return { ok: false, error: "invalid_sender_id" };
 
       const params = new URLSearchParams({
         api_key: config.apiKey,

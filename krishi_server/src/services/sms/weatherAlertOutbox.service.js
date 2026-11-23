@@ -3,6 +3,7 @@ import { assertPhoneVerified } from "./smsSubscription.service.js";
 import {
   evaluateWeatherForecast,
   buildWeatherDedupeKey,
+  WEATHER_ALERT_MAX_AGE_MS,
 } from "./weatherAlertEngine.js";
 import { enqueueSmsAlert } from "./smsOutbox.service.js";
 
@@ -51,6 +52,9 @@ export async function evaluateFarmerWeatherAlertForOutbox({
     text: evaluation.alert.messageBn,
     dedupeKey,
     now,
+    // Revalidated at delivery time by the worker.
+    sourceObservedAt: forecast?.meta?.fetchTimestamp || null,
+    freshnessMaxAgeMs: WEATHER_ALERT_MAX_AGE_MS,
     ...(outboxModel ? { model: outboxModel } : {}),
   });
 

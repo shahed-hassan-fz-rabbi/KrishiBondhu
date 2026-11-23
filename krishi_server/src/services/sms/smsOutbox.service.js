@@ -58,6 +58,8 @@ export async function enqueueSmsAlert({
   text = "",
   dedupeKey = "",
   now = new Date(),
+  sourceObservedAt = null,
+  freshnessMaxAgeMs = null,
   model = SmsOutbox,
 } = {}) {
   const validation = revalidateForDelivery({ user, preferences, category, now });
@@ -80,6 +82,11 @@ export async function enqueueSmsAlert({
       messageRef,
       message: text,
       parts: smsParts(text),
+      sourceObservedAt: sourceObservedAt ? new Date(sourceObservedAt) : null,
+      freshnessMaxAgeMs: Number.isFinite(freshnessMaxAgeMs) ? freshnessMaxAgeMs : null,
+      expiresAt: sourceObservedAt && Number.isFinite(freshnessMaxAgeMs)
+        ? new Date(new Date(sourceObservedAt).getTime() + freshnessMaxAgeMs)
+        : null,
       status: "pending",
       attempts: 0,
       phoneLast4: validation.phoneLast4,

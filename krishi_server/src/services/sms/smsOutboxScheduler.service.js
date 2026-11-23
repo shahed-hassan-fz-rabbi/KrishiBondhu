@@ -61,7 +61,16 @@ export function toSafeOutboxSummary(summary = {}) {
   const skipped = Number.isFinite(summary.skipped)
     ? Number(summary.skipped)
     : Math.max(0, claimed - processed - cancelled - failed - retryScheduled);
-  return { processed, dryRun, cancelled, failed, retryScheduled, skipped };
+  return {
+    processed,
+    dryRun,
+    cancelled,
+    failed,
+    retryScheduled,
+    skipped,
+    ...(summary.limitSkipped !== undefined ? { limitSkipped: Number(summary.limitSkipped) || 0 } : {}),
+    ...(summary.stoppedEarly ? { stoppedEarly: summary.stoppedEarly } : {}),
+  };
 }
 
 function toSafeError(error) {
