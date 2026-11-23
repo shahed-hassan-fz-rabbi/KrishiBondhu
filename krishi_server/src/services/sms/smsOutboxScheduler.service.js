@@ -68,6 +68,8 @@ export function toSafeOutboxSummary(summary = {}) {
     failed,
     retryScheduled,
     skipped,
+    ...(summary.liveSubmissions !== undefined ? { liveSubmissions: Number(summary.liveSubmissions) || 0 } : {}),
+    ...(summary.ambiguousSubmissions !== undefined ? { ambiguousSubmissions: Number(summary.ambiguousSubmissions) || 0 } : {}),
     ...(summary.limitSkipped !== undefined ? { limitSkipped: Number(summary.limitSkipped) || 0 } : {}),
     ...(summary.stoppedEarly ? { stoppedEarly: summary.stoppedEarly } : {}),
   };

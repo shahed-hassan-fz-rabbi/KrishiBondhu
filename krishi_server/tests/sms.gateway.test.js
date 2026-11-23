@@ -179,7 +179,7 @@ test("consent and duplicate protection remain intact with a live adapter", async
 
   const prefs = updateCategoryConsent(null, "market", true, { now: NOW });
   const first = await sendSms({ user: USER, preferences: prefs, text: "test", category: "market", dedupeKey: "d1", now: NOW, logger });
-  assert.equal(first.status, "sent");
+  assert.equal(first.status, "submitted");
   assert.equal(calls, 1);
   resetSmsGatewayForTests();
 });

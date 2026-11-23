@@ -16,7 +16,9 @@ const smsNotificationLogSchema = new mongoose.Schema(
     dedupeKey: { type: String, default: null, index: true },
     status: {
       type: String,
-      enum: ["dry_run", "sent", "failed", "skipped", "queued"],
+      // `submitted` means the provider accepted the request; `sent` is reserved
+  // for confirmed handset delivery (not available without a DLR webhook).
+  enum: ["dry_run", "submitted", "sent", "failed", "skipped", "queued", "cancelled"],
       required: true,
     },
     mode: { type: String, enum: ["dry_run", "live"], default: "dry_run" },

@@ -84,7 +84,7 @@ test("live-test job uses Alpha wiring and reports provider + request id", async 
     configureGateway: () => wired,
     models: fakes.models,
     send: async () => ({
-      status: "sent",
+      status: "submitted",
       log: { metadata: { providerStatus: "submitted", providerRequestId: 77, ambiguous: false } },
     }),
   });

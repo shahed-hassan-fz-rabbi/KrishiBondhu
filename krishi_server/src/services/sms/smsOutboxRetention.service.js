@@ -16,7 +16,7 @@ export async function applySmsRetention({
   const days = Math.max(1, Math.min(3650, Number(retentionDays) || DEFAULT_RETENTION_DAYS));
   const cutoff = new Date(now.getTime() - days * 86_400_000);
   const jobFilter = { status: { $in: [...TERMINAL_OUTBOX_STATUSES] }, createdAt: { $lt: cutoff } };
-  const logFilter = { createdAt: { $lt: cutoff }, status: { $in: ["dry_run", "sent", "failed", "skipped", "cancelled"] } };
+  const logFilter = { createdAt: { $lt: cutoff }, status: { $in: ["dry_run", "submitted", "sent", "failed", "skipped", "cancelled"] } };
 
   const report = {
     cutoff: cutoff.toISOString(),

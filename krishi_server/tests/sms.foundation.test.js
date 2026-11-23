@@ -188,7 +188,7 @@ test("a registered gateway is reserved for future parts", async () => {
   const logger = memoryLogger();
   const prefs = updateCategoryConsent(null, "weather", true, { now: NOW });
   const result = await sendSms({ user: USER, preferences: prefs, text: "Test", category: "weather", now: NOW, logger });
-  assert.equal(result.status, "sent");
+  assert.equal(result.status, "submitted");
   assert.equal(called, 1);
   resetSmsGatewayForTests();
 });

@@ -181,7 +181,7 @@ export async function sendSms({
     const ambiguous = !ok && isAmbiguous(result?.error);
     const entry = createLogEntry({
       ...base,
-      status: ok ? "sent" : "failed",
+      status: ok ? "submitted" : "failed",
       mode: "live",
       attempts: 1,
       nextRetryAt: null, // no automatic retry, including clear provider rejections
@@ -197,7 +197,7 @@ export async function sendSms({
       },
     });
     const log = await persistLog(entry, logger);
-    return { status: ok ? "sent" : "failed", dryRun: false, provider: gatewayAdapter.name, parts, log, reason: ambiguous ? "ambiguous_submission_no_retry" : undefined };
+    return { status: ok ? "submitted" : "failed", dryRun: false, provider: gatewayAdapter.name, parts, log, reason: ambiguous ? "ambiguous_submission_no_retry" : undefined };
   } catch (error) {
     const entry = createLogEntry({
       ...base,

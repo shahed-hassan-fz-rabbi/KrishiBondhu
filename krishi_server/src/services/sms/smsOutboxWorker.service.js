@@ -12,7 +12,9 @@ import {
   reserveSmsQuota as defaultReserveQuota,
   releaseSmsQuota,
 } from "./smsOutboxQuota.service.js";
-import { isSmsLiveEnabled } from "./smsSender.service.js";
+import { isSmsLiveEnabled, sendSms, getSmsMode } from "./smsSender.service.js";
+import { configureSmsGatewayFromEnv } from "./configureSmsGateway.js";
+import { readSmsOutboxLiveConfig } from "../../config/smsOutboxLive.config.js";
 import {
   revalidateForDelivery,
   transitionOutboxStatus,
@@ -25,19 +27,17 @@ import {
 } from "./smsOutboxRetry.service.js";
 
 /**
- * Safe dry-run outbox worker (Part 3D.4B).
- *
- * This worker NEVER contacts an SMS gateway. It atomically claims pending (or
- * expired-lease) jobs, revalidates consent/phone, then records a dry-run
- * outcome in a terminal `dry_run` state. Temporary failures only get a
- * nextAttemptAt timestamp (no timers, scheduler or webhook); every attempt
- * revalidates consent and recipient.
+ * Safe outbox worker. Default mode is DRY-RUN and never contacts a gateway.
+ * Live delivery is possible only when BOTH SMS_LIVE=1 and
+ * SMS_OUTBOX_LIVE_ENABLED=1 are set in the same process and no scheduler flag
+ * is active. Even then, every safety gate still applies and an accepted
+ * provider submission is recorded as `submitted`, never `delivered`.
  */
 
 const DEFAULT_LEASE_TTL_MS = 5 * 60 * 1000;
 const DEFAULT_LIMIT = 20;
 
-/** Refuse to run unless SMS_LIVE=0 and no live gateway is active. */
+/** Legacy guard retained: strictly refuses any live mode. */
 export function assertDryRunOnly({
   envConfig = env,
   liveEnabled = null,
@@ -49,6 +49,26 @@ export function assertDryRunOnly({
     return { ok: false, reason: "LIVE_SMS_ENABLED" };
   }
   return { ok: true };
+}
+
+/** New explicit gate: dry-run by default; live requires both flags + no schedulers. */
+export function assertDeliveryMode({
+  rawEnv = process.env,
+  liveConfig = null,
+  liveEnabled = null,
+} = {}) {
+  const config = liveConfig || readSmsOutboxLiveConfig(rawEnv);
+  if (config.mode === "live") {
+    if (liveEnabled === false) return { ok: false, mode: "live", reason: "LIVE_DISABLED_BY_CALLER" };
+    return { ok: true, mode: "live" };
+  }
+  // Any live signal without the full explicit gate is an error, never a
+  // silent fall back to dry-run.
+  const rawLive = String(rawEnv.SMS_LIVE || "").trim() === "1" || isSmsLiveEnabled();
+  if (rawLive || config.reasons.length) {
+    return { ok: false, mode: "dry_run", reason: config.reasons[0] || "LIVE_SMS_ENABLED" };
+  }
+  return { ok: true, mode: "dry_run" };
 }
 
 /** Atomic claim: pending jobs, or processing jobs whose lease has expired. */
@@ -158,11 +178,18 @@ export async function processSmsOutboxBatch({
   requireEncryption,
   quotaModel,
   reserveQuota = defaultReserveQuota,
+  rawEnv = process.env,
+  liveConfig,
+  deliveryMode,
+  configureGateway = configureSmsGatewayFromEnv,
+  send = sendSms,
 } = {}) {
   const summary = {
     claimed: 0,
     processed: 0,
     dryRuns: 0,
+    liveSubmissions: 0,
+    ambiguousSubmissions: 0,
     cancelled: 0,
     failed: 0,
     conflicts: 0,
@@ -176,9 +203,23 @@ export async function processSmsOutboxBatch({
     results: [],
   };
 
-  const guard = dryRunGuard || assertDryRunOnly({ envConfig, liveEnabled });
+  const guard = dryRunGuard || (deliveryMode
+    ? { ok: true, mode: deliveryMode }
+    : assertDeliveryMode({ rawEnv, liveConfig, liveEnabled }));
   if (!guard.ok) {
     return { ...summary, refused: true, reason: guard.reason };
+  }
+  const mode = guard.mode || "dry_run";
+  summary.mode = mode;
+
+  if (mode === "live") {
+    const cryptoCheck = encryptionRequirement({ envConfig, requireEncryption: true });
+    if (!cryptoCheck.ok) return { ...summary, refused: true, reason: cryptoCheck.reason };
+    const wired = configureGateway();
+    if (!wired.registered || getSmsMode() !== "live") {
+      return { ...summary, refused: true, reason: "GATEWAY_NOT_LIVE" };
+    }
+    summary.provider = wired.name;
   }
 
   const size = Math.max(1, Math.min(100, Number(limit) || DEFAULT_LIMIT));
@@ -222,13 +263,14 @@ export async function processSmsOutboxBatch({
     try {
       // Reject tampered content before any simulated delivery. Legacy
       // plaintext is never exposed; it is blocked outright in live mode.
-      const cryptoCheck = encryptionRequirement({ requireEncryption });
+      const cryptoCheck = encryptionRequirement({ envConfig, requireEncryption });
       let actualRef = null;
+      let plainText = null;
       let legacyPlaintext = false;
       if (job.messageProtected && job.messageAlgorithm === MESSAGE_ALGORITHM) {
         try {
-          const plain = decryptOutboxMessage(job.message, { key: encryptionKey });
-          actualRef = outboxMessageRef({ dedupeKey: job.dedupeKey, text: plain });
+          plainText = decryptOutboxMessage(job.message, { key: encryptionKey });
+          actualRef = outboxMessageRef({ dedupeKey: job.dedupeKey, text: plainText });
         } catch {
           actualRef = null;
         }
@@ -236,9 +278,10 @@ export async function processSmsOutboxBatch({
         actualRef = null;
       } else {
         legacyPlaintext = true;
-        actualRef = outboxMessageRef({ dedupeKey: job.dedupeKey, text: job.message || "" });
+        plainText = job.message || "";
+        actualRef = outboxMessageRef({ dedupeKey: job.dedupeKey, text: plainText });
       }
-      if (legacyPlaintext && !cryptoCheck.ok) {
+      if (legacyPlaintext && (mode === "live" || !cryptoCheck.ok)) {
         const blocked = await transitionOutboxStatus({
           id: job._id, from: "processing", to: "cancelled", leaseOwner, now,
           extra: {
@@ -372,6 +415,73 @@ export async function processSmsOutboxBatch({
           summary.results.push(safeResult(job, "cancelled", reservation.reason));
         } else {
           summary.conflicts += 1;
+        }
+        continue;
+      }
+
+      if (mode === "live") {
+        // Live path: the sender rechecks consent/phone and enforces its own
+        // dedupe. Accepted submissions are terminal `submitted`, never "delivered".
+        let result;
+        try {
+          result = await send({
+            user,
+            preferences,
+            text: plainText,
+            category: job.category,
+            dedupeKey: job.dedupeKey,
+            now,
+            logger: notificationLogModel,
+          });
+        } catch {
+          result = { status: "failed", reason: "provider_exception" };
+        }
+
+        if (["duplicate", "no_consent", "unverified_recipient"].includes(result.reason)) {
+          const cancelled = await transitionOutboxStatus({
+            id: job._id, from: "processing", to: "cancelled", leaseOwner, now,
+            extra: {
+              lastError: result.reason,
+              cancellationReason: result.reason,
+              failureCategory: "permanent",
+              nextAttemptAt: null,
+            }, model,
+          });
+          if (cancelled.ok) {
+            summary.cancelled += 1;
+            summary.results.push(safeResult(job, "cancelled", result.reason));
+          } else {
+            summary.conflicts += 1;
+          }
+          continue;
+        }
+
+        const accepted = result.status === "submitted" || result.status === "sent";
+        const ambiguous = result.reason === "ambiguous_submission_no_retry";
+        const toStatus = accepted ? "submitted" : "failed";
+        const done = await transitionOutboxStatus({
+          id: job._id, from: "processing", to: toStatus, leaseOwner, now,
+          extra: {
+            lastError: accepted ? null : (result.reason || "provider_rejected"),
+            provider: summary.provider || null,
+            providerRequestId: result.log?.metadata?.providerRequestId || result.requestId || null,
+            providerStatus: result.log?.metadata?.providerStatus || (accepted ? "submitted" : null),
+            deliveryConfirmed: false,
+            ambiguous,
+            nextAttemptAt: null,
+          }, model,
+        });
+        if (!done.ok) { summary.conflicts += 1; continue; }
+        globalCount += 1;
+        farmerCounts.set(farmerKey, farmerCount + 1);
+        summary.processed += 1;
+        if (accepted) {
+          summary.liveSubmissions += 1;
+          summary.results.push(safeResult(job, "submitted", "PROVIDER_ACCEPTED"));
+        } else {
+          summary.failed += 1;
+          if (ambiguous) summary.ambiguousSubmissions += 1;
+          summary.results.push(safeResult(job, "failed", result.reason || "provider_rejected"));
         }
         continue;
       }

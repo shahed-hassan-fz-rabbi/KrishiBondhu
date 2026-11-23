@@ -96,6 +96,12 @@ const smsOutboxSchema = new mongoose.Schema(
     dryRunAt: { type: Date, default: null },
     dryRunProvider: { type: String, default: null },
     dryRunNote: { type: String, default: null },
+    /** Live-provider audit fields. Submitted != delivered. */
+    provider: { type: String, default: null },
+    providerStatus: { type: String, default: null },
+    providerRequestId: { type: String, default: null },
+    deliveryConfirmed: { type: Boolean, default: false },
+    ambiguous: { type: Boolean, default: false },
     failedAt: { type: Date, default: null },
     cancelledAt: { type: Date, default: null },
     /** Reserved for a future worker; never used for live sending in this part. */
