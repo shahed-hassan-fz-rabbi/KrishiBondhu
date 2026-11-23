@@ -49,8 +49,12 @@ export function BondhuMascot({ className = "", state = "idle", facing = 1, activ
     const onPointerMove = (event) => {
       if (!host) return;
       const rect = host.getBoundingClientRect();
-      gazeTarget.x = Math.max(-1, Math.min(1, (event.clientX - (rect.left + rect.width / 2)) / Math.max(1, window.innerWidth * 0.6)));
-      gazeTarget.y = Math.max(-1, Math.min(1, ((rect.top + rect.height / 2) - event.clientY) / Math.max(1, window.innerHeight * 0.6)));
+      const hostCenterX = rect.left + rect.width / 2;
+      const hostCenterY = rect.top + rect.height / 2;
+      const dx = (event.clientX - hostCenterX) / Math.max(160, window.innerWidth * 0.42);
+      const dy = (hostCenterY - event.clientY) / Math.max(160, window.innerHeight * 0.42);
+      gazeTarget.x = Math.max(-1, Math.min(1, dx));
+      gazeTarget.y = Math.max(-1, Math.min(1, dy));
     };
     const onPointerOut = (event) => { if (!event.relatedTarget) { gazeTarget.x = 0; gazeTarget.y = 0; } };
 
@@ -106,13 +110,34 @@ export function BondhuMascot({ className = "", state = "idle", facing = 1, activ
       root.rotation.x += ((flying ? -0.1 : 0) - root.rotation.x) * ease(6);
       root.rotation.y += ((flying ? facingRef.current * 0.24 : 0) - root.rotation.y) * ease(6);
       parts.body.scale.y = 1 + breath;
-      parts.head.rotation.z += (pose.headTilt - parts.head.rotation.z) * ease(8);
-      parts.head.rotation.x += ((-gazeTarget.y * 0.075) - parts.head.rotation.x) * ease(5);
-      parts.head.rotation.y += ((gazeTarget.x * 0.13) - parts.head.rotation.y) * ease(5);
+      // Expressive head and cursor orientation
+      const targetLookY = (gazeTarget.x * 0.42);
+      const targetLookX = (-gazeTarget.y * 0.26);
+      const targetTiltZ = pose.headTilt + (gazeTarget.x * 0.08);
+      parts.head.rotation.z += (targetTiltZ - parts.head.rotation.z) * ease(8);
+      parts.head.rotation.x += (targetLookX - parts.head.rotation.x) * ease(6);
+      parts.head.rotation.y += (targetLookY - parts.head.rotation.y) * ease(6);
+
+      // Subtle torso posture tracks cursor direction
+      parts.body.rotation.y += ((gazeTarget.x * 0.14) - parts.body.rotation.y) * ease(5);
+      parts.body.rotation.x += ((-gazeTarget.y * 0.08) - parts.body.rotation.x) * ease(5);
+
+      // Pupils track cursor with lifelike depth
       parts.gaze.forEach((gaze) => {
-        gaze.position.x += (gazeTarget.x * 0.035 - gaze.position.x) * ease(12);
-        gaze.position.y += (gazeTarget.y * 0.028 - gaze.position.y) * ease(12);
+        gaze.position.x += (gazeTarget.x * 0.045 - gaze.position.x) * ease(14);
+        gaze.position.y += (gazeTarget.y * 0.038 - gaze.position.y) * ease(14);
       });
+
+      // Animated dragon ear-fins twitch and perk up
+      if (parts.ears && parts.ears.length) {
+        parts.ears.forEach((ear, idx) => {
+          const side = idx === 0 ? -1 : 1;
+          const twitch = reduced ? 0 : (Math.sin(seconds * 3.2 + idx * 1.8) > 0.88 ? Math.sin(seconds * 22) * 0.14 : 0);
+          const earPerk = pose.state === "listening" || Math.abs(gazeTarget.x) > 0.4 ? 0.18 : 0;
+          const targetRotZ = side * (0.24 + earPerk) + twitch;
+          ear.rotation.z += (targetRotZ - ear.rotation.z) * ease(10);
+        });
+      }
       parts.tail.rotation.y += (pose.tailSway - parts.tail.rotation.y) * ease(6);
       parts.wings.forEach((wing, index) => {
         const direction = index === 0 ? -1 : 1;

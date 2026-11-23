@@ -440,6 +440,9 @@
 .kb-mini-guide[style] { position:fixed; z-index:85; }
 .kb-mini-launcher { touch-action:none; }
 .kb-mini-launcher { pointer-events:auto!important; }
+.kb-mini-launcher:not(.is-hidden) { pointer-events:none!important; }
+.kb-mini-hit-area { position:absolute; inset:0; z-index:2; display:block; clip-path:polygon(50% 0,64% 2%,77% 8%,86% 17%,91% 19%,96% 28%,100% 37%,90% 44%,87% 52%,97% 58%,99% 67%,87% 73%,82% 85%,72% 95%,59% 100%,41% 100%,28% 95%,18% 85%,13% 73%,1% 67%,3% 58%,13% 52%,10% 44%,0 37%,4% 28%,9% 19%,14% 17%,23% 8%,36% 2%); background:transparent; pointer-events:auto; }
+.kb-mini-launcher.is-hidden .kb-mini-hit-area { display:none; }
 .kb-mini-launcher.is-hidden { width:auto; height:44px; min-height:44px; border:1px solid #b4c9a9; border-radius:999px; background:#f9f5e9; padding:4px 12px; color:#155447; box-shadow:0 6px 18px #153d3a20; font-size:12px; }
 .kb-mini-launcher.is-hidden .kb-mini-face { display:none; }
 .kb-mini-launcher>span { position:absolute; right:3px; bottom:4px; border:1px solid #dce7d7; border-radius:999px; background:#fffaf0ed; padding:4px 8px; color:#245c42; font-size:10px; font-weight:750; box-shadow:0 3px 10px #183b2918; }
@@ -478,6 +481,12 @@
 .kb-mini-bubble-body { padding:3px 15px 14px; }
 .kb-mini-bubble-body h2 { margin:0 0 6px; color:#173b2a; font-size:16px; line-height:1.3; letter-spacing:-.025em; }
 .kb-mini-bubble-body>p:not(.kb-mini-step) { margin:0; color:#52675b; font-size:12px; line-height:1.65; }
+.kb-mini-audio-bar { display:flex; align-items:center; gap:8px; margin-top:8px; }
+.kb-mini-voice-btn { display:inline-flex; align-items:center; gap:6px; min-height:30px; padding:3px 10px; border-radius:8px; border:1px solid #b8dac7; background:#eef8f2; color:#176447; font-size:11px; font-weight:700; cursor:pointer; transition:all .15s ease; }
+.kb-mini-voice-btn:hover { background:#dcf2e4; border-color:#8ccb9e; }
+.kb-mini-voice-btn.is-speaking { background:#247a4b; color:#fff; border-color:#175f3a; animation:kb-guide-voice-pulse 1.4s infinite ease-in-out; }
+.kb-mini-listen-btn.is-speaking { background:#247a4b!important; color:#fff!important; border-color:#175f3a!important; animation:kb-guide-voice-pulse 1.4s infinite ease-in-out; }
+@keyframes kb-guide-voice-pulse { 0%, 100% { transform:scale(1); } 50% { transform:scale(1.05); } }
 .kb-mini-primary { min-height:38px; border-radius:11px; font-size:11px; }
 .kb-mini-start { margin-top:10px; }
 .kb-mini-tour-actions { gap:5px; margin-top:10px; }
@@ -508,6 +517,9 @@
 .dark .kb-mini-more>summary { color:#c2d0c2; }
 .dark .kb-mini-places nav button { border-color:#35554d; background:#1c443c; color:#d1ded1; }
 .dark .kb-mini-places nav button:hover,.dark .kb-mini-places nav button[aria-current="page"] { border-color:#629276; background:#285444; }
+.dark .kb-mini-voice-btn { border-color:#35554d; background:#1c453c; color:#a3dfbf; }
+.dark .kb-mini-voice-btn:hover { background:#25574c; }
+.dark .kb-mini-voice-btn.is-speaking { background:#349666; color:#fff; }
 .dark .kb-mini-ask { background:#22483f; color:#d6e8d7; }
 .kb-cat-actions { position:absolute; z-index:3; top:calc(7% + 128px); right:-1%; display:grid; gap:7px; width:min(235px,65%); }
 .kb-cat-actions button,.kb-cat-actions a { display:inline-flex; min-height:36px; align-items:center; justify-content:center; border:1px solid #efe6d5; border-radius:11px; background:#fffaf0; padding:7px 10px; color:#24584a; font:inherit; font-size:11px; font-weight:700; line-height:1.3; text-align:center; text-decoration:none; cursor:pointer; }
@@ -522,6 +534,9 @@
 .dark .kb-mini-places { border-color:#35554d; }
 .dark .kb-mini-places nav button { border-color:#35554d; background:#1c443c; color:#d1ded1; }
 .dark .kb-mini-places nav button:hover,.dark .kb-mini-places nav button[aria-current="page"] { border-color:#629276; background:#285444; }
+.dark .kb-mini-voice-btn { border-color:#35554d; background:#1c453c; color:#a3dfbf; }
+.dark .kb-mini-voice-btn:hover { background:#25574c; }
+.dark .kb-mini-voice-btn.is-speaking { background:#349666; color:#fff; }
 .dark .kb-mini-ask { background:#22483f; color:#d6e8d7; }
 @media(max-width:760px) {
   .kb-mini-guide { right:8px; bottom:calc(76px + env(safe-area-inset-bottom)); gap:9px; }

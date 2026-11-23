@@ -2,21 +2,22 @@
 export function createBondhuModel(THREE) {
   const root = new THREE.Group();
   root.name = "Bondhu";
-  const parts = { root, eyes: [], lids: [], gaze: [], wings: [], arms: [], mouth: null, tail: null };
+  const parts = { root, eyes: [], lids: [], gaze: [], wings: [], arms: [], mouth: null, tail: null, ears: [], spines: [] };
 
-  const green = new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.76, metalness: 0, clearcoat: 0.015, clearcoatRoughness: 0.9 });
+  const green = new THREE.MeshPhysicalMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.76, metalness: 0.04, clearcoat: 0.04, clearcoatRoughness: 0.85, sheen: 0.22, sheenColor: 0x9be8b0 });
   const greenLight = new THREE.MeshStandardMaterial({ color: 0x67ae7b, roughness: 0.78 });
   const headSkin = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.79 });
   const greenDeep = new THREE.MeshStandardMaterial({ color: 0x245c43, roughness: 0.82 });
   const scaleGreen = new THREE.MeshStandardMaterial({ color: 0x79b982, roughness: 0.83 });
   const belly = new THREE.MeshStandardMaterial({ color: 0xf3e4c2, roughness: 0.84 });
-  const sclera = new THREE.MeshStandardMaterial({ color: 0xfffdf7, roughness: 0.3 });
-  const iris = new THREE.MeshStandardMaterial({ color: 0x397b61, roughness: 0.42 });
-  const pupil = new THREE.MeshStandardMaterial({ color: 0x172c27, roughness: 0.3 });
+  const sclera = new THREE.MeshStandardMaterial({ color: 0xfffdf7, roughness: 0.28 });
+  const iris = new THREE.MeshStandardMaterial({ color: 0x2d7557, roughness: 0.38 });
+  const pupil = new THREE.MeshStandardMaterial({ color: 0x11211d, roughness: 0.25 });
   const shine = new THREE.MeshBasicMaterial({ color: 0xffffff });
   const mouthMat = new THREE.MeshStandardMaterial({ color: 0x693e43, roughness: 0.8 });
   const nostrilMat = new THREE.MeshStandardMaterial({ color: 0x20553e, roughness: 0.8 });
-  const blushMat = new THREE.MeshStandardMaterial({ color: 0xd9897a, roughness: 0.9, transparent: true, opacity: 0.42 });
+  const blushMat = new THREE.MeshStandardMaterial({ color: 0xd9897a, roughness: 0.9, transparent: true, opacity: 0.45 });
+  const spineMat = new THREE.MeshStandardMaterial({ color: 0xd99631, roughness: 0.65, metalness: 0.06 });
   const sphere = new THREE.SphereGeometry(1, 40, 28);
 
   const ball = (material, size, position, parent = root, name = "") => {
@@ -78,6 +79,23 @@ export function createBondhuModel(THREE) {
     tube([[-half, y, 0.538], [0, y - 0.018, 0.553], [half, y, 0.538]], 0.007, new THREE.MeshStandardMaterial({ color: 0xe2cda7, roughness: 0.92 }), body, 12, 6);
   }
 
+  // Graduated golden dragon spine plates along the back
+  const spineSpecs = [
+    [0, 0.52, -0.44, 0.065, 0.1],
+    [0, 0.22, -0.5, 0.08, 0.13],
+    [0, -0.06, -0.53, 0.09, 0.14],
+    [0, -0.32, -0.5, 0.08, 0.12],
+    [0, -0.56, -0.44, 0.065, 0.09],
+  ];
+  for (const [sx, sy, sz, radius, height] of spineSpecs) {
+    const spine = new THREE.Mesh(new THREE.ConeGeometry(radius, height, 4), spineMat);
+    spine.position.set(sx, sy, sz);
+    spine.rotation.x = -Math.PI / 2.2;
+    spine.rotation.y = Math.PI / 4;
+    body.add(spine);
+    parts.spines.push(spine);
+  }
+
   const head = new THREE.Group(); head.position.set(0, 0.66, 0.02); root.add(head); parts.head = head;
   // Deformed UV sphere blends forehead, cheeks and short muzzle into one smooth head shell.
   const headGeometry = new THREE.SphereGeometry(1, 80, 56);
@@ -102,7 +120,7 @@ export function createBondhuModel(THREE) {
   headGeometry.computeVertexNormals();
   const headMesh = new THREE.Mesh(headGeometry, headSkin); headMesh.name = "sculpted-head-and-muzzle"; head.add(headMesh);
 
-  // Soft brows and small horns preserve Bondhu's recognizable friendly silhouette.
+  // Soft brows, small horns and lively dragon ear fins preserve Bondhu's friendly silhouette.
   for (const side of [-1, 1]) {
     const horn = new THREE.Mesh(new THREE.CapsuleGeometry(0.055, 0.17, 5, 12), belly);
     horn.position.set(side * 0.43, 0.56, -0.04); horn.rotation.z = -side * 0.32; head.add(horn);
@@ -110,6 +128,18 @@ export function createBondhuModel(THREE) {
     brow.name = "expressive-brow";
     ball(blushMat, [0.1, 0.038, 0.015], [side * 0.51, -0.23, 0.46], head);
     ball(nostrilMat, [0.023, 0.017, 0.012], [side * 0.13, -0.18, 0.837], head);
+
+    // Expressive dragon ear fins that perk up and twitch
+    const ear = new THREE.Group();
+    ear.position.set(side * 0.52, 0.42, -0.08);
+    ear.rotation.y = side * 0.32;
+    ear.rotation.z = side * 0.25;
+    const earFin = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.28, 5), greenLight);
+    earFin.rotation.z = -side * 1.05;
+    earFin.scale.set(0.35, 1, 0.12);
+    ear.add(earFin);
+    head.add(ear);
+    parts.ears.push(ear);
   }
   for (const side of [-1, 1]) {
     const eye = new THREE.Group(); eye.position.set(side * 0.285, 0.105, 0.53); head.add(eye);
@@ -118,6 +148,7 @@ export function createBondhuModel(THREE) {
     ball(iris, [0.093, 0.124, 0.055], [0.014, -0.006, 0.104], gaze, "iris");
     ball(pupil, [0.053, 0.084, 0.036], [0.018, -0.01, 0.145], gaze, "pupil");
     ball(shine, [0.03, 0.036, 0.018], [-0.006, 0.04, 0.174], gaze, "eye-highlight");
+    ball(shine, [0.015, 0.018, 0.01], [0.028, -0.032, 0.165], gaze, "eye-highlight-secondary");
     // A curved upper shell sweeps down over the sclera during a true eyelid blink.
     const lid = new THREE.Mesh(new THREE.SphereGeometry(1, 36, 22, 0, Math.PI * 2, 0, Math.PI / 2), greenLight);
     lid.scale.set(0.196, 0.226, 0.13); lid.rotation.z = Math.PI; lid.position.set(0, 0.224, 0.015); lid.name = "upper-eyelid"; eye.add(lid);

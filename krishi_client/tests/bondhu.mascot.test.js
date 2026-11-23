@@ -69,8 +69,15 @@ test("Bondhu stays character-first at rest and opens a compact speech bubble onl
   assert.match(guide, /if \(!open \|\| !greeting \|\| tourMode\)/, "user-requested contextual help stays open until dismissed");
   assert.match(guide, /#home \.kb-hero2-card-stage/, "homepage companion uses the reserved hero illustration area");
   assert.match(guide, /chooseCompanionPosition/, "other pages avoid visible copy and controls when placing the companion");
-  assert.match(guide, /if \(position \|\| tourMode \|\| hidden \|\| isDragging\)/, "collision-aware positioning runs on internal routes unless the user is dragging or touring");
+  assert.match(guide, /if \(tourMode \|\| hidden \|\| isDragging\)/, "collision-aware positioning runs on every route unless the user is dragging or touring");
+  assert.match(guide, /measureCompanionObstacles/, "full card and content boundaries are measured rather than headings alone");
+  assert.match(guide, /measureCompanionSafeArea/, "fixed and sticky navigation define the usable viewport");
+  assert.match(guide, /new ResizeObserver\(schedule\)/, "placement updates when content cards resize");
   assert.match(guide, /position \|\| visibleContentPosition \|\| contentPosition \|\| savedPosition/, "internal pages apply collision-aware placement before a saved default position");
+  assert.match(guide, /setPosition\(safe\);\s*savePreferences\(safe\)/, "unsafe saved positions are relocated and saved");
+  assert.match(guide, /kb-mini-hit-area/, "the pointer target follows Bondhu's visible silhouette rather than the transparent canvas bounds");
+  assert.match(css, /\.kb-mini-launcher:not\(\.is-hidden\)\s*\{[^}]*pointer-events:none!important/);
+  assert.match(css, /\.kb-mini-hit-area\s*\{[^}]*clip-path:polygon/);
   assert.match(guide, /const startDrag = \(event\)/, "pointer dragging remains available");
   assert.match(guide, /savePreferences\(position\)/, "dragged placement is saved");
   assert.match(guide, /onKeyDown=\{moveWithKeyboard\}/, "keyboard movement remains available");
@@ -122,7 +129,7 @@ test("contextual bubbles remain in the viewport and adapt around companion and t
 });
 
 test("content-aware companion placement avoids copy and keeps Bondhu inside the viewport", async () => {
-  const { chooseCompanionPosition } = await import("../components/mascot/companionLayout.js");
+  const { chooseCompanionPosition, getCompanionPositionBounds } = await import("../components/mascot/companionLayout.js");
   const obstacles = [
     { left: 0, right: 390, top: 350, bottom: 520, weight: 1 },
     { left: 12, right: 378, top: 570, bottom: 650, weight: 2.5 },
@@ -132,6 +139,24 @@ test("content-aware companion placement avoids copy and keeps Bondhu inside the 
   assert.ok(result.x >= 8 && result.y >= 8);
   assert.ok(result.x + 132 <= 382 && result.y + 154 <= 836);
   assert.ok(result.y >= 650 || result.y + 154 <= 350, "chooses clear space away from copy and calls to action");
+
+  const mobileBounds = getCompanionPositionBounds({
+    viewportWidth: 390,
+    viewportHeight: 844,
+    size: { width: 132, height: 154 },
+    safeArea: { top: 64, bottom: 780 },
+  });
+  assert.deepEqual(mobileBounds, { minX: 12, minY: 76, maxX: 246, maxY: 614 }, "mobile position bounds clear the sticky top bar and fixed bottom navigation");
+
+  const savedPositionIsUnsafe = chooseCompanionPosition({
+    viewportWidth: 1440,
+    viewportHeight: 900,
+    size: { width: 160, height: 176 },
+    safeArea: { top: 68, bottom: 860 },
+    preferredPositions: [{ x: 1260, y: 680 }],
+    obstacles: [{ left: 1200, right: 1440, top: 640, bottom: 900, weight: 3 }],
+  });
+  assert.ok(savedPositionIsUnsafe.y + 176 <= 628 || savedPositionIsUnsafe.x + 160 <= 1188, "unsafe saved placement relocates outside the measured data card and viewport bounds");
 });
 
 test("one shared Bondhu scene replaces the old launcher without changing tour or voice integration", () => {

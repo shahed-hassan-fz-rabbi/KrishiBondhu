@@ -2,14 +2,14 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, ChevronDown, Compass, Headphones, Map, MessageCircle, Pause, Play, SkipForward, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, Compass, Headphones, Map, MessageCircle, Pause, Play, SkipForward, Volume2, VolumeX, X } from "lucide-react";
 import { BondhuMascot } from "@/components/mascot/BondhuMascot.js";
 import { saveMascotPreferences, useMascotPreferences } from "@/components/mascot/mascotStore.js";
 import { BONDHU_TOUR_STEPS, findEligibleTourStepIndex, getTourStepIndexForRoute, normalizeTourProgress } from "@/components/mascot/tourSteps.js";
 import { useAuth } from "@/contexts/AuthContext.js";
 import { useLang } from "@/lib/i18n/LanguageContext.js";
 import { useVoiceOutput } from "@/hooks/useVoiceOutput.js";
-import { chooseCompanionPosition, placeCompanionBubble } from "@/components/mascot/companionLayout.js";
+import { chooseCompanionPosition, getCompanionPositionBounds, placeCompanionBubble } from "@/components/mascot/companionLayout.js";
 
 const PLACES = [
   { href: "/crop-calendar", en: "Crop calendar", bn: "ফসল ক্যালেন্ডার" },
@@ -26,49 +26,106 @@ const PLACES = [
 ];
 const TOUR_STOPS = BONDHU_TOUR_STEPS.map((step) => step.route);
 
+function measureCompanionObstacles() {
+  const main = document.querySelector("main");
+  if (!main) return [];
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  const boundarySelector = 'article, aside, [role="region"], [data-bondhu-obstacle], [class*="-card"], [class*="-panel"], [class*="-strip"]';
+  const boundaries = [...main.querySelectorAll(boundarySelector)]
+    .filter((element) => !element.closest(".kb-mini-guide") && element.getAttribute("aria-hidden") !== "true")
+    .filter((element) => ![...element.classList].some((name) => name.includes("stage")))
+    .map((element) => ({ element, rect: element.getBoundingClientRect() }))
+    .filter(({ rect }) => rect.width >= 100 && rect.height >= 76 && rect.bottom > 0 && rect.top < height)
+    .sort((a, b) => (b.rect.width * b.rect.height) - (a.rect.width * a.rect.height));
+  const obstacles = [];
+  for (const { element, rect } of boundaries) {
+    if (boundaries.some((candidate) => candidate.element !== element && candidate.element.contains(element) && obstacles.some((obstacle) => obstacle.element === candidate.element))) continue;
+    obstacles.push({
+      element,
+      left: Math.max(0, rect.left),
+      right: Math.min(width, rect.right),
+      top: Math.max(0, rect.top),
+      bottom: Math.min(height, rect.bottom),
+      weight: 3,
+    });
+  }
+  const textAndControls = main.querySelectorAll("h1,h2,h3,p,a,button,input,select,textarea,summary,[role=button]");
+  for (const element of textAndControls) {
+    if (element.closest(".kb-mini-guide,[aria-hidden='true']") || obstacles.some((obstacle) => obstacle.element.contains(element))) continue;
+    const rect = element.getBoundingClientRect();
+    if (!rect.width || !rect.height || rect.bottom <= 0 || rect.top >= height) continue;
+    const interactive = /^(A|BUTTON|INPUT|SELECT|TEXTAREA|SUMMARY)$/.test(element.tagName) || element.getAttribute("role") === "button";
+    obstacles.push({
+      left: Math.max(0, rect.left),
+      right: Math.min(width, rect.right),
+      top: Math.max(0, rect.top),
+      bottom: Math.min(height, rect.bottom),
+      weight: interactive ? 5 : element.matches("h1,h2,h3") ? 3 : 1.5,
+    });
+  }
+  return obstacles.filter((obstacle) => obstacle.right > obstacle.left && obstacle.bottom > obstacle.top);
+}
+
+function measureCompanionSafeArea() {
+  const area = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
+  for (const element of document.querySelectorAll("header, nav, [role=banner], [data-bondhu-safe-edge]")) {
+    if (element.closest(".kb-mini-guide") || element.getAttribute("aria-hidden") === "true") continue;
+    const style = window.getComputedStyle(element);
+    if (style.position !== "fixed" && style.position !== "sticky") continue;
+    const rect = element.getBoundingClientRect();
+    if (!rect.width || !rect.height) continue;
+    if (rect.top <= 1 && rect.bottom <= window.innerHeight * 0.45) area.top = Math.max(area.top, rect.bottom);
+    if (rect.bottom >= window.innerHeight - 1 && rect.top >= window.innerHeight * 0.55) area.bottom = Math.min(area.bottom, rect.top);
+    if (rect.left <= 1 && rect.right <= window.innerWidth * 0.4 && rect.height >= window.innerHeight * 0.55) area.left = Math.max(area.left, rect.right);
+    if (rect.right >= window.innerWidth - 1 && rect.left >= window.innerWidth * 0.6 && rect.height >= window.innerHeight * 0.55) area.right = Math.min(area.right, rect.left);
+  }
+  return area;
+}
+
 function pageTip(pathname, bn) {
   if (pathname?.startsWith("/officer")) return bn
-    ? { title: "কর্মকর্তার পর্যালোচনা", text: "কৃষকের জেলার অনুরোধ খুলে পরিকল্পনা ও প্রশ্ন পড়ুন। মাঠের বাস্তবতা বিবেচনা করে লিখিত পরামর্শ দিন।" }
-    : { title: "Officer review queue", text: "Open a request for your district, read the crop context and farmer’s question, then record practical field advice." };
+    ? { title: "কর্মকর্তার পর্যালোচনা ডায়েরি", text: "আপনার জেলার কৃষকদের পাঠানো ফসল পরিকল্পনার অনুরোধগুলো যাচাই করুন। মাটির আর্দ্রতা, জমির ধরন ও স্থানীয় আবহাওয়া বিবেচনা করে বাস্তবসম্মত বৈজ্ঞানিক পরামর্শ ও দিকনির্দেশনা দিন।" }
+    : { title: "Agricultural Officer Review Queue", text: "Review farm planning requests submitted by local farmers in your district. Provide practical, crop-specific guidance based on soil moisture, land type, and local weather." };
   if (pathname === "/crop-calendar") return bn
-    ? { title: "ফসল ক্যালেন্ডার", text: "আপনার জেলা ও ফসল বেছে বপন, পরিচর্যা ও কাটার সময় দেখুন। ক্যালেন্ডারের উৎস ও মৌসুম মিলিয়ে নিন।" }
-    : { title: "Crop calendar", text: "Choose a district and crop to see sowing, care and harvest windows. Check the source and season before using a calendar." };
+    ? { title: "বাৎসরিক ফসল ক্যালেন্ডার", text: "আপনার জেলা ও ফসল নির্বাচন করে বপন, নিবিড় পরিচর্যা, সার প্রয়োগ ও কাটার সর্বোত্তম সময়সূচি জানুন। রবি, খরিফ-১ ও খরিফ-২ মৌসুমের সাথে মিলিয়ে মাঠের কাজের পরিকল্পনা করুন।" }
+    : { title: "Annual Crop Calendar", text: "Select your district and crop to explore optimal sowing, crop care, fertilization, and harvest windows aligned with Bangladesh's Rabi, Kharif-1, and Kharif-2 cropping seasons." };
   if (["/crop-rotation", "/rotation-planner"].includes(pathname)) return bn
-    ? { title: "ফসল পর্যায়", text: "আগের ফসল, জমি ও মৌসুম অনুযায়ী পরের ফসল তুলনা করুন। ফলন নিশ্চিত ধরে নেবেন না—স্থানীয় অবস্থা মিলিয়ে নিন।" }
-    : { title: "Crop rotation", text: "Compare a next crop using field and seasonal context. Treat suitability as a screening result, then check local conditions." };
+    ? { title: "ফসল পর্যায় ও মাটির স্বাস্থ্য", text: "পূর্ববর্তী ফসল এবং জমির উর্বরতা বিশ্লেষণ করে পরবর্তী লাভজনক ফসল নির্বাচন করুন। ফসল পর্যায় মাটির নাইট্রোজেন বজায় রাখে এবং ক্ষতিকারক পোকামাকড়ের বিস্তার রোধ করে।" }
+    : { title: "Crop Rotation & Soil Nutrition", text: "Select the most beneficial succession crop based on previous cultivation and soil fertility. Smart crop rotation restores nitrogen balance and breaks destructive pest cycles." };
   if (pathname === "/my-farm/plan") return bn
-    ? { title: "জমির জন্য ফসল পরিকল্পনা", text: "জেলা, জমির ধরন, মাটি ও পানির তথ্য দিন। প্রস্তাবের কারণ ও সীমাবদ্ধতা দেখে প্রয়োজনে কৃষি কর্মকর্তার পর্যালোচনা চান।" }
-    : { title: "Plan for your field", text: "Enter your district, land, soil and water details. Review each option’s reasons and limits; you can ask an officer to review the plan." };
+    ? { title: "জমির জন্য কাস্টম ফসল পরিকল্পনা", text: "আপনার জমির ধরন, মাটির গঠন ও সেচ সুবিধার তথ্য দিন। আমাদের এআই ইঞ্জিন জলবায়ু উপগ্রহ ডেটা বিশ্লেষণ করে সর্বোচ্চ লাভজনক জাত ও সার সুপারিশ করবে।" }
+    : { title: "Customized Field Crop Plan", text: "Enter your land category, soil characteristics, and irrigation setup. Our AI engine leverages satellite climate telemetry to recommend the highest-yielding crop varieties." };
   if (pathname === "/handoff") return bn
-    ? { title: "আমন থেকে সরিষা", text: "কাটার পর ০, ৭ বা ১৪ দিনের ব্যবধান তুলনা করুন। বৃষ্টি ও ফসলের ক্যালেন্ডার দেখে জমির প্রস্তুতি ঠিক করুন।" }
-    : { title: "Aman to mustard", text: "Compare 0, 7 and 14-day handoff windows. Use rainfall context and the crop calendar while planning field preparation." };
+    ? { title: "আমন থেকে সরিষার ট্রানজিশন", text: "আমন ধান কাটার পর সরিষা বপনের মধ্যবর্তী ০, ৭ ও ১৪ দিনের বিরতি তুলনা করুন। মাটির আর্দ্রতা মেপে জমিতে সঠিক সময়ে হালকা চাষ ও বীজ বপন নিশ্চিত করুন।" }
+    : { title: "Aman to Mustard Handoff", text: "Compare 0, 7, and 14-day turnaround windows between Aman harvest and mustard sowing. Evaluate residual soil moisture to guarantee timely land preparation and seeding." };
   if (pathname === "/my-farm/reviews") return bn
-    ? { title: "কর্মকর্তার পর্যালোচনা", text: "আপনার পাঠানো ফসল পরিকল্পনার অবস্থা দেখুন। কর্মকর্তা উত্তর দিলে পরামর্শ এখানে পড়তে পারবেন।" }
-    : { title: "Officer review", text: "Track your crop plan requests here. When an agricultural officer responds, you can read their advice on this page." };
+    ? { title: "কর্মকর্তার মতামত ও পর্যালোচনা", text: "আপনার প্রেরিত ফসল পরিকল্পনায় স্থানীয় উপসহকারী কৃষি কর্মকর্তার মূল্যায়িত পরামর্শ ও মাঠের বাস্তবসম্মত নির্দেশনা এখানে দেখতে পারবেন।" }
+    : { title: "Extension Officer Advisory", text: "Track personalized reviews and field recommendations submitted by your local agricultural extension officer for your submitted crop plan." };
   if (pathname?.startsWith("/my-farm")) return bn
-    ? { title: "আমার খামার", text: "খামার যোগ করুন, সক্রিয় ফসল ও মাঠের কাজ দেখুন। কাজ শেষ হলে আপডেট করুন, আর সতর্কতা সেটিংস থেকে SMS পছন্দ নিয়ন্ত্রণ করুন।" }
-    : { title: "My Farm", text: "Add a farm, track active crops and field tasks, then mark work complete. Manage SMS consent and alerts in settings." };
+    ? { title: "আমার খামার ব্যবস্থাপনা", text: "নতুন খামার বা প্লট যুক্ত করুন, চলমান ফসলের পরিচর্যা ও সেচের কাজের তালিকা ট্র্যাক করুন। জরুরি আবহাওয়া ও রোগবালাই সংক্রান্ত নোটিফিকেশন পেতে সেটিংস থেকে SMS চালু রাখুন।" }
+    : { title: "Farm Management & Operations", text: "Register your farm plots, track seasonal crop lifecycles, and monitor weekly field tasks. Keep SMS alerts enabled in settings for urgent local weather advisories." };
   if (pathname === "/market") return bn
-    ? { title: "বাজার ও নিজের হিসাব", text: "সরকারি দৈনিক রিপোর্ট খুলুন। নিজের বিক্রয়দর ও উৎপাদন খরচ লিখে লক্ষ্যদরের সাথে তুলনা করুন।" }
-    : { title: "Market and your costs", text: "Open the official daily report, then enter your own quote and production costs to compare against a target price." };
+    ? { title: "দৈনিক বাজারদর ও মার্জিন বিশ্লেষণ", text: "কৃষি বিপণন অধিদপ্তরের (DAM) দৈনিক পাইকারি ও খুচরা দর পর্যবেক্ষণ করুন। নিজের উৎপাদন খরচ বাদ দিয়ে প্রত্যাশিত লাভ ও ফসল বিক্রির সেরা সময় নির্ধারণ করুন।" }
+    : { title: "Daily Market Intelligence & Margins", text: "Examine verified daily wholesale and retail agricultural market rates from the Department of Agricultural Marketing (DAM) to determine the most profitable sale window." };
   if (["/climate", "/rainfall", "/soil-moisture", "/vegetation", "/map"].includes(pathname)) return bn
-    ? { title: "আবহাওয়া ও জলবায়ু", text: "জেলা বেছে পর্যবেক্ষণের তারিখ, একক ও ডেটার কভারেজ দেখুন। এগুলো এলাকার পর্যবেক্ষণ—আপনার জমির সরাসরি মাপ নয়।" }
-    : { title: "Weather and climate", text: "Choose a district and check observation dates, units and coverage. These are area observations, not direct measurements of your plot." };
+    ? { title: "উপগ্রহ আবহাওয়া ও জলবায়ু পর্যবেক্ষণ", text: "নাসা পাওয়ার ও এসএমএপি উপগ্রহ থেকে আপনার জেলার ২৫ বছরের বৃষ্টিপাত, মূল অঞ্চলের মাটির আর্দ্রতা ও রোদ ঘণ্টার উপগ্রহ তথ্য সরাসরি যাচাই করুন।" }
+    : { title: "Satellite Climate & Soil Telemetry", text: "Access high-resolution observations from NASA POWER and SMAP satellites, including 25-year rainfall trends, root-zone soil moisture, and solar radiation for your district." };
   if (pathname === "/assistant") return bn
-    ? { title: "কৃষি সহকারী", text: "বাংলা বা ইংরেজিতে প্রশ্ন করুন। উত্তর যে তথ্যের ওপর ভিত্তি করে এবং যেখানে সীমাবদ্ধ—সেটা যাচাই করুন।" }
-    : { title: "Farm assistant", text: "Ask in Bangla or English. Check which information supports the answer and where its limits are." };
+    ? { title: "কৃষি বন্ধু এআই সহকারী", text: "ফসলের রোগবালাই, সার-কীটনাশকের সঠিক মাত্রা বা সেচ ব্যবস্থাপনা নিয়ে সরাসরি প্রশ্ন করুন। বাংলা বা ইংরেজিতে তাৎক্ষণিক বৈজ্ঞানিক পরামর্শ ও উৎস তথ্য জেনে নিন।" }
+    : { title: "KrishiBondhu AI Farm Assistant", text: "Ask any agronomic questions regarding plant pathologies, optimal fertilizer dosages, or irrigation schedules in Bangla or English for instant, grounded advisory." };
   if (pathname === "/settings") return bn
-    ? { title: "প্রোফাইল ও সতর্কতা", text: "প্রোফাইল ও জেলা ঠিক রাখুন। SMS চালু করার আগে নিজের ফোন যাচাই ও সম্মতি সম্পন্ন করুন।" }
-    : { title: "Profile and alerts", text: "Keep your profile and district current. Verify your phone and give consent before enabling SMS alerts." };
+    ? { title: "প্রোফাইল ও নোটিফিকেশন সেটিংস", text: "আপনার চাষের জেলা ও যোগাযোগের তথ্য হালনাগাদ রাখুন। উপগ্রহভিত্তিক খরা ও বৃষ্টির জরুরি সতর্কতা সরাসরি মোবাইলে পেতে ফোন নম্বর ভেরিফাই করুন।" }
+    : { title: "Account & Alert Preferences", text: "Keep your preferred agricultural district and contact profile updated. Verify your phone number to receive critical satellite-triggered drought and weather SMS alerts." };
   if (pathname === "/data-sources") return bn
-    ? { title: "তথ্যের উৎস", text: "কোন উৎস, সময়কাল ও একক ব্যবহার হয়েছে তা দেখুন—কোনো ফসল সিদ্ধান্তে যাওয়ার আগে ডেটার সীমাবদ্ধতাও পড়ুন।" }
-    : { title: "Data sources", text: "Review the sources, time periods and units, including data limits, before using an observation in a crop decision." };
+    ? { title: "তথ্যের নির্ভরযোগ্যতা ও বৈজ্ঞানিক উৎস", text: "কৃষিবন্ধুর সকল আবহাওয়া, উপগ্রহ ও বাজার তথ্যের নির্ভুল উৎস জানুন। নাসা, ওপেন-মেটিও ও বাংলাদেশ কৃষি বিপণন অধিদপ্তরের সমন্বয়ে এই প্ল্যাটফর্মটি পরিচালিত।" }
+    : { title: "Scientific Data Provenance", text: "Verify the authentic sources powering KrishiBondhu. All telemetry is cross-calibrated using NASA Earthdata, Open-Meteo, and Bangladesh Department of Agricultural Marketing (DAM)." };
   if (pathname === "/dashboard") return bn
-    ? { title: "আপনার কৃষি ড্যাশবোর্ড", text: "জেলা ও সাম্প্রতিক কৃষি তথ্য দেখুন। বিস্তারিত ফসল পরিকল্পনা, আবহাওয়া, বাজার বা খামারের কাজে যেতে নিচের পথগুলো ব্যবহার করুন।" }
-    : { title: "Your farming dashboard", text: "Review your district and recent agricultural context. Use the shortcuts below to continue to crop planning, weather, market or My Farm." };
+    ? { title: "আপনার আধুনিক কৃষি ড্যাশবোর্ড", text: "মাঠের সার্বিক পরিস্থিতি একনজরে দেখুন। মাটির আর্দ্রতা, ৩০ দিনের বৃষ্টিপাত ও রবি ২০২৬ মৌসুমের প্রস্তাবিত ফসলের জাত অনুযায়ী এই সপ্তাহের অগ্রাধিকারমূলক কাজ সম্পন্ন করুন।" }
+    : { title: "Your Modern Agricultural Dashboard", text: "Review field operations at a glance. Prioritize weekly tasks based on root-zone soil moisture, 30-day rainfall anomalies, and season-specific crop recommendations." };
   return bn
-    ? { title: "আমি বন্ধু, আপনার কৃষি সঙ্গী", text: "ফসলের ক্যালেন্ডার থেকে বাজারদর—যেখানে যেতে চান বলুন। আমি সেই পাতায় নিয়ে গিয়ে কীভাবে ব্যবহার করবেন দেখাব।" }
-    : { title: "I’m Bondhu, your farm guide", text: "I can show you around or take you straight to a farm page. Start with a quick tour if you like." };
+    ? { title: "আমি বন্ধু, আপনার সার্বক্ষণিক কৃষি সঙ্গী", text: "উপগ্রহ প্রযুক্তি, আবহাওয়া পর্যবেক্ষণ ও বাজার তথ্যের শক্তিতে প্রতিটি পদক্ষেপে আপনার পাশে আছি। যেকোনো পাতায় চলুন বা আমার সাথে পুরো প্ল্যাটফর্ম ঘুরে দেখুন!" }
+    : { title: "I’m Bondhu, Your Agricultural Guide", text: "I'm here to empower your farming decisions with satellite telemetry, weather forecasting, and market intelligence. Explore the platform with me anytime!" };
 }
 
 export function MiniGuide() {
@@ -109,7 +166,7 @@ export function MiniGuide() {
   const tourStep = BONDHU_TOUR_STEPS[tourIndex] || null;
   const eligibleTourSteps = BONDHU_TOUR_STEPS.filter((step) => isAuthenticated || !step.requiresAuth);
   const visibleTourIndex = eligibleTourSteps.findIndex((step) => step.id === tourStep?.id);
-  const characterState = tourMode && tourPaused ? "idle" : flying ? "flying" : isDragging ? "dragging" : tourMode && isTourVoiceSpeaking && !isTourVoicePaused ? "talking" : tourMode || pokeState ? "happy" : hovered ? "listening" : sleeping ? "sleeping" : assistantState;
+  const characterState = tourMode && tourPaused ? "idle" : flying ? "flying" : isDragging ? "dragging" : isTourVoiceSpeaking && !isTourVoicePaused ? "talking" : tourMode || pokeState ? "happy" : hovered ? "listening" : sleeping ? "sleeping" : assistantState;
   const [position, setPosition] = useState(null);
   const [contentPosition, setContentPosition] = useState(null);
   const [bubblePosition, setBubblePosition] = useState(null);
@@ -206,64 +263,82 @@ export function MiniGuide() {
   const savedPosition = Number.isFinite(preferences.x) && Number.isFinite(preferences.y)
     ? { x: preferences.x, y: preferences.y }
     : null;
-  const currentPosition = position || savedPosition;
   const launcherBounds = () => {
+    const current = launcherRef.current?.getBoundingClientRect();
+    if (current?.width && current?.height) return { width: current.width, height: current.height };
     const compact = window.innerWidth <= 760;
-    return { width: compact ? 132 : 170, height: compact ? 154 : 182, right: compact ? 8 : 20, bottom: compact ? 76 : 20 };
+    return { width: compact ? 132 : 160, height: compact ? 154 : 176 };
   };
   const defaultPosition = () => {
     const bounds = launcherBounds();
-    return { x: window.innerWidth - bounds.width - bounds.right, y: window.innerHeight - bounds.height - bounds.bottom };
+    const safeArea = measureCompanionSafeArea();
+    const limits = getCompanionPositionBounds({ viewportWidth: window.innerWidth, viewportHeight: window.innerHeight, size: bounds, safeArea });
+    return { x: limits.maxX, y: limits.maxY };
   };
-  const visibleContentPosition = pathname === "/" && !tourMode && !hidden ? contentPosition : null;
+  const visibleContentPosition = !tourMode && !hidden ? contentPosition : null;
 
-  // On the landing page Bondhu occupies its reserved hero stage. Elsewhere choose the
-  // viewport corner with the least collision against visible copy and controls.
-  useEffect(() => {
-    if (position || tourMode || hidden || isDragging) return undefined;
+  // Measure real card/control boundaries and keep Bondhu outside fixed navigation.
+  // The landing hero stage is preferred only when it has enough measured free space.
+  useLayoutEffect(() => {
+    if (tourMode || hidden || isDragging) return undefined;
     let frame = 0;
-    const update = () => {
-      window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(() => {
-        const size = launcherBounds();
-        const obstacles = [...document.querySelectorAll("main h1,main h2,main p,main a,main button,main input,main select,main textarea,header,nav")]
-          .filter((element) => !element.closest(".kb-mini-guide") && element.getAttribute("aria-hidden") !== "true")
-          .map((element) => {
-            const rect = element.getBoundingClientRect();
-            if (!rect.width || !rect.height || rect.bottom <= 0 || rect.top >= window.innerHeight) return null;
-            const interactive = /^(A|BUTTON|INPUT|SELECT|TEXTAREA)$/.test(element.tagName);
-            return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, weight: interactive ? 2.5 : 1 };
-          }).filter(Boolean);
-        const hasSavedPosition = Number.isFinite(preferences.x) && Number.isFinite(preferences.y);
-        const saved = hasSavedPosition ? { x: preferences.x, y: preferences.y } : null;
-        if (saved) {
-          const savedRect = { left: saved.x, top: saved.y, right: saved.x + size.width, bottom: saved.y + size.height };
-          const collision = obstacles.some((item) => Math.max(0, Math.min(savedRect.right, item.right) - Math.max(savedRect.left, item.left)) * Math.max(0, Math.min(savedRect.bottom, item.bottom) - Math.max(savedRect.top, item.top)) > 600);
-          if (!collision) {
-            setContentPosition((current) => current?.x === saved.x && current?.y === saved.y ? current : saved);
-            return;
-          }
+    const place = () => {
+      const size = launcherBounds();
+      const safeArea = measureCompanionSafeArea();
+      const obstacles = measureCompanionObstacles();
+      const preferredPositions = [position, savedPosition, contentPosition].filter(Boolean);
+      const candidatePositions = [];
+      if (window.innerWidth > 780) {
+        const stage = document.querySelector("#home .kb-hero2-card-stage");
+        const stageRect = stage?.getBoundingClientRect();
+        const content = stage?.querySelector(".kb-hero-path-card, article, [role=region]");
+        const contentRect = content?.getBoundingClientRect();
+        const freeBelowContent = stageRect && contentRect ? stageRect.bottom - Math.max(contentRect.bottom, stageRect.top) : 0;
+        if (stageRect && stageRect.bottom > safeArea.top && stageRect.top < safeArea.bottom && freeBelowContent >= size.height + 12) {
+          candidatePositions.push({
+            x: stageRect.left + (stageRect.width - size.width) / 2,
+            y: stageRect.bottom - size.height - 8,
+          });
         }
-        const stageRect = document.querySelector("#home .kb-hero2-card-stage")?.getBoundingClientRect();
-        if (stageRect && stageRect.bottom > 0 && stageRect.top < window.innerHeight && stageRect.width > size.width) {
-          const x = Math.max(8, Math.min(window.innerWidth - size.width - 8, stageRect.left + (stageRect.width - size.width) / 2));
-          const y = Math.max(stageRect.top + 8, Math.min(window.innerHeight - size.height - 8, stageRect.bottom - size.height - 12));
-          setContentPosition((current) => current?.x === x && current?.y === y ? current : { x, y });
-          return;
-        }
-        const safe = chooseCompanionPosition({ viewportWidth: window.innerWidth, viewportHeight: window.innerHeight, size, obstacles });
-        setContentPosition((current) => current?.x === safe.x && current?.y === safe.y ? current : safe);
+      }
+      const safe = chooseCompanionPosition({
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
+        size,
+        obstacles,
+        preferredPositions,
+        candidatePositions,
+        safeArea,
       });
+      if (position && (position.x !== safe.x || position.y !== safe.y)) {
+        setPosition(safe);
+        savePreferences(safe);
+      } else if (!position && savedPosition && (savedPosition.x !== safe.x || savedPosition.y !== safe.y)) {
+        setPosition(safe);
+        savePreferences(safe);
+      }
+      setContentPosition((current) => current?.x === safe.x && current?.y === safe.y ? current : safe);
     };
-    update();
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update, { passive: true });
+    const schedule = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(place);
+    };
+    place();
+    window.addEventListener("scroll", schedule, { capture: true, passive: true });
+    window.addEventListener("resize", schedule, { passive: true });
+    const main = document.querySelector("main");
+    const resizeObserver = typeof ResizeObserver === "undefined" || !main ? null : new ResizeObserver(schedule);
+    if (main) resizeObserver?.observe(main);
+    for (const element of main?.querySelectorAll('article, aside, [role="region"], [data-bondhu-obstacle], [class*="-card"], [class*="-panel"], [class*="-strip"]') || []) {
+      if (![...element.classList].some((name) => name.includes("stage"))) resizeObserver?.observe(element);
+    }
     return () => {
       window.cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", schedule, true);
+      window.removeEventListener("resize", schedule);
+      resizeObserver?.disconnect();
     };
-  }, [pathname, preferences.x, preferences.y, position, tourMode, hidden, isDragging]);
+  }, [pathname, preferences.x, preferences.y, savedPosition?.x, savedPosition?.y, position, contentPosition, tourMode, hidden, isDragging]);
 
   useLayoutEffect(() => {
     if (!open || !launcherRef.current || !bubbleRef.current) {
@@ -333,12 +408,10 @@ export function MiniGuide() {
 
   const drag = (event) => {
     if (!dragRef.current || dragRef.current.pointerId !== event.pointerId) return;
-    const fallbackPosition = defaultPosition();
     const bounds = launcherBounds();
-    const maxX = Math.max(8, window.innerWidth - bounds.width - 8);
-    const maxY = Math.max(8, window.innerHeight - bounds.height - 8);
-    const x = Math.max(8, Math.min(maxX, event.clientX - dragRef.current.offsetX));
-    const y = Math.max(8, Math.min(maxY, event.clientY - dragRef.current.offsetY));
+    const limits = getCompanionPositionBounds({ viewportWidth: window.innerWidth, viewportHeight: window.innerHeight, size: bounds, safeArea: measureCompanionSafeArea(), margin: 8 });
+    const x = Math.max(limits.minX, Math.min(limits.maxX, event.clientX - dragRef.current.offsetX));
+    const y = Math.max(limits.minY, Math.min(limits.maxY, event.clientY - dragRef.current.offsetY));
     const visualPosition = position || visibleContentPosition || savedPosition || fallbackPosition;
     if (Math.abs(x - visualPosition.x) + Math.abs(y - visualPosition.y) > 6) draggedRef.current = true;
     setPosition({ x, y });
@@ -373,32 +446,11 @@ export function MiniGuide() {
     event.preventDefault();
     const bounds = launcherBounds();
     const base = position || visibleContentPosition || savedPosition || defaultPosition();
-    const maxX = Math.max(8, window.innerWidth - bounds.width - 8);
-    const maxY = Math.max(8, window.innerHeight - bounds.height - 8);
-    const next = { x: Math.max(8, Math.min(maxX, base.x + offset[0])), y: Math.max(8, Math.min(maxY, base.y + offset[1])) };
+    const limits = getCompanionPositionBounds({ viewportWidth: window.innerWidth, viewportHeight: window.innerHeight, size: bounds, safeArea: measureCompanionSafeArea(), margin: 8 });
+    const next = { x: Math.max(limits.minX, Math.min(limits.maxX, base.x + offset[0])), y: Math.max(limits.minY, Math.min(limits.maxY, base.y + offset[1])) };
     setPosition(next);
     savePreferences(next);
   };
-
-  useEffect(() => {
-    const resize = () => {
-      const base = position || visibleContentPosition || (Number.isFinite(preferences.x) && Number.isFinite(preferences.y)
-        ? { x: preferences.x, y: preferences.y }
-        : null);
-      if (!base) return;
-      const bounds = launcherBounds();
-      const next = {
-        x: Math.max(8, Math.min(Math.max(8, window.innerWidth - bounds.width - 8), base.x)),
-        y: Math.max(8, Math.min(Math.max(8, window.innerHeight - bounds.height - 8), base.y)),
-      };
-      if (next.x !== base.x || next.y !== base.y) {
-        setPosition(next);
-        savePreferences(next);
-      }
-    };
-    window.addEventListener("resize", resize, { passive: true });
-    return () => window.removeEventListener("resize", resize);
-  }, [position, visibleContentPosition, preferences.x, preferences.y]);
 
   const startTour = useCallback((restart = false) => {
     const contextualIndex = getTourStepIndexForRoute(pathname);
@@ -463,12 +515,26 @@ export function MiniGuide() {
     else speakTourVoice(bn ? tourStep.bn : tourStep.en, { id: "bondhu-tour-" + tourStep.id, preferredLang: bn ? "bn-BD" : "en-US" });
   };
 
+  const readPageTip = () => {
+    if (muted || !isTourVoiceSupported) return;
+    if (isTourVoiceSpeaking && !isTourVoicePaused) {
+      stopTourVoice();
+    } else {
+      const speechText = `${tip.title}। ${tip.text}`;
+      speakTourVoice(speechText, {
+        id: "bondhu-tip-" + (pathname ? pathname.replace(/\//g, "-") : "home"),
+        preferredLang: bn ? "bn-BD" : "en-US",
+      });
+    }
+  };
+
   const closeGuide = useCallback(() => {
+    stopTourVoice();
     if (tourMode) cancelTour();
     setOpen(false);
     setGreeting(false);
     window.requestAnimationFrame(() => launcherRef.current?.focus({ preventScroll: true }));
-  }, [cancelTour, tourMode]);
+  }, [cancelTour, stopTourVoice, tourMode]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -581,8 +647,32 @@ export function MiniGuide() {
     {open && <section ref={bubbleRef} className={`kb-mini-bubble${tourMode ? " is-tour-bubble" : ""}`} data-side={bubblePosition?.side || "above"} style={speechStyle} role="dialog" aria-label={bn ? "বন্ধুর কৃষি নির্দেশনা" : "Bondhu’s farm guide"} aria-describedby={tourMode ? "bondhu-tour-description" : undefined} onPointerEnter={() => { bubbleHoveredRef.current = true; }} onPointerLeave={() => { bubbleHoveredRef.current = false; }}>
       <header className="kb-mini-bubble-head"><div className="kb-mini-kicker">{tourMode ? (bn ? `ধাপ ${visibleTourIndex + 1} / ${eligibleTourSteps.length}` : `STEP ${visibleTourIndex + 1} OF ${eligibleTourSteps.length}`) : (bn ? "বন্ধু · আপনার মাঠের সঙ্গী" : "BONDHU · YOUR FIELD GUIDE")}</div><button type="button" aria-label={bn ? "বন্ধ করুন" : "Close"} onClick={closeGuide} className="kb-mini-close"><X size={17}/></button></header>
       <div className="kb-mini-bubble-body">
-        {tourMode ? <><h2>{bn ? "বন্ধুর সাথে ঘুরে দেখুন" : "Explore with Bondhu"}</h2><p id="bondhu-tour-description" className="kb-mini-tour-description" aria-live="polite">{bn ? tourStep?.bn : tourStep?.en}</p>{tourNotice && <p className="kb-mini-tour-notice" role="status">{tourNotice}</p>}{tourVoiceError && <p className="kb-mini-tour-notice" role="status">{bn ? "কণ্ঠে শোনা যাচ্ছে না। লেখা পড়ে এগিয়ে যান।" : "Voice playback is unavailable. Continue with the captions."}</p>}</> : finished ? <><h2>{bn ? "ঘুরে দেখা শেষ!" : "Tour complete"}</h2><p>{bn ? "যেকোনো সময় আবার ঘুরে দেখতে পারেন।" : "You can replay the tour any time."}</p></> : <><h2>{tip.title}</h2><p>{tip.text}</p></>}
-        {tourMode ? <div className="kb-mini-tour-actions"><button type="button" onClick={() => { const previous = findEligibleTourStepIndex(tourIndex - 1, isAuthenticated, BONDHU_TOUR_STEPS, -1); if (previous >= 0) { stopTourVoice(); setTourIndex(previous); savePreferences({ tourProgress: previous }); navigateTo(TOUR_STOPS[previous]); } }} disabled={paused || findEligibleTourStepIndex(tourIndex - 1, isAuthenticated, BONDHU_TOUR_STEPS, -1) < 0} className="kb-mini-quiet" aria-label={bn ? "আগের ধাপ" : "Previous step"}><ArrowLeft size={15}/>{bn ? "আগে" : "Previous"}</button><button type="button" onClick={nextStop} disabled={paused} className="kb-mini-primary">{tourIndex >= BONDHU_TOUR_STEPS.length-1 ? (bn ? "শেষ করুন" : "Finish") : (bn ? "পরের ধাপ" : "Next")}<ArrowRight size={15}/></button><button type="button" onClick={toggleTourPause} className="kb-mini-quiet" aria-label={paused ? (bn ? "আবার চালান" : "Resume tour") : (bn ? "বিরতি" : "Pause tour")}>{paused ? <Play size={15}/> : <Pause size={15}/>}<span className="sr-only">{paused ? (bn ? "চালান" : "Resume") : (bn ? "বিরতি" : "Pause")}</span></button><button type="button" onClick={readTourStep} disabled={muted || !isTourVoiceSupported} className="kb-mini-quiet" aria-label={isTourVoiceSpeaking ? (bn ? "কণ্ঠ থামান" : "Stop speaking") : (bn ? "এই ধাপ শুনুন" : "Listen to this step")}><Headphones size={15}/></button><button type="button" onClick={cancelTour} className="kb-mini-quiet"><SkipForward size={15}/>{bn ? "বাদ" : "Skip"}</button><button type="button" onClick={() => startTour(true)} className="kb-mini-quiet">{bn ? "আবার" : "Replay"}</button></div> : <>
+        {tourMode ? <>
+          <h2>{bn ? "বন্ধুর সাথে ঘুরে দেখুন" : "Explore with Bondhu"}</h2>
+          <p id="bondhu-tour-description" className="kb-mini-tour-description" aria-live="polite">{bn ? tourStep?.bn : tourStep?.en}</p>
+          {tourNotice && <p className="kb-mini-tour-notice" role="status">{tourNotice}</p>}
+          {tourVoiceError && <p className="kb-mini-tour-notice" role="status">{bn ? "কণ্ঠে শোনা যাচ্ছে না। লেখা পড়ে এগিয়ে যান।" : "Voice playback is unavailable. Continue with the captions."}</p>}
+        </> : finished ? <>
+          <h2>{bn ? "ঘুরে দেখা শেষ!" : "Tour complete"}</h2>
+          <p>{bn ? "যেকোনো সময় আবার ঘুরে দেখতে পারেন।" : "You can replay the tour any time."}</p>
+        </> : <>
+          <h2>{tip.title}</h2>
+          <p>{tip.text}</p>
+          <div className="kb-mini-audio-bar">
+            <button
+              type="button"
+              onClick={readPageTip}
+              disabled={muted || !isTourVoiceSupported}
+              className={`kb-mini-voice-btn ${isTourVoiceSpeaking && !tourMode ? "is-speaking" : ""}`}
+              aria-label={isTourVoiceSpeaking && !tourMode ? (bn ? "কণ্ঠ থামান" : "Stop listening") : (bn ? "কণ্ঠে শুনুন" : "Listen in voice")}
+              title={isTourVoiceSpeaking && !tourMode ? (bn ? "কণ্ঠ থামান" : "Stop voice") : (bn ? "কণ্ঠে শুনুন" : "Listen in voice")}
+            >
+              {isTourVoiceSpeaking && !tourMode ? <VolumeX size={14} /> : <Volume2 size={14} />}
+              <span>{isTourVoiceSpeaking && !tourMode ? (bn ? "কণ্ঠ থামান" : "Stop speaking") : (bn ? "কণ্ঠে শুনুন" : "Listen in voice")}</span>
+            </button>
+          </div>
+        </>}
+        {tourMode ? <div className="kb-mini-tour-actions"><button type="button" onClick={() => { const previous = findEligibleTourStepIndex(tourIndex - 1, isAuthenticated, BONDHU_TOUR_STEPS, -1); if (previous >= 0) { stopTourVoice(); setTourIndex(previous); savePreferences({ tourProgress: previous }); navigateTo(TOUR_STOPS[previous]); } }} disabled={paused || findEligibleTourStepIndex(tourIndex - 1, isAuthenticated, BONDHU_TOUR_STEPS, -1) < 0} className="kb-mini-quiet" aria-label={bn ? "আগের ধাপ" : "Previous step"}><ArrowLeft size={15}/>{bn ? "আগে" : "Previous"}</button><button type="button" onClick={nextStop} disabled={paused} className="kb-mini-primary">{tourIndex >= BONDHU_TOUR_STEPS.length-1 ? (bn ? "শেষ করুন" : "Finish") : (bn ? "পরের ধাপ" : "Next")}<ArrowRight size={15}/></button><button type="button" onClick={toggleTourPause} className="kb-mini-quiet" aria-label={paused ? (bn ? "আবার চালান" : "Resume tour") : (bn ? "বিরতি" : "Pause tour")}>{paused ? <Play size={15}/> : <Pause size={15}/>}<span className="sr-only">{paused ? (bn ? "চালান" : "Resume") : (bn ? "বিরতি" : "Pause")}</span></button><button type="button" onClick={readTourStep} disabled={muted || !isTourVoiceSupported} className={`kb-mini-quiet kb-mini-listen-btn ${isTourVoiceSpeaking && tourMode ? "is-speaking" : ""}`} aria-label={isTourVoiceSpeaking ? (bn ? "কণ্ঠ থামান" : "Stop speaking") : (bn ? "এই ধাপ শুনুন" : "Listen to this step")} title={isTourVoiceSpeaking ? (bn ? "কণ্ঠ থামান" : "Stop speaking") : (bn ? "এই ধাপ শুনুন" : "Listen to this step")}>{isTourVoiceSpeaking && tourMode ? <VolumeX size={15}/> : <Volume2 size={15}/>}<span>{isTourVoiceSpeaking && tourMode ? (bn ? "থামান" : "Stop") : (bn ? "শুনুন" : "Listen")}</span></button><button type="button" onClick={cancelTour} className="kb-mini-quiet"><SkipForward size={15}/>{bn ? "বাদ" : "Skip"}</button><button type="button" onClick={() => startTour(true)} className="kb-mini-quiet">{bn ? "আবার" : "Replay"}</button></div> : <>
           {!finished && <button type="button" onClick={startTour} className="kb-mini-primary kb-mini-start">{bn ? "বন্ধুর সাথে ঘুরে দেখুন" : preferences.tourProgress != null ? "Resume guided tour" : "Take a guided tour"}<Compass size={15}/></button>}
           <a className="kb-mini-ask" href="/assistant" onClick={(event)=>{event.preventDefault();setOpen(false);setFinished(false);navigateTo("/assistant");}}><MessageCircle size={14}/>{bn ? "কৃষি সহকারীর সাথে কথা বলুন" : "Open the farm assistant"}</a>
           <details className="kb-mini-more"><summary>{bn ? "আরও বিকল্প" : "More options"}<ChevronDown size={14}/></summary>
@@ -599,7 +689,9 @@ export function MiniGuide() {
       </div>
     </section>}
     <button ref={launcherRef} type="button" className={`kb-mini-launcher ${flying ? "is-flying" : ""} ${hidden ? "is-hidden" : ""}`} onPointerEnter={() => setHovered(true)} onPointerLeave={() => setHovered(false)} onPointerDown={startDrag} onPointerMove={drag} onPointerUp={endDrag} onPointerCancel={endDrag} onKeyDown={moveWithKeyboard} onClick={tapCompanion} aria-expanded={open} aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight" aria-label={bn ? (hidden ? "বন্ধুকে দেখান" : "বন্ধুর কাছে সাহায্য চান") : (hidden ? "Show Bondhu" : "Ask Bondhu for help")}>
-      <BondhuMascot active={!hidden && animationEnabled} className="kb-mini-face" state={characterState} facing={facing} label={bn ? "বন্ধু, কৃষকের সহায়ক ড্রাগন" : "Bondhu, a friendly farmer companion"}/>{(hidden || tourMode) && <span>{hidden ? (bn ? "বন্ধুকে দেখান" : "Show Bondhu") : "Bondhu"}</span>}
+      <BondhuMascot active={!hidden && animationEnabled} className="kb-mini-face" state={characterState} facing={facing} label={bn ? "বন্ধু, কৃষকের সহায়ক ড্রাগন" : "Bondhu, a friendly farmer companion"}/>
+      {!hidden && <span className="kb-mini-hit-area" aria-hidden="true" />}
+      {(hidden || tourMode) && <span>{hidden ? (bn ? "বন্ধুকে দেখান" : "Show Bondhu") : "Bondhu"}</span>}
     </button>
   </div>
   </>;
