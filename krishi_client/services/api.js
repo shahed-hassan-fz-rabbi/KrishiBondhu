@@ -30,6 +30,13 @@ export function fetchMarketplaceProducts({ page = 1, limit = 12, q, district } =
   if (typeof district === "string" && district.trim()) query.set("district", district.trim());
   return request(`/marketplace/products?${query.toString()}`);
 }
+/** POST /api/v1/marketplace/products — create a listing using the existing cookie session. */
+export function createMarketplaceProduct(input = {}) {
+  const allowedFields = ["productName", "description", "quantity", "unit", "askingPricePerUnit", "district", "upazila"];
+  const source = input && typeof input === "object" && !Array.isArray(input) ? input : {};
+  const product = Object.fromEntries(allowedFields.filter((field) => Object.hasOwn(source, field)).map((field) => [field, source[field]]));
+  return request("/marketplace/products", { method: "POST", body: JSON.stringify(product) });
+}
 export function fetchMarketPriceForecast({ commodity, division, district, upazila, market, unit, source, priceType = "wholesale", frequency = "daily", horizonDays = 30 }) {
   const query = new URLSearchParams({ commodity, priceType, frequency, horizonDays: String(horizonDays) });
   if (division) query.set("division", division);

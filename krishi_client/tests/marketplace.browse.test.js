@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { fetchMarketplaceProducts } from "../services/api.js";
+import { createMarketplaceProduct, fetchMarketplaceProducts } from "../services/api.js";
 
 const component = readFileSync(new URL("../components/marketplace/MarketplaceBrowse.js", import.meta.url), "utf8");
 const route = readFileSync(new URL("../app/(public-data)/marketplace/page.js", import.meta.url), "utf8");
@@ -39,6 +39,22 @@ test("public Marketplace API client sends trimmed English/Bengali search and dis
     assert.equal(url.searchParams.get("district"), "Cumilla");
     assert.equal(url.searchParams.get("page"), "1");
     assert.equal(url.searchParams.get("limit"), "12");
+  } finally { mock.restore(); }
+});
+
+test("Marketplace create API posts only permitted listing fields with the cookie session", async () => {
+  const mock = mockFetch({ status: 201, body: { data: { product: { _id: "listing-1", productName: "Potato" } } } });
+  try {
+    const result = await createMarketplaceProduct({ productName: "Potato", description: "Fresh crop", quantity: 10, unit: "kg", askingPricePerUnit: 25, district: "Cumilla", upazila: "Burichang", ownerId: "spoof", role: "admin", status: "archived" });
+    assert.equal(result.success, true);
+    assert.equal(mock.requests[0].options.method, "POST");
+    assert.equal(mock.requests[0].options.credentials, "include");
+    assert.equal(mock.requests[0].url.endsWith("/marketplace/products"), true);
+    const body = JSON.parse(mock.requests[0].options.body);
+    assert.deepEqual(Object.keys(body).sort(), ["askingPricePerUnit", "description", "district", "productName", "quantity", "unit", "upazila"].sort());
+    assert.equal("ownerId" in body, false);
+    assert.equal("role" in body, false);
+    assert.equal("status" in body, false);
   } finally { mock.restore(); }
 });
 
@@ -82,6 +98,7 @@ test("public page presents loading, retry, empty, pagination, and demo disclosur
   assert.match(component, /draft\.q\.trim\(\)/);
   assert.match(component, /draft\.district\.trim\(\)/);
   assert.match(component, /names are not automatically translated/);
+  assert.match(component, /href="\/marketplace\/sell"/);
   assert.match(component, /Farmer asking price/);
   assert.match(component, /Not a DAM-verified price/);
   assert.match(component, /DEMO \/ SAMPLE/);

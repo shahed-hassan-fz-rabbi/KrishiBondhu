@@ -1883,3 +1883,9 @@ article:hover > .kb-dataset-visual img { transform: scale(1.035); }
     linear-gradient(rgba(11, 31, 23, 0.74), rgba(11, 31, 23, 0.74)),
     url("/img/photos/crop-planning-field-background.webp");
 }
+
+/* Seller actions need the usable viewport while the seller page is visible. */
+html.kb-marketplace-sell-page-visible .kb-mini-guide {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
