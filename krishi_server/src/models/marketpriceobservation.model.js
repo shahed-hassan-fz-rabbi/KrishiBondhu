@@ -31,9 +31,11 @@ const marketPriceObservationSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 marketPriceObservationSchema.index({ commodityKey: 1, division: 1, district: 1, upazila: 1, market: 1, frequency: 1, priceType: 1, unit: 1, observedOn: 1 });
+// Grade is part of the unique identity so distinct grades of the same crop,
+// market, source and date can coexist without blocking each other.
 marketPriceObservationSchema.index(
-  { commodityKey: 1, division: 1, district: 1, upazila: 1, market: 1, frequency: 1, priceType: 1, unit: 1, observedOn: 1, source: 1 },
-  { unique: true, name: "market_observation_location_frequency_source_unique" }
+  { commodityKey: 1, division: 1, district: 1, upazila: 1, market: 1, frequency: 1, priceType: 1, unit: 1, observedOn: 1, source: 1, grade: 1 },
+  { unique: true, name: "market_observation_location_frequency_source_grade_unique" }
 );
 
 export const MarketPriceObservation = mongoose.models.MarketPriceObservation || mongoose.model("MarketPriceObservation", marketPriceObservationSchema);
