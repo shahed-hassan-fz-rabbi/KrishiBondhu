@@ -24,6 +24,7 @@ import marketRoutes from "./market.routes.js";
 import officerReviewRoutes from "./officerreview.routes.js";
 import savedAdvisoryRoutes from "./savedadvisory.routes.js";
 import smsSubscriptionRoutes from "./smsSubscription.routes.js";
+import marketplaceRoutes from "./marketplace.routes.js";
 
 const router = Router();
 
@@ -49,5 +50,6 @@ router.use("/market", marketRoutes);
 router.use("/officer-reviews", officerReviewRoutes);
 router.use("/saved-advisories", savedAdvisoryRoutes);
 router.use("/sms-subscriptions", smsSubscriptionRoutes);
+router.use("/marketplace", marketplaceRoutes);
 
 export default router;
