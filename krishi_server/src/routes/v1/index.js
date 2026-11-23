@@ -23,6 +23,7 @@ import rotationRoutes from "./rotation.routes.js";
 import marketRoutes from "./market.routes.js";
 import officerReviewRoutes from "./officerreview.routes.js";
 import savedAdvisoryRoutes from "./savedadvisory.routes.js";
+import smsSubscriptionRoutes from "./smsSubscription.routes.js";
 
 const router = Router();
 
@@ -47,5 +48,6 @@ router.use("/rotations", rotationRoutes);
 router.use("/market", marketRoutes);
 router.use("/officer-reviews", officerReviewRoutes);
 router.use("/saved-advisories", savedAdvisoryRoutes);
+router.use("/sms-subscriptions", smsSubscriptionRoutes);
 
 export default router;
