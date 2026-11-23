@@ -70,6 +70,8 @@ export const env = {
   smsOutboxDbWaitTimeoutMs: parseInt(process.env.SMS_OUTBOX_DB_WAIT_TIMEOUT_MS || "30000", 10),
   // Base64-encoded 32-byte AES-256-GCM key for outbox message content.
   smsOutboxEncryptionKey: process.env.SMS_OUTBOX_ENCRYPTION_KEY || "",
+  // Dedicated 64-hex-character AES-256-GCM key for marketplace buyer PII.
+  marketplaceBuyerPiiEncryptionKey: process.env.MARKETPLACE_BUYER_PII_ENCRYPTION_KEY || "",
   smsOutboxRetentionDays: parseInt(process.env.SMS_OUTBOX_RETENTION_DAYS || "30", 10),
   // Live single-number test command is opt-in and never enabled by default.
   smsLiveTestEnabled: process.env.SMS_LIVE_TEST_ENABLED === "1",
