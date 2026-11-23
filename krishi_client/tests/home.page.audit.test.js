@@ -21,7 +21,7 @@ test("public footer explores existing pages and localizes the new project conten
   }
   assert.ok(read("../app/page.js").includes('id="about"'));
   assert.ok(footer.includes('<BrandMark tone="dark" />'));
-  assert.ok(footer.includes('sm:grid-cols-[minmax(0,1fr)_auto]'));
+  assert.ok(footer.includes('xl:grid-cols-[minmax(0,1fr)_auto]'));
   assert.doesNotMatch(footer, /footer\.(features|account|platform)|landing\.footerRights|t\("tagline"\)/);
   assert.doesNotMatch(footer, /GITHUB_REPO_URL|footer\.(team|github|githubPlaceholder)/);
   assert.ok(read("../lib/config.js").includes('GITHUB_REPO_URL = ""'));

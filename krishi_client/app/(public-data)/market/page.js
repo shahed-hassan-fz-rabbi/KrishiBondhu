@@ -240,6 +240,7 @@ export default function MarketPage() {
       <div className="flex items-center gap-2 text-sm font-bold text-[#9a6226]"><Store size={18}/> KrishiBondhu · Market</div>
       <h1 data-tour-target="market.overview" className="mt-4 max-w-3xl text-3xl font-extrabold tracking-tight sm:text-5xl">{c.title}</h1>
       <p className="mt-4 max-w-2xl text-base leading-7 text-[#526761]">{c.intro}</p>
+      <Link href="/marketplace" className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full border border-[#b9cfba] bg-white/80 px-4 py-2 text-sm font-bold text-[#247A4B] shadow-sm hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#247A4B]"><Store size={17} aria-hidden="true"/>{bn ? "কৃষকের পণ্য দেখুন · বিক্রেতার চাওয়া দাম" : "Browse farmer listings · seller-set prices"}<ArrowUpRight size={15} aria-hidden="true"/></Link>
       {user?.role === "admin" ? <Link href="/market-import" className="mt-5 inline-flex rounded-full border border-[#0d6865] px-4 py-2 text-sm font-bold text-[#247A4B]">{bn ? "সরকারি বাজারদর আমদানি" : "Admin: import official prices"}</Link> : null}
       <div className="mt-5 rounded-2xl border border-[#d9d0ba] bg-white/70 p-4 pr-24 text-sm text-[#526761] sm:pr-4" role="status">
         <p className="font-bold text-[#173B2A]">{bn ? "বাজার ডেটার সর্বশেষ অবস্থা" : "Market data freshness"}</p>

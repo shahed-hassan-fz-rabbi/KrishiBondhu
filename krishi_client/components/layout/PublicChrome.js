@@ -540,7 +540,7 @@ export function PublicFooter() {
 
       <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-12 sm:px-6 sm:pb-24 lg:px-8 lg:pt-16">
         {/* Balanced layout: brand block fixed width, columns share remaining space evenly */}
-        <div className="grid gap-12 sm:grid-cols-[minmax(0,1fr)_auto] lg:gap-16 items-start">
+        <div className="grid gap-12 xl:grid-cols-[minmax(0,1fr)_auto] xl:gap-16 items-start">
           {/* Brand + description + transparency note */}
           <div className="flex flex-col items-start space-y-5 max-w-sm shrink-0">
             <BrandMark tone="dark" />
