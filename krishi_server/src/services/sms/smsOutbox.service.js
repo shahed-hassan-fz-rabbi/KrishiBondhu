@@ -70,8 +70,9 @@ export async function enqueueSmsAlert({
   model = SmsOutbox,
   encryptionKey,
   requireEncryption,
+  envConfig = env,
 } = {}) {
-  const cryptoCheck = encryptionRequirement({ requireEncryption });
+  const cryptoCheck = encryptionRequirement({ envConfig, requireEncryption });
   if (!cryptoCheck.ok) return { enqueued: false, reason: cryptoCheck.reason, outbox: null };
   const validation = revalidateForDelivery({ user, preferences, category, now });
   if (!validation.ok) return { enqueued: false, reason: validation.code, outbox: null };
@@ -85,7 +86,7 @@ export async function enqueueSmsAlert({
 
   const key = dedupeKey.trim();
   const messageRef = outboxMessageRef({ dedupeKey: key, text });
-  const cryptoKey = encryptionKey !== undefined ? encryptionKey : env.smsOutboxEncryptionKey;
+  const cryptoKey = encryptionKey !== undefined ? encryptionKey : envConfig.smsOutboxEncryptionKey;
   const configured = isOutboxEncryptionConfigured({ smsOutboxEncryptionKey: cryptoKey });
   if (encryptionKey !== undefined && !configured) {
     return { enqueued: false, reason: "ENCRYPTION_NOT_CONFIGURED", outbox: null };

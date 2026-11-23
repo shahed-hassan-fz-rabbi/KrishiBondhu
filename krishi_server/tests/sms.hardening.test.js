@@ -65,7 +65,8 @@ test("enqueue encrypts content and refuses missing key when encryption is requir
 
   const refused = await enqueueSmsAlert({
     user: USER, preferences: PREFS, category: "weather", text: MESSAGE,
-    dedupeKey: "weather:farmer-1:other", now: NOW, model: fakeOutbox(), requireEncryption: true,
+    dedupeKey: "weather:farmer-1:other", now: NOW, model: fakeOutbox(),
+    requireEncryption: true, envConfig: { smsOutboxEncryptionKey: "" }, encryptionKey: "",
   });
   assert.equal(refused.reason, "ENCRYPTION_NOT_CONFIGURED");
 });

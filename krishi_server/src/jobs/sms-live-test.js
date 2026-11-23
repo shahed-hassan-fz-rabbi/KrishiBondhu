@@ -14,11 +14,20 @@ import { sendSms, getSmsMode } from "../services/sms/smsSender.service.js";
 import { encryptionRequirement } from "../services/sms/smsOutboxCrypto.service.js";
 
 /**
- * CONTROLLED single-recipient BulkSMSBD test command.
+ * CONTROLLED single-recipient provider test command.
  * Disabled by default. This job is NOT imported by server.js. Every guard
  * must pass before the single provider call is attempted.
  * Live sending requires explicit SMS_LIVE=1 AND SMS_LIVE_TEST_ENABLED=1.
+ * The provider is selected by SMS_PROVIDER (alpha_sms or bulksmsbd); the
+ * wired adapter must match it, so there is no silent provider fallback.
  */
+
+/** Compare allowlist/recipient numbers without depending on '+' or leading zero. */
+function normaliseTestNumber(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (/^01[3-9]\d{8}$/.test(digits)) return `88${digits}`;
+  return digits;
+}
 
 export function checkLiveTestGuards({
   source = env,
@@ -36,7 +45,9 @@ export function checkLiveTestGuards({
   }
   const allowed = String(source.smsLiveTestAllowedNumbers || rawEnv.SMS_LIVE_TEST_ALLOWED_NUMBERS || "")
     .split(",").map((value) => value.trim()).filter(Boolean);
-  if (!allowed.includes(String(number))) reasons.push("NUMBER_NOT_ALLOWLISTED");
+  if (!allowed.some((entry) => normaliseTestNumber(entry) === normaliseTestNumber(number))) {
+    reasons.push("NUMBER_NOT_ALLOWLISTED");
+  }
   const crypto = encryptionRequirement({ envConfig: source, requireEncryption: true });
   if (!crypto.ok) reasons.push(crypto.reason);
   if (!rawEnv.MONGODB_TEST_URI) reasons.push("NO_TEST_DATABASE");
@@ -55,6 +66,8 @@ export async function runSmsLiveTest({
   fetchImpl,
   models = { userModel: User, preferencesModel: SmsPreferences, logModel: SmsNotificationLog },
   connect = connectDatabase,
+  configureGateway = configureSmsGatewayFromEnv,
+  send = sendSms,
 } = {}) {
   const guards = checkLiveTestGuards({ source, rawEnv, number, apply, now });
   if (!guards.ok) return { attempted: false, mode: getSmsMode(), reasons: guards.reasons };
@@ -72,7 +85,7 @@ export async function runSmsLiveTest({
   const { userModel, preferencesModel, logModel } = models;
   try {
     const recipient = await getVerifiedSmsRecipient(userId, { now, userModel });
-    if (!recipient || recipient.e164 !== String(number)) {
+    if (!recipient || normaliseTestNumber(recipient.phone || recipient.e164) !== normaliseTestNumber(number)) {
       return { attempted: false, mode: getSmsMode(), reasons: ["NUMBER_NOT_VERIFIED"] };
     }
     const preferences = await preferencesModel.findOne({ userId }).lean();
@@ -80,16 +93,22 @@ export async function runSmsLiveTest({
       return { attempted: false, mode: getSmsMode(), reasons: ["NO_CONSENT"] };
     }
 
-    const dedupeKey = `sms-live-test:${recipient.e164}:${guards.day}`;
+    const verifiedE164 = recipient.phone || recipient.e164;
+    const dedupeKey = `sms-live-test:${verifiedE164}:${guards.day}`;
     if (await logModel.findOne({ dedupeKey })) {
       return { attempted: false, mode: getSmsMode(), reasons: ["ALREADY_ATTEMPTED"] };
     }
-    const wired = configureSmsGatewayFromEnv({ fetchImpl });
+    const wired = configureGateway({ source, fetchImpl });
     if (!wired.registered || getSmsMode() !== "live") {
       return { attempted: false, mode: getSmsMode(), reasons: ["GATEWAY_NOT_LIVE"] };
     }
-    const result = await sendSms({
-      user: { _id: userId, phone: number, phoneVerifiedAt: now },
+    // Never silently fall back to a different provider than SMS_PROVIDER.
+    const expectedProvider = String(source.smsProvider || "").trim().toLowerCase() || "bulksmsbd";
+    if (wired.name !== expectedProvider) {
+      return { attempted: false, mode: getSmsMode(), reasons: ["PROVIDER_MISMATCH"] };
+    }
+    const result = await send({
+      user: { _id: userId, phone: verifiedE164, phoneVerifiedAt: now },
       preferences,
       text,
       category,
@@ -104,6 +123,8 @@ export async function runSmsLiveTest({
       deliveryConfirmed: false,
       providerStatus: result.log?.metadata?.providerStatus || null,
       ambiguous: Boolean(result.log?.metadata?.ambiguous),
+      provider: wired.name,
+      requestId: result.log?.metadata?.providerRequestId || null,
       reasons: [],
     };
   } finally {
