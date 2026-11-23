@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { connectDatabase, disconnectDatabase } from "../config/database.js";
 import { MarketPriceObservation } from "../models/marketpriceobservation.model.js";
+import { normalizeMarketGrade } from "../config/marketAlert.config.js";
 
 const allowedDivisions = new Set(["Dhaka", "Chattogram", "Khulna", "Rajshahi", "Barishal", "Rangpur", "Sylhet", "Mymensingh", "National"]);
 const allowedTypes = new Set(["producer", "wholesale", "retail"]);
@@ -31,6 +32,7 @@ function cleanRow(row, index) {
     district: typeof row.district === "string" ? row.district.trim().slice(0, 60) : "",
     market: typeof row.market === "string" ? row.market.trim().slice(0, 120) : "",
     priceType, unit, priceMin, priceMax, observedOn, source, sourceUrl,
+    grade: normalizeMarketGrade(row?.grade),
     licence: typeof row.licence === "string" ? row.licence.trim().slice(0, 120) : "",
     qualityStatus: row.qualityStatus === "verified" ? "verified" : "review",
   };

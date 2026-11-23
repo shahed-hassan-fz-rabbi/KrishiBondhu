@@ -35,6 +35,25 @@ export const MARKET_ALERT_POLICY = Object.freeze({
   minAbsoluteChange: 2, // in the observation's own unit (e.g. BDT/kg)
 });
 
+/**
+ * Grades are optional. Blank/unknown placeholders are treated as UNKNOWN
+ * (null), never as an empty or equivalent grade. A known grade is never
+ * considered comparable to an unknown one.
+ */
+const UNKNOWN_GRADE_TOKENS = new Set(["", "unknown", "unspecified", "n/a", "na", "none", "-", "null"]);
+export const UNKNOWN_GRADE_KEY = "unknown";
+
+export function normalizeMarketGrade(value) {
+  if (value === null || value === undefined) return null;
+  const text = String(value).trim().toLocaleLowerCase("en").slice(0, 40);
+  return UNKNOWN_GRADE_TOKENS.has(text) ? null : text;
+}
+
+/** Stable dedupe/identity token; unknown grades never collide with known ones. */
+export function marketGradeKey(value) {
+  return normalizeMarketGrade(value) || UNKNOWN_GRADE_KEY;
+}
+
 /** Local, documented defaults; callers may pass a partial override. */
 export function resolveMarketAlertThresholds(override = {}) {
   return {

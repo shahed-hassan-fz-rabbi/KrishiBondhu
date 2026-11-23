@@ -10,6 +10,7 @@ import {
 } from "../src/services/sms/marketPriceAlertEngine.js";
 import { evaluateFarmerMarketPriceAlert } from "../src/services/sms/marketPriceAlert.service.js";
 import { updateCategoryConsent } from "../src/services/sms/smsPreferences.js";
+import { normalizeMarketGrade, marketGradeKey } from "../src/config/marketAlert.config.js";
 
 const NOW = new Date("2026-11-23T10:00:00.000Z");
 const USER = {
@@ -156,7 +157,7 @@ test("dedupe key is scoped per farmer", () => {
   const a = buildMarketDedupeKey({ userId: "farmer-1", alert });
   const b = buildMarketDedupeKey({ userId: "farmer-2", alert });
   assert.notEqual(a, b);
-  assert.match(a, /^market:farmer-1:rice:cumilla central:bdt\/kg:retail:daily:none:dam official report:2026-11-22$/);
+  assert.match(a, /^market:farmer-1:rice:cumilla central:bdt\/kg:retail:daily:unknown:dam official report:2026-11-22$/);
 
   const gradeA = { ...alert, grade: "A" };
   const gradeB = { ...alert, grade: "B" };
@@ -167,6 +168,40 @@ test("dedupe key is scoped per farmer", () => {
   assert.notEqual(buildMarketDedupeKey({ userId: "farmer-1", alert: gradeA }), buildMarketDedupeKey({ userId: "farmer-1", alert: gradeB }));
   assert.notEqual(base, buildMarketDedupeKey({ userId: "farmer-1", alert: weekly }));
   assert.notEqual(base, buildMarketDedupeKey({ userId: "farmer-1", alert: otherSource }));
+});
+
+test("grade normalisation treats missing/unknown grades as UNKNOWN", () => {
+  assert.equal(normalizeMarketGrade("  A "), "a");
+  assert.equal(normalizeMarketGrade("B"), "b");
+  assert.equal(normalizeMarketGrade("unknown"), null);
+  assert.equal(normalizeMarketGrade("N/A"), null);
+  assert.equal(normalizeMarketGrade(""), null);
+  assert.equal(normalizeMarketGrade(null), null);
+  assert.equal(marketGradeKey("A"), "a");
+  assert.equal(marketGradeKey(null), "unknown");
+  assert.notEqual(marketGradeKey("a"), marketGradeKey(null));
+});
+
+test("missing grades are compatible, known/unknown grades never mix", () => {
+  const ungraded = [obs({ date: "2026-11-21", min: 100, max: 100 }), obs({ date: "2026-11-22", min: 112, max: 112 })];
+  const ok = evaluateMarketPriceSeries({ observations: ungraded, selection: SELECTION, now: NOW });
+  assert.equal(ok.shouldAlert, true);
+  assert.equal(ok.alert.grade, null);
+
+  const mixed = [obs({ date: "2026-11-21", min: 100, max: 100, grade: "A" }), obs({ date: "2026-11-22", min: 112, max: 112 })];
+  assert.equal(evaluateMarketPriceSeries({ observations: mixed, selection: SELECTION, now: NOW }).reason, "AMBIGUOUS_SERIES");
+
+  const unknownMatchesUnknown = evaluateMarketPriceSeries({
+    observations: [obs({ date: "2026-11-21", min: 100, max: 100 }), obs({ date: "2026-11-22", min: 112, max: 112 })],
+    selection: { ...SELECTION, grade: "unknown" }, now: NOW,
+  });
+  assert.equal(unknownMatchesUnknown.shouldAlert, true, "unknown matches unknown");
+
+  const knownVsUnknown = evaluateMarketPriceSeries({
+    observations: [obs({ date: "2026-11-21", min: 100, max: 100, grade: "A" }), obs({ date: "2026-11-22", min: 112, max: 112, grade: "A" })],
+    selection: { ...SELECTION, grade: "unknown" }, now: NOW,
+  });
+  assert.equal(knownVsUnknown.shouldAlert, false, "a known grade must not match an UNKNOWN selection");
 });
 
 test("engine requires verified phone, market consent and farmer's own location", async () => {

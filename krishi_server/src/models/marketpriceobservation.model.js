@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { normalizeMarketGrade } from "../config/marketAlert.config.js";
 
 const marketPriceObservationSchema = new mongoose.Schema({
   commodity: { type: String, trim: true, required: true, maxlength: 80, index: true },
@@ -10,6 +11,16 @@ const marketPriceObservationSchema = new mongoose.Schema({
   frequency: { type: String, enum: ["daily", "weekly", "monthly"], default: "daily", index: true },
   priceType: { type: String, enum: ["producer", "wholesale", "retail"], required: true, index: true },
   unit: { type: String, trim: true, required: true, maxlength: 24 },
+  /** Optional product grade. Normalised on write; null means UNKNOWN. */
+  grade: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    maxlength: 40,
+    default: null,
+    set: normalizeMarketGrade,
+    index: true,
+  },
   priceMin: { type: Number, min: 0.01, required: true },
   priceMax: { type: Number, min: 0.01, required: true },
   observedOn: { type: Date, required: true, index: true },

@@ -96,7 +96,7 @@ test("a valid market change creates one pending market outbox job", async () => 
   const queued = await result;
   assert.equal(queued.queued, true);
   assert.equal(queued.reason, "QUEUED");
-  assert.match(queued.dedupeKey, /^market:u1:rice:cumilla central:bdt\/kg:retail:daily:none:dam official report:2026-11-23$/);
+  assert.match(queued.dedupeKey, /^market:u1:rice:cumilla central:bdt\/kg:retail:daily:unknown:dam official report:2026-11-23$/);
   assert.equal(model.documents.length, 1);
   assert.equal(model.documents[0].category, "market");
   assert.equal(model.documents[0].status, "pending");

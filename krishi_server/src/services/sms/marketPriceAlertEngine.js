@@ -1,6 +1,8 @@
 import {
   OFFICIAL_MARKET_SOURCE_HOSTS,
   resolveMarketAlertThresholds,
+  normalizeMarketGrade,
+  marketGradeKey,
 } from "../../config/marketAlert.config.js";
 
 /**
@@ -57,7 +59,7 @@ function seriesIdentity(observation) {
     normalise(observation.unit),
     normalise(observation.frequency),
     normalise(observation.source),
-    normalise(observation.grade),
+    marketGradeKey(observation.grade),
   ]);
 }
 
@@ -66,6 +68,20 @@ function selectionMatches(observation, selection) {
   for (const field of fields) {
     const expected = selection[field];
     if (expected === undefined || expected === null || expected === "") continue;
+    if (field === "grade") {
+      const actualGrade = normalizeMarketGrade(observation.grade);
+      const requested = String(expected).trim().toLocaleLowerCase("en");
+      if (requested === "unknown") {
+        // Explicit UNKNOWN only matches ungraded observations.
+        if (actualGrade !== null) return false;
+        continue;
+      }
+      const wanted = normalizeMarketGrade(expected);
+      if (wanted === null) continue; // no grade constraint was supplied
+      // Missing/unknown grade never matches a known grade.
+      if (actualGrade !== wanted) return false;
+      continue;
+    }
     const actual = field === "commodity"
       ? observation.commodityKey || observation.commodity
       : observation[field];
@@ -154,7 +170,7 @@ export function evaluateMarketPriceSeries({
     unit: sample.unit,
     priceType: sample.priceType,
     frequency: sample.frequency,
-    grade: sample.grade || null,
+    grade: normalizeMarketGrade(sample.grade),
     previousDate,
     previousPrice,
     observedOn,
@@ -183,7 +199,7 @@ export function buildMarketDedupeKey({ userId, alert }) {
     normalise(alert.unit),
     normalise(alert.priceType),
     normalise(alert.frequency),
-    alert.grade ? normalise(alert.grade) : "none",
+    marketGradeKey(alert.grade),
     normalise(alert.source),
     alert.observedOn || "unknown",
   ].join(":");

@@ -115,7 +115,7 @@ integration("valid market change creates one pending job and no delivery log", a
   const job = await SmsOutbox.findOne({}).lean();
   assert.equal(job.category, "market");
   assert.equal(job.status, "pending");
-  assert.match(job.dedupeKey, /^market:[a-f0-9]{24}:rice:cumilla central:bdt\/kg:retail:daily:none:dam official report:2026-11-23$/);
+  assert.match(job.dedupeKey, /^market:[a-f0-9]{24}:rice:cumilla central:bdt\/kg:retail:daily:unknown:dam official report:2026-11-23$/);
   assert.equal(await SmsNotificationLog.countDocuments({}), 0);
 });
 
@@ -188,38 +188,65 @@ integration("stale, review-only and modeled observations create no job", async (
   assert.equal(await SmsOutbox.countDocuments({}), 0);
 });
 
-integration("different source and frequency series get distinct dedupe keys", async () => {
+integration("grade survives persistence and grade/source series get distinct dedupe keys", async () => {
   const { user, preferences } = await seedFarmer("u1");
-  // Grade is covered in unit tests: the observation model is strict and does
-  // not persist extra grade fields. Source and frequency are persisted.
+  // The observation unique index does not include grade, so each grade series
+  // uses a distinct official source while keeping dates/prices identical.
   await MarketPriceObservation.create([
-    observation({ date: "2026-11-22", price: 100 }),
-    observation({ date: "2026-11-23", price: 112 }),
-    observation({ date: "2026-11-22", price: 100, source: "DAM market bulletin" }),
-    observation({ date: "2026-11-23", price: 112, source: "DAM market bulletin" }),
-    observation({ date: "2026-11-22", price: 100, source: "DAM wholesale bulletin", frequency: "weekly" }),
-    observation({ date: "2026-11-23", price: 112, source: "DAM wholesale bulletin", frequency: "weekly" }),
+    observation({ date: "2026-11-22", price: 100, grade: "A" }),
+    observation({ date: "2026-11-23", price: 112, grade: "A" }),
+    observation({ date: "2026-11-22", price: 100, grade: "B", source: "DAM market bulletin" }),
+    observation({ date: "2026-11-23", price: 112, grade: "B", source: "DAM market bulletin" }),
+    observation({ date: "2026-11-22", price: 100, source: "DAM wholesale bulletin" }),
+    observation({ date: "2026-11-23", price: 112, source: "DAM wholesale bulletin" }),
   ]);
   const all = await MarketPriceObservation.find({}).lean();
   const pick = (matcher) => all.filter(matcher);
 
-  const official = await evaluateFarmerMarketPriceAlertForOutbox({
-    user, preferences, observations: pick((row) => row.source === "DAM official report"),
-    selection: SELECTION, now: NOW,
+  assert.equal(all.filter((row) => row.grade === "a").length, 2, "grade is normalised and persisted");
+  assert.equal(all.filter((row) => row.grade === "b").length, 2);
+  assert.equal(all.filter((row) => row.grade === null || row.grade === undefined).length, 2);
+
+  const gradeA = await evaluateFarmerMarketPriceAlertForOutbox({
+    user, preferences, observations: pick((row) => row.grade === "a"),
+    selection: { ...SELECTION, grade: "A" }, now: NOW,
   });
-  const bulletin = await evaluateFarmerMarketPriceAlertForOutbox({
-    user, preferences, observations: pick((row) => row.source === "DAM market bulletin"),
-    selection: { ...SELECTION, source: "DAM market bulletin" }, now: NOW,
+  const gradeB = await evaluateFarmerMarketPriceAlertForOutbox({
+    user, preferences, observations: pick((row) => row.grade === "b"),
+    selection: { ...SELECTION, grade: "B", source: "DAM market bulletin" }, now: NOW,
   });
-  const weekly = await evaluateFarmerMarketPriceAlertForOutbox({
-    user, preferences, observations: pick((row) => row.frequency === "weekly"),
-    selection: { ...SELECTION, source: "DAM wholesale bulletin", frequency: "weekly" }, now: NOW,
+  const ungraded = await evaluateFarmerMarketPriceAlertForOutbox({
+    user, preferences, observations: pick((row) => !row.grade),
+    selection: { ...SELECTION, source: "DAM wholesale bulletin" }, now: NOW,
+  });
+  const mixed = await evaluateFarmerMarketPriceAlertForOutbox({
+    user, preferences, observations: all, selection: SELECTION, now: NOW,
   });
 
-  assert.equal(official.queued, true, `official reason: ${official.reason}`);
-  assert.equal(bulletin.queued, true, `bulletin reason: ${bulletin.reason}`);
-  assert.equal(weekly.queued, true, `weekly reason: ${weekly.reason}`);
-  assert.equal(new Set([official.dedupeKey, bulletin.dedupeKey, weekly.dedupeKey]).size, 3);
+  assert.equal(gradeA.queued, true, `grade A reason: ${gradeA.reason}`);
+  assert.equal(gradeB.queued, true, `grade B reason: ${gradeB.reason}`);
+  assert.equal(ungraded.queued, true, `ungraded reason: ${ungraded.reason}`);
+  assert.equal(mixed.queued, false);
+  assert.equal(mixed.reason, "AMBIGUOUS_SERIES", "different grades cannot be compared");
+  assert.ok(gradeA.dedupeKey.includes(":a:dam"));
+  assert.ok(gradeB.dedupeKey.includes(":b:dam"));
+  assert.ok(ungraded.dedupeKey.includes(":unknown:dam"));
+  assert.equal(new Set([gradeA.dedupeKey, gradeB.dedupeKey, ungraded.dedupeKey]).size, 3);
   assert.equal(await SmsOutbox.countDocuments({}), 3);
   assert.equal(await SmsNotificationLog.countDocuments({}), 0);
+});
+
+integration("known grade never matches an ungraded selection or observation", async () => {
+  const { user, preferences } = await seedFarmer("u2");
+  await MarketPriceObservation.create([
+    observation({ date: "2026-11-22", price: 100, grade: "A" }),
+    observation({ date: "2026-11-23", price: 112, grade: "A" }),
+  ]);
+  const all = await MarketPriceObservation.find({}).lean();
+  const unknownSelection = await evaluateFarmerMarketPriceAlertForOutbox({
+    user, preferences, observations: all,
+    selection: { ...SELECTION, grade: "unknown" }, now: NOW,
+  });
+  assert.equal(unknownSelection.queued, false);
+  assert.equal(await SmsOutbox.countDocuments({}), 0);
 });

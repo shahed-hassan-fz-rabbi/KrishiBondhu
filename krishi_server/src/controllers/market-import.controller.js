@@ -8,6 +8,7 @@ import { errorResponse, successResponse } from "../utils/response.js";
 import { MarketPriceObservation } from "../models/marketpriceobservation.model.js";
 import { MarketImportDocument } from "../models/marketimportdocument.model.js";
 import { MarketPriceSync } from "../models/marketpricesync.model.js";
+import { normalizeMarketGrade } from "../config/marketAlert.config.js";
 
 const thisDir = path.dirname(fileURLToPath(import.meta.url));
 const pdfExtractor = path.resolve(thisDir, "../../science/extract_market_pdf_text.py");
@@ -81,6 +82,7 @@ export function parsePriceCsv(csvText) {
       priceType,
       frequency: pick(values, ["frequency", "periodicity"]).toLowerCase() || "daily",
       unit: pick(values, ["unit", "measurement", "priceunit"]),
+      grade: normalizeMarketGrade(pick(values, ["grade", "productgrade", "qualitygrade"])),
       priceMin, priceMax,
     };
     const rowDate = /^\d{4}-\d{2}-\d{2}$/.test(dateText) && !Number.isNaN(Date.parse(`${dateText}T00:00:00Z`));
@@ -195,6 +197,7 @@ export async function commitMarketImport(req, res, next) {
         commodity, commodityKey: commodity.toLocaleLowerCase("en"), division,
         district: String(item?.district || "").trim().slice(0, 60), upazila: String(item?.upazila || "").trim().slice(0, 60), market,
         frequency: recordFrequency, priceType, unit, priceMin, priceMax, observedOn,
+        grade: normalizeMarketGrade(item?.grade),
         source, sourceUrl, licence: "Official DAM report; source report retained in import record",
         qualityStatus: humanVerified ? "verified" : "review",
       });
