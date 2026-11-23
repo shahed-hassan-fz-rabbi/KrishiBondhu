@@ -3,6 +3,7 @@ import { MarketplaceProduct } from "../models/marketplaceproduct.model.js";
 import { errorResponse, successResponse } from "../utils/response.js";
 
 const PUBLIC_PRODUCT_FIELDS = "productName description quantity unit askingPricePerUnit district upazila status createdAt updatedAt";
+const FARMER_PRODUCT_FIELDS = "_id productName description quantity unit askingPricePerUnit district upazila status createdAt updatedAt";
 const ALLOWED_UNITS = new Set(["kg", "quintal", "ton"]);
 const MAX_PAGE_SIZE = 100;
 const MAX_RESULT_OFFSET = 1_000_000;
@@ -105,6 +106,41 @@ export async function listMarketplaceProducts(req, res, next) {
         .skip((page - 1) * limit)
         .limit(limit)
         .select(PUBLIC_PRODUCT_FIELDS)
+        .lean(),
+      MarketplaceProduct.countDocuments(filter),
+    ]);
+
+    return successResponse(res, 200, {
+      products,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+/** GET /api/v1/marketplace/products/mine — list every status for the authenticated farmer. */
+export async function listMyMarketplaceProducts(req, res, next) {
+  try {
+    const allowedFields = new Set(["page", "limit"]);
+    const unexpectedFields = Object.keys(req.query || {}).filter((field) => !allowedFields.has(field));
+    if (unexpectedFields.length) {
+      return errorResponse(res, 400, "Unsupported Marketplace query parameter.", "INVALID_QUERY", unexpectedFields.map((field) => ({ field, message: "This query parameter is not supported." })));
+    }
+
+    const page = parsePositiveInteger(req.query.page, 1);
+    const limit = parsePositiveInteger(req.query.limit, 20, MAX_PAGE_SIZE);
+    if (!page || !limit || (page - 1) * limit > MAX_RESULT_OFFSET) {
+      return errorResponse(res, 400, "Page and limit must be positive integers; limit cannot exceed 100 or request an excessive offset.", "INVALID_PAGINATION");
+    }
+
+    const filter = { ownerId: req.user._id };
+    const [products, total] = await Promise.all([
+      MarketplaceProduct.find(filter)
+        .sort({ createdAt: -1, _id: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .select(FARMER_PRODUCT_FIELDS)
         .lean(),
       MarketplaceProduct.countDocuments(filter),
     ]);

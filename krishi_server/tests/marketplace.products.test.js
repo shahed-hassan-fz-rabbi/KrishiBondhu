@@ -14,14 +14,17 @@ let baseUrl;
 const farmerId = new mongoose.Types.ObjectId();
 const otherFarmerId = new mongoose.Types.ObjectId();
 const officerId = new mongoose.Types.ObjectId();
+const adminId = new mongoose.Types.ObjectId();
 const spoofedOwnerId = new mongoose.Types.ObjectId();
 const productId = new mongoose.Types.ObjectId();
 const farmer = { _id: farmerId, email: "farmer@example.test", phone: "+8801712345678", passwordHash: "private-hash", role: "farmer" };
 const otherFarmer = { _id: otherFarmerId, email: "otherfarmer@example.test", phone: "+8801712345677", role: "farmer" };
 const officer = { _id: officerId, email: "officer@example.test", phone: "+8801712345679", role: "extension_officer" };
+const admin = { _id: adminId, email: "admin@example.test", phone: "+8801712345680", role: "admin" };
 const farmerToken = signToken(farmer);
 const otherFarmerToken = signToken(otherFarmer);
 const officerToken = signToken(officer);
+const adminToken = signToken(admin);
 
 const validListing = {
   productName: "BRRI dhan rice",
@@ -234,6 +237,125 @@ test("Marketplace search rejects malformed, oversized, control-character, and op
   }
   assert.equal(findCalls, 0);
   assert.equal(countCalls, 0);
+});
+
+test("GET marketplace products/mine returns only the farmer's listings across every status with safe pagination", async (t) => {
+  t.mock.method(User, "findById", async (id) => String(id) === String(farmerId) ? farmer : null);
+  const inventory = [
+    publicProduct({ _id: new mongoose.Types.ObjectId("650000000000000000000011"), ownerId: farmerId, status: "active", createdAt: new Date("2026-11-23T00:00:00.000Z") }),
+    publicProduct({ _id: new mongoose.Types.ObjectId("650000000000000000000012"), ownerId: farmerId, status: "sold_out", createdAt: new Date("2026-11-22T00:00:00.000Z") }),
+    publicProduct({ _id: new mongoose.Types.ObjectId("650000000000000000000013"), ownerId: farmerId, status: "archived", createdAt: new Date("2026-11-21T00:00:00.000Z") }),
+    publicProduct({ _id: new mongoose.Types.ObjectId("650000000000000000000014"), ownerId: otherFarmerId, status: "active", productName: "Other farmer's rice", createdAt: new Date("2026-11-24T00:00:00.000Z") }),
+  ];
+  const filters = [];
+  let selectedFields;
+  t.mock.method(MarketplaceProduct, "find", (filter) => {
+    filters.push(filter);
+    let offset = 0;
+    let pageSize = 20;
+    return {
+      sort(sort) { assert.deepEqual(sort, { createdAt: -1, _id: -1 }); return this; },
+      skip(value) { offset = value; return this; },
+      limit(value) { pageSize = value; return this; },
+      select(fields) { selectedFields = fields; return this; },
+      lean: async () => inventory
+        .filter((product) => String(product.ownerId) === String(filter.ownerId))
+        .sort((a, b) => b.createdAt - a.createdAt || String(b._id).localeCompare(String(a._id)))
+        .slice(offset, offset + pageSize)
+        .map(({ _id, productName, description, quantity, unit, askingPricePerUnit, district, upazila, status, createdAt, updatedAt }) => ({ _id, productName, description, quantity, unit, askingPricePerUnit, district, upazila, status, createdAt, updatedAt })),
+    };
+  });
+  t.mock.method(MarketplaceProduct, "countDocuments", async (filter) => {
+    filters.push(filter);
+    return inventory.filter((product) => String(product.ownerId) === String(filter.ownerId)).length;
+  });
+
+  const firstPage = await request("GET", "/api/v1/marketplace/products/mine?limit=2", undefined, farmerToken);
+  assert.equal(firstPage.response.status, 200);
+  assert.deepEqual(firstPage.payload.data.products.map(({ status }) => status), ["active", "sold_out"]);
+  assert.deepEqual(firstPage.payload.data.pagination, { page: 1, limit: 2, total: 3, pages: 2 });
+  assert.deepEqual(filters, [{ ownerId: farmerId }, { ownerId: farmerId }]);
+  assert.match(selectedFields, /_id productName description quantity unit askingPricePerUnit district upazila status createdAt updatedAt/);
+  assert.doesNotMatch(selectedFields, /ownerId|email|phone|password|session|googleId/);
+  const serialized = JSON.stringify(firstPage.payload.data.products);
+  assert.equal(serialized.includes("Other farmer's rice"), false);
+  for (const privateValue of [farmer.email, farmer.phone, farmer.passwordHash, "ownerId", "session", "googleId"]) {
+    assert.equal(serialized.includes(privateValue), false);
+  }
+  assert.equal("ownerId" in firstPage.payload.data.products[0], false);
+  assert.equal("email" in firstPage.payload.data.products[0], false);
+
+  filters.length = 0;
+  const secondPage = await request("GET", "/api/v1/marketplace/products/mine?page=2&limit=2", undefined, farmerToken);
+  assert.equal(secondPage.response.status, 200);
+  assert.deepEqual(secondPage.payload.data.products.map(({ status }) => status), ["archived"]);
+  assert.deepEqual(secondPage.payload.data.pagination, { page: 2, limit: 2, total: 3, pages: 2 });
+  assert.deepEqual(filters, [{ ownerId: farmerId }, { ownerId: farmerId }]);
+
+  filters.length = 0;
+  const allStatuses = await request("GET", "/api/v1/marketplace/products/mine?limit=100", undefined, farmerToken);
+  assert.equal(allStatuses.response.status, 200);
+  assert.deepEqual(allStatuses.payload.data.products.map(({ status }) => status), ["active", "sold_out", "archived"]);
+  assert.deepEqual(allStatuses.payload.data.pagination, { page: 1, limit: 100, total: 3, pages: 1 });
+});
+
+test("GET marketplace products/mine requires a farmer role and excludes guest, officer, and admin", async (t) => {
+  const guest = await request("GET", "/api/v1/marketplace/products/mine");
+  assert.equal(guest.response.status, 401);
+  assert.equal(guest.payload.error.code, "UNAUTHORIZED");
+
+  t.mock.method(User, "findById", async (id) => {
+    if (String(id) === String(officerId)) return officer;
+    if (String(id) === String(adminId)) return admin;
+    return null;
+  });
+  let findCalls = 0;
+  let countCalls = 0;
+  t.mock.method(MarketplaceProduct, "find", () => { findCalls += 1; throw new Error("Non-farmers must not query owner listings"); });
+  t.mock.method(MarketplaceProduct, "countDocuments", () => { countCalls += 1; throw new Error("Non-farmers must not count owner listings"); });
+  for (const token of [officerToken, adminToken]) {
+    const denied = await request("GET", "/api/v1/marketplace/products/mine", undefined, token);
+    assert.equal(denied.response.status, 403);
+    assert.equal(denied.payload.error.code, "FORBIDDEN");
+  }
+  assert.equal(findCalls, 0);
+  assert.equal(countCalls, 0);
+});
+
+test("GET marketplace products/mine returns an empty paginated result and rejects unsafe query parameters before database access", async (t) => {
+  t.mock.method(User, "findById", async (id) => String(id) === String(farmerId) ? farmer : null);
+  let findCalls = 0;
+  let countCalls = 0;
+  t.mock.method(MarketplaceProduct, "find", () => {
+    findCalls += 1;
+    return {
+      sort() { return this; }, skip() { return this; }, limit() { return this; }, select() { return this; },
+      lean: async () => [],
+    };
+  });
+  t.mock.method(MarketplaceProduct, "countDocuments", async () => { countCalls += 1; return 0; });
+
+  const empty = await request("GET", "/api/v1/marketplace/products/mine", undefined, farmerToken);
+  assert.equal(empty.response.status, 200);
+  assert.deepEqual(empty.payload.data.products, []);
+  assert.deepEqual(empty.payload.data.pagination, { page: 1, limit: 20, total: 0, pages: 0 });
+
+  for (const [query, code] of [
+    [`?ownerId=${spoofedOwnerId}`, "INVALID_QUERY"],
+    ["?page=1&page=2", "INVALID_PAGINATION"],
+    ["?limit=20&limit=10", "INVALID_PAGINATION"],
+    ["?page=1e2", "INVALID_PAGINATION"],
+    ["?limit=101", "INVALID_PAGINATION"],
+    ["?page=100000000&limit=100", "INVALID_PAGINATION"],
+    ["?status=archived", "INVALID_QUERY"],
+    ["?limit%5B%24gt%5D=1", "INVALID_QUERY"],
+  ]) {
+    const invalid = await request("GET", `/api/v1/marketplace/products/mine${query}`, undefined, farmerToken);
+    assert.equal(invalid.response.status, 400, query);
+    assert.equal(invalid.payload.error.code, code, query);
+  }
+  assert.equal(findCalls, 1, "only the valid empty request reaches find");
+  assert.equal(countCalls, 1, "only the valid empty request reaches count");
 });
 
 test("guest cannot create a marketplace product (401)", async () => {
