@@ -24,8 +24,10 @@ export function explainRotationResult(payload) {
 
 export function fetchMarketPriceAlerts() { return request("/market/alerts"); }
 /** GET /api/v1/marketplace/products — public farmer-set product listings. */
-export function fetchMarketplaceProducts({ page = 1, limit = 12 } = {}) {
+export function fetchMarketplaceProducts({ page = 1, limit = 12, q, district } = {}) {
   const query = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (typeof q === "string" && q.trim()) query.set("q", q.trim());
+  if (typeof district === "string" && district.trim()) query.set("district", district.trim());
   return request(`/marketplace/products?${query.toString()}`);
 }
 export function fetchMarketPriceForecast({ commodity, division, district, upazila, market, unit, source, priceType = "wholesale", frequency = "daily", horizonDays = 30 }) {

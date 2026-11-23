@@ -30,6 +30,18 @@ test("public Marketplace API client requests the selected page and limit", async
   } finally { mock.restore(); }
 });
 
+test("public Marketplace API client sends trimmed English/Bengali search and district filters", async () => {
+  const mock = mockFetch({ status: 200, body: { data: { products: [], pagination: { page: 1, limit: 12, total: 0, pages: 0 } } } });
+  try {
+    await fetchMarketplaceProducts({ page: 1, limit: 12, q: "  আলু  ", district: " Cumilla " });
+    const url = new URL(mock.requests[0].url);
+    assert.equal(url.searchParams.get("q"), "আলু");
+    assert.equal(url.searchParams.get("district"), "Cumilla");
+    assert.equal(url.searchParams.get("page"), "1");
+    assert.equal(url.searchParams.get("limit"), "12");
+  } finally { mock.restore(); }
+});
+
 test("API client handles successful product data, including an empty listing set", async () => {
   const products = [{ _id: "demo-1", productName: "[DEMO / SAMPLE] Potato", askingPricePerUnit: 32, quantity: 5, unit: "kg", district: "Cumilla", upazila: "Burichang", description: "Fictional sample listing and price." }];
   const success = mockFetch({ status: 200, body: { data: { products, pagination: { page: 1, limit: 12, total: 1, pages: 1 } } } });
@@ -59,6 +71,17 @@ test("public page presents loading, retry, empty, pagination, and demo disclosur
   assert.match(component, /setRetryKey/);
   assert.match(component, /changePage\(page - 1\)/);
   assert.match(component, /changePage\(page \+ 1\)/);
+  assert.match(component, /name="q"[\s\S]*maxLength=\{100\}/);
+  assert.match(component, /name="district"[\s\S]*maxLength=\{80\}/);
+  assert.match(component, /onSubmit=\{submitFilters\}/);
+  assert.match(component, /onClick=\{clearFilters\}/);
+  assert.match(component, /setAppliedFilters\(next\)/);
+  assert.match(component, /fetchMarketplaceProducts\(\{ page, limit: PAGE_SIZE, \.\.\.appliedFilters \}\)/);
+  assert.match(component, /filteredEmpty/);
+  assert.match(component, /setPage\(1\)/);
+  assert.match(component, /draft\.q\.trim\(\)/);
+  assert.match(component, /draft\.district\.trim\(\)/);
+  assert.match(component, /names are not automatically translated/);
   assert.match(component, /Farmer asking price/);
   assert.match(component, /Not a DAM-verified price/);
   assert.match(component, /DEMO \/ SAMPLE/);
