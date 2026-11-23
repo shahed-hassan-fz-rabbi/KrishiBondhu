@@ -93,10 +93,15 @@ function emptySummary(runId, now) {
     locked: false,
     evaluated: 0,
     eligible: 0,
+    // Jobs written to the SMS outbox. NOT SMS deliveries.
     queued: 0,
     duplicate: 0,
     failed: 0,
-    // Legacy alias kept for existing callers; equals `queued` (no send occurs).
+    // No delivery happens in the cycle; this is always zero. It exists so the
+    // summary cannot be mistaken for a sent-message count.
+    delivered: 0,
+    // Deprecated alias of `queued`; retained only for older callers. It does
+    // NOT mean an SMS was sent or handed to a provider.
     dryRunAlerts: 0,
     skipped: 0,
     errors: 0,

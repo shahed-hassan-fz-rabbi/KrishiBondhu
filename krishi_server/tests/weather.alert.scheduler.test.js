@@ -97,7 +97,7 @@ test("a cycle runs on a tick with a PII-free summary", async () => {
   const timers = makeTimers();
   const logger = makeLogger();
   const summary = {
-    runId: "cycle-1", eligible: 2, evaluated: 2, dryRunAlerts: 2, skipped: 0,
+    runId: "cycle-1", eligible: 2, evaluated: 2, queued: 2, dryRunAlerts: 2, skipped: 0,
     errors: 0, skipReasons: {}, districtsProcessed: ["cumilla"], stoppedEarly: null,
     phone: "+8801712345678",
   };
@@ -109,7 +109,8 @@ test("a cycle runs on a tick with a PII-free summary", async () => {
 
   assert.equal(logger.logs.info.length, 1);
   const logged = JSON.stringify(logger.logs.info[0]);
-  assert.ok(logged.includes("dryRunAlerts"));
+  assert.ok(logged.includes('"queued":2'));
+  assert.ok(logged.includes('"delivered":0'));
   assert.equal(logged.includes("+8801712345678"), false);
   assert.equal(logged.includes("phone"), false);
   assert.deepEqual(toSafeCycleSummary(summary).districtsProcessed, ["cumilla"]);
