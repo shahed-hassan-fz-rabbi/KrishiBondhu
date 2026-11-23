@@ -11,6 +11,7 @@ import { connectDatabase, getDatabaseState } from "./config/database.js";
 import { env } from "./config/env.config.js";
 import { startFarmSmsScheduler } from "./services/farm-sms-scheduler.service.js";
 import { startWeatherAlertScheduler } from "./services/sms/weatherAlertScheduler.service.js";
+import { startSmsOutboxScheduler } from "./services/sms/smsOutboxScheduler.service.js";
 
 async function main() {
   await connectDatabase();
@@ -28,12 +29,15 @@ async function main() {
   const stopFarmSmsScheduler = db.readyState === 1 ? startFarmSmsScheduler() : null;
   // Disabled by default; only starts with WEATHER_ALERT_SCHEDULER_ENABLED=1.
   const stopWeatherAlertScheduler = startWeatherAlertScheduler().stop;
+  // Disabled by default; dry-run only; needs SMS_OUTBOX_SCHEDULER_ENABLED=1.
+  const stopSmsOutboxScheduler = startSmsOutboxScheduler().stop;
 
   // ---- Graceful shutdown ----
   const shutdown = async (signal) => {
     console.log(`[server] Received ${signal} — shutting down gracefully`);
     stopFarmSmsScheduler?.();
     await stopWeatherAlertScheduler();
+    await stopSmsOutboxScheduler();
     server.close(async () => {
       const { disconnectDatabase } = await import("./config/database.js");
       await disconnectDatabase();

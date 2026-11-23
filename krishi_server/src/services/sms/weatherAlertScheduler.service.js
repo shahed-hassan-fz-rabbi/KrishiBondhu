@@ -51,7 +51,11 @@ export function toSafeCycleSummary(summary = {}) {
     locked: Boolean(summary.locked),
     eligible: summary.eligible || 0,
     evaluated: summary.evaluated || 0,
-    dryRunAlerts: summary.dryRunAlerts || 0,
+    // Queued outbox jobs, not delivered SMS. The cycle never sends.
+    queued: summary.queued ?? summary.dryRunAlerts ?? 0,
+    duplicate: summary.duplicate || 0,
+    failed: summary.failed || 0,
+    delivered: 0,
     skipped: summary.skipped || 0,
     errors: summary.errors || 0,
     skipReasons: summary.skipReasons || {},
