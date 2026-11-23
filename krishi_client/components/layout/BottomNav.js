@@ -42,15 +42,15 @@ export function BottomNav() {
       aria-label="Mobile navigation"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
     >
-      <ul className="mx-auto flex max-w-md items-stretch">
+      <ul className="mx-auto flex w-full min-w-0 max-w-md items-stretch">
         {navigation.map(({ href, icon: Icon, key }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
           return (
-            <li key={href} className="flex-1">
+            <li key={href} className="min-w-0 flex-1">
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg px-1 pb-1 pt-1.5 text-[10px] font-medium leading-tight transition-colors ${
+                className={`flex min-h-12 w-full min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-0.5 pb-1 pt-1.5 text-[10px] font-medium leading-tight transition-colors ${
                   active ? "bg-forest text-white" : "text-muted hover:text-content"
                 }`}
               >
@@ -59,7 +59,7 @@ export function BottomNav() {
                   strokeWidth={active ? 2.0 : 1.75}
                   aria-hidden="true"
                 />
-                <span className="max-w-[14ch] truncate">{t(key)}</span>
+                <span className="w-full min-w-0 max-w-full text-center">{t(key)}</span>
               </Link>
             </li>
           );

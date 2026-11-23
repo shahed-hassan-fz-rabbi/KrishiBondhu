@@ -35,6 +35,15 @@ test("sidebar and mobile navigation mark nested routes active", () => {
   assert.match(bottomNav, /bg-forest text-white/);
 });
 
+test("mobile navigation labels wrap inside equal-width touch targets without forcing horizontal overflow", () => {
+  const bottomNav = read("../components/layout/BottomNav.js");
+  assert.match(bottomNav, /<ul className="mx-auto flex w-full min-w-0 max-w-md items-stretch">/);
+  assert.match(bottomNav, /<li key=\{href\} className="min-w-0 flex-1">/);
+  assert.match(bottomNav, /min-h-12 w-full min-w-0 flex-col/);
+  assert.match(bottomNav, /<span className="w-full min-w-0 max-w-full text-center">\{t\(key\)\}<\/span>/);
+  assert.doesNotMatch(bottomNav, /max-w-\[14ch\] truncate/);
+});
+
 test("Weather and Soil is a single sidebar destination; specialist data pages are not separate navigation items", () => {
   const sidebar = read("../components/layout/AppSidebar.js");
   const navigation = read("../lib/nav.js");
