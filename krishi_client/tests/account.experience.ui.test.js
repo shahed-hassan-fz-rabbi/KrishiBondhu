@@ -54,6 +54,28 @@ test("Assistant retains the real chat and voice services with a mobile-safe comp
   assert.match(assistant, /min-h-11 min-w-11/);
 });
 
+test("Assistant guest gate explains the service and keeps chat private behind login", () => {
+  const access = read("components/auth/PrivateAccess.js");
+  const loading = read("components/assistant/AssistantLoadingState.js");
+  assert.match(access, /isAssistant/);
+  assert.match(access, /\/login\?redirect=\$\{encodeURIComponent\(pathname\)\}/);
+  assert.match(access, /\/register\?redirect=\$\{encodeURIComponent\(pathname\)\}/);
+  assert.match(access, /assistantFeatures/);
+  assert.match(access, /assistantPrivacyBody/);
+  assert.match(loading, /role="status"/);
+  assert.match(loading, /aria-busy="true"/);
+});
+
+test("Assistant reserves the application shell space and keeps the composer in its flex layout", () => {
+  const assistant = read("app/(app)/assistant/page.js");
+  assert.match(assistant, /h-\[calc\(100dvh-13\.5rem\)\].*lg:h-\[calc\(100dvh-7\.75rem\)\]/);
+  assert.match(assistant, /flex min-h-0 w-full flex-1 flex-col overflow-hidden/);
+  assert.match(assistant, /shrink-0 border-t border-line bg-gradient-to-r/);
+  assert.doesNotMatch(assistant, /sticky bottom-0 bg-gradient-to-r/);
+  assert.match(assistant, /assistant\.headerDescription/);
+  assert.match(assistant, /assistant\.contextLabel/);
+});
+
 test("Administrative pages preserve role checks and truthful status/import safeguards", () => {
   const officer = read("app/(app)/officer/reviews/page.js");
   const marketAdmin = read("app/(public-data)/market-import/page.js");

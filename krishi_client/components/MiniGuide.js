@@ -220,7 +220,7 @@ export function MiniGuide() {
   // On the landing page Bondhu occupies its reserved hero stage. Elsewhere choose the
   // viewport corner with the least collision against visible copy and controls.
   useEffect(() => {
-    if (pathname !== "/" || position || tourMode || hidden || isDragging) return undefined;
+    if (position || tourMode || hidden || isDragging) return undefined;
     let frame = 0;
     const update = () => {
       window.cancelAnimationFrame(frame);
@@ -555,7 +555,7 @@ export function MiniGuide() {
     };
   }, [authLoading, bn, isAuthenticated, nextStop, pathname, paused, tourIndex, tourMode, tourStep]);
 
-  const launcherPosition = position || visibleContentPosition || savedPosition;
+  const launcherPosition = position || visibleContentPosition || contentPosition || savedPosition;
   const launcherStyle = launcherPosition ? { left: launcherPosition.x, top: launcherPosition.y, right: "auto", bottom: "auto" } : undefined;
   const tourPosition = tourMode && targetRect ? {
     left: (() => {

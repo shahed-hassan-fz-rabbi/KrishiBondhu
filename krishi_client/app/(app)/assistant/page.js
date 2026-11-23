@@ -1,5 +1,6 @@
 "use client";
 import { PrivateAccess } from "@/components/auth/PrivateAccess.js";
+import { AssistantLoadingState } from "@/components/assistant/AssistantLoadingState.js";
 import { BRAND_LOGO_SRC } from "@/lib/branding.js";
 import { isMascotVoiceMuted } from "@/components/mascot/mascotStore.js";
 
@@ -26,6 +27,7 @@ import {
   LayoutGrid,
   ListTodo,
   MapPin,
+  MessageCircle,
   Mic,
   MicOff,
   Moon,
@@ -690,7 +692,7 @@ function AssistantContent() {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] flex flex-col h-[calc(100dvh-8rem)] sm:h-[calc(100dvh-8.5rem)] overflow-hidden">
+    <div className="mx-auto flex h-[calc(100dvh-13.5rem)] min-h-[28rem] w-full max-w-[1320px] flex-col overflow-hidden lg:h-[calc(100dvh-7.75rem)] lg:min-h-0">
       {/* Sleek, Compact Top Toolbar: Ultra-Compact Single-Row Toolbar */}
       {conversationTitle && (
       <div className="shrink-0 mb-3 w-full flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-surface to-lime-50 px-4 py-4 shadow-sm sm:px-6 dark:border-emerald-900 dark:from-emerald-950/30 dark:to-lime-950/20">
@@ -753,16 +755,27 @@ function AssistantContent() {
       {/* Main Grid: Left Chat Area & Right Sidebar */}
       <div className="flex-1 min-h-0 flex flex-col w-full overflow-hidden">
         {/* Left Column: Full-Height Chat Area with Contained Scroll */}
-        <div className="flex-1 min-w-0 w-full h-full flex flex-col rounded-3xl border border-emerald-200 bg-gradient-to-br from-surface via-surface to-sky-50/60 shadow-sm overflow-hidden dark:border-emerald-900 dark:to-sky-950/20 transition-all duration-200">
-          <header className="flex shrink-0 items-center justify-between gap-3 border-b border-emerald-100 bg-emerald-50/60 px-4 py-3 sm:px-6 dark:border-emerald-900 dark:bg-emerald-950/20">
-            <div className="flex min-w-0 items-center gap-3">
-              <Image src={BRAND_LOGO_SRC} alt="" width={40} height={40} className="h-10 w-10 shrink-0 rounded-xl object-contain" />
-              <h1 data-tour-target="assistant.overview" className="text-lg font-semibold tracking-tight text-content sm:text-xl">{t("assistant.title")}</h1>
+        <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-3xl border border-line bg-gradient-to-br from-surface via-surface to-sky-50/40 shadow-sm transition-colors duration-200 dark:to-sky-950/10">
+          <header className="flex shrink-0 flex-col gap-3 border-b border-line bg-gradient-to-r from-emerald-50/80 via-surface to-lime-50/60 px-4 py-4 dark:from-emerald-950/30 dark:via-surface dark:to-lime-950/20 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-200">
+                <MessageCircle className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h1 data-tour-target="assistant.overview" className="text-lg font-semibold tracking-tight text-content sm:text-xl">{t("assistant.title")}</h1>
+                <p className="mt-1 max-w-2xl text-xs leading-5 text-muted sm:text-sm">{t("assistant.headerDescription")}</p>
+                <div className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-line bg-surface/80 px-2.5 py-1 text-xs text-content-muted">
+                  <MapPin className="h-3.5 w-3.5 shrink-0 text-emerald" aria-hidden="true" />
+                  <span>{t("assistant.contextLabel")}</span>
+                  <span className="font-semibold text-content">{isBn ? districtLabelBn : districtLabel}</span>
+                  {activeFarm ? <span className="hidden max-w-48 truncate border-l border-line pl-1.5 sm:inline">{activeFarm.farmName}</span> : null}
+                </div>
+              </div>
             </div>
             <button
               type="button"
               onClick={() => handleNewConversation(selectedFarmId)}
-              className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl bg-forest px-3 text-sm font-semibold text-white shadow-xs transition-colors hover:bg-forest/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald focus-visible:ring-offset-2"
+              className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-forest px-4 text-sm font-semibold text-white shadow-xs transition-colors hover:bg-forest/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald focus-visible:ring-offset-2 sm:w-auto"
               aria-label={t("assistant.newChat")}
             >
               <Plus className="h-4 w-4" />
@@ -1231,7 +1244,7 @@ function AssistantContent() {
           )}
 
           {/* Message Composer Area */}
-          <div className="sticky bottom-0 bg-gradient-to-r from-emerald-50/95 via-surface to-sky-50/95 backdrop-blur-md px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3 mt-3 border-t border-emerald-100 z-10 sm:px-6 dark:from-emerald-950/80 dark:to-sky-950/80 dark:border-emerald-900">
+          <div className="shrink-0 border-t border-line bg-gradient-to-r from-emerald-50/95 via-surface to-sky-50/95 px-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3 sm:px-6 dark:from-emerald-950/80 dark:to-sky-950/80">
             {/* Active Listening / Interim Transcription Banner */}
             {(isListening || isTranscribing) && (
               <div className="mb-2 p-2.5 rounded-xl border border-emerald/30 bg-emerald/5 dark:bg-emerald-950/30 flex items-center justify-between gap-3 animate-in fade-in duration-150">
@@ -1405,16 +1418,10 @@ function AssistantContent() {
 }
 
 function AssistantPage() {
+  const { t } = useLang();
   return (
     <Suspense
-      fallback={
-        <div className="flex h-96 w-full items-center justify-center">
-          <div className="flex items-center gap-2 text-sm text-muted">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-emerald border-t-transparent" />
-            <span>Loading AI Assistant...</span>
-          </div>
-        </div>
-      }
+      fallback={<AssistantLoadingState label={t("common.loading")} />}
     >
       <AssistantContent />
     </Suspense>

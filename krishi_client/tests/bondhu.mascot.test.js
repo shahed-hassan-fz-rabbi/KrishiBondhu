@@ -69,6 +69,8 @@ test("Bondhu stays character-first at rest and opens a compact speech bubble onl
   assert.match(guide, /if \(!open \|\| !greeting \|\| tourMode\)/, "user-requested contextual help stays open until dismissed");
   assert.match(guide, /#home \.kb-hero2-card-stage/, "homepage companion uses the reserved hero illustration area");
   assert.match(guide, /chooseCompanionPosition/, "other pages avoid visible copy and controls when placing the companion");
+  assert.match(guide, /if \(position \|\| tourMode \|\| hidden \|\| isDragging\)/, "collision-aware positioning runs on internal routes unless the user is dragging or touring");
+  assert.match(guide, /position \|\| visibleContentPosition \|\| contentPosition \|\| savedPosition/, "internal pages apply collision-aware placement before a saved default position");
   assert.match(guide, /const startDrag = \(event\)/, "pointer dragging remains available");
   assert.match(guide, /savePreferences\(position\)/, "dragged placement is saved");
   assert.match(guide, /onKeyDown=\{moveWithKeyboard\}/, "keyboard movement remains available");
