@@ -11,10 +11,9 @@ const MAX_FAILED_ATTEMPTS = 5;
 const digestCode = (userId, phone, code) => createHmac("sha256", env.jwtSecret).update(`${userId}:${phone}:${code}`).digest("hex");
 
 export class PhoneVerificationService {
-  static async sendCode(userId) {
+  static async sendCode(userId, { transport = sendVerificationCodeSms, now = new Date() } = {}) {
     const user = await User.findById(userId).select("phone");
     if (!user?.phone) return { success: false, status: 400, code: "PHONE_REQUIRED", message: "Add a Bangladesh mobile number first" };
-    const now = new Date();
     let record = await PhoneVerification.findOne({ userId });
     if (record?.phone !== user.phone) record = null;
     if (record?.lastSentAt && now - record.lastSentAt < RESEND_COOLDOWN_MS) {
@@ -25,7 +24,7 @@ export class PhoneVerificationService {
       return { success: false, status: 429, code: "OTP_DAILY_LIMIT", message: "Daily verification SMS limit reached; try again tomorrow" };
     }
     const code = String(randomInt(0, 1000000)).padStart(6, "0");
-    const delivery = await sendVerificationCodeSms(user.phone, code);
+    const delivery = await transport(user.phone, code);
     if (!delivery.sent) {
       return { success: false, status: delivery.reason === "provider_not_configured" ? 503 : 502, code: "SMS_UNAVAILABLE", message: delivery.reason === "provider_not_configured" ? "SMS verification is not configured yet" : "Could not send the verification code" };
     }

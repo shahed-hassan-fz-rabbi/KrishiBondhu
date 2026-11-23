@@ -46,6 +46,8 @@ export const env = {
   geminiApiKey: process.env.GEMINI_API_KEY || "",
   geminiModel: process.env.GEMINI_MODEL || "gemini-2.5-flash",
   smsProvider: process.env.SMS_PROVIDER || "",
+  // OTP delivery is a separate transport. Real OTP sends require explicit opt-in.
+  smsOtpLiveEnabled: process.env.SMS_OTP_LIVE_ENABLED === "1",
   sslSmsApiToken: process.env.SSL_SMS_API_TOKEN || "",
   sslSmsSid: process.env.SSL_SMS_SID || "",
   // Notification SMS gateway (BulkSMSBD). Live sending is opt-in via SMS_LIVE=1.
