@@ -107,6 +107,7 @@ export async function transitionOutboxStatus({
   leaseOwner = null,
   now = new Date(),
   leaseTtlMs = DEFAULT_LEASE_TTL_MS,
+  extra = {},
   model = SmsOutbox,
 } = {}) {
   if (!SMS_OUTBOX_TRANSITIONS[from]?.includes(to)) {
@@ -128,8 +129,12 @@ export async function transitionOutboxStatus({
     update.$set.leaseExpiresAt = null;
   }
   if (to === "submitted") update.$set.submittedAt = now;
+  if (to === "dry_run") update.$set.dryRunAt = now;
   if (to === "failed") update.$set.failedAt = now;
   if (to === "cancelled") update.$set.cancelledAt = now;
+  for (const [key, value] of Object.entries(extra)) {
+    if (key !== "status" && key !== "attempts") update.$set[key] = value;
+  }
 
   try {
     const updated = await model.findOneAndUpdate(filter, update, { new: true });

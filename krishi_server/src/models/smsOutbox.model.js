@@ -14,14 +14,17 @@ export const SMS_OUTBOX_STATUSES = Object.freeze([
   "pending",
   "processing",
   "submitted",
+  "dry_run",
   "failed",
   "cancelled",
 ]);
 
 export const SMS_OUTBOX_TRANSITIONS = Object.freeze({
   pending: ["processing", "cancelled"],
-  processing: ["submitted", "failed", "pending"],
+  processing: ["submitted", "failed", "dry_run", "pending", "cancelled"],
   submitted: [],
+  // Terminal: a simulated send is never a real submission and is never retried.
+  dry_run: [],
   failed: ["pending", "cancelled"],
   cancelled: [],
 });
@@ -58,6 +61,10 @@ const smsOutboxSchema = new mongoose.Schema(
     consentSource: { type: String, default: null },
     lastAttemptAt: { type: Date, default: null },
     submittedAt: { type: Date, default: null },
+    /** Dry-run outcomes are recorded separately and never as submissions. */
+    dryRunAt: { type: Date, default: null },
+    dryRunProvider: { type: String, default: null },
+    dryRunNote: { type: String, default: null },
     failedAt: { type: Date, default: null },
     cancelledAt: { type: Date, default: null },
     /** Reserved for a future worker; never used for live sending in this part. */
