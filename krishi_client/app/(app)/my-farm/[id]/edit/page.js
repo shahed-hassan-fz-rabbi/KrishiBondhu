@@ -83,11 +83,11 @@ function EditFarmContent() {
               cropName: f.crop?.cropName,
             });
           } else {
-            setError(res.error?.message || "Failed to load farm details");
+            setError(res.error?.message || "Failed to load field details");
           }
         }
       } catch (err) {
-        if (active) setError("A network error occurred while loading farm data.");
+        if (active) setError("A network error occurred while loading field data.");
       } finally {
         if (active) setLoading(false);
       }
@@ -107,7 +107,7 @@ function EditFarmContent() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.farmName.trim()) {
-      setSubmitError(lang === "bn" ? "খামারের নাম আবশ্যক" : "Farm name is required");
+      setSubmitError(lang === "bn" ? "ক্ষেতের নাম আবশ্যক" : "Field name is required");
       return;
     }
     const areaNum = parseFloat(formData.area);
@@ -151,10 +151,10 @@ function EditFarmContent() {
       if (res.success) {
         router.push(`/my-farm/${farmId}`);
       } else {
-        setSubmitError(res.error?.message || "Failed to update farm");
+        setSubmitError(res.error?.message || "Failed to update field");
       }
     } catch {
-      setSubmitError("Failed to update farm due to network error.");
+      setSubmitError("Failed to update field due to network error.");
     } finally {
       setSubmitting(false);
     }
@@ -201,7 +201,7 @@ function EditFarmContent() {
       <div className="rounded-[24px] border border-line bg-surface p-5 shadow-km-sm sm:p-7">
         <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-forest/5 px-3 py-1 text-xs font-semibold text-forest dark:bg-forest/20 dark:text-emerald-300">
           <Tractor className="h-3.5 w-3.5" />
-          {lang === "bn" ? "খামারের তথ্য" : "FARM PROFILE"}
+          {lang === "bn" ? "ক্ষেতের তথ্য" : "FIELD PROFILE"}
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-content sm:text-3xl">
           {t("myFarm.editFarm")}

@@ -9,7 +9,7 @@ import { useLang } from "@/lib/i18n/LanguageContext.js";
 
 const SEARCH_TERMS = {
   "/dashboard": "overview home ড্যাশবোর্ড সারসংক্ষেপ",
-  "/my-farm": "farm farms field fields খামার জমি",
+  "/my-farm": "field fields field fields ক্ষেত জমি",
   "/assistant": "ai chat chatbot সহকারী প্রশ্ন",
   "/handoff": "crop transition handoff window sowing ফসল পরিবর্তন বপন সময়",
   "/climate": "climate weather power জলবায়ু আবহাওয়া",

@@ -21,7 +21,7 @@ import { useLang } from "@/lib/i18n/LanguageContext.js";
 import { useAuth } from "@/contexts/AuthContext.js";
 
 const actions = [
-  { href: "/my-farm", icon: Sprout, en: "My farm", bn: "আমার খামার", detailEn: "Review your farm records", detailBn: "খামারের তথ্য ও কাজ দেখুন" },
+  { href: "/my-farm", icon: Sprout, en: "My field", bn: "আমার ক্ষেত", detailEn: "Review your field records", detailBn: "ক্ষেতের তথ্য ও কাজ দেখুন" },
   { href: "/assistant", icon: MessageCircle, en: "Ask the assistant", bn: "সহকারীর পরামর্শ নিন", detailEn: "Continue with an agricultural question", detailBn: "কৃষি বিষয়ে প্রশ্ন করুন" },
   { href: "/market", icon: Store, en: "Market information", bn: "বাজার তথ্য", detailEn: "Browse available market records", detailBn: "বাজারদর ও লাভ হিসাব দেখুন" },
   { href: "/saved-advisories", icon: Bookmark, en: "Saved advisories", bn: "সংরক্ষিত পরামর্শ", detailEn: "Return to saved guidance", detailBn: "সংরক্ষিত পরামর্শ দেখুন" },
@@ -81,7 +81,7 @@ export default function DashboardOverview({
       <section data-tour-target="dashboard.overview" className="kb-dash-context-card rounded-2xl border border-line bg-surface p-5 shadow-km-sm sm:p-7">
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,0.8fr)] lg:items-center">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald">{isBn ? "আপনার কৃষি কর্মক্ষেত্র" : "YOUR FARM WORKSPACE"}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald">{isBn ? "আপনার কৃষি কর্মক্ষেত্র" : "YOUR FIELD WORKSPACE"}</p>
             <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight text-content sm:text-3xl">{isBn ? `${user?.name ? `${user.name}, ` : ""}আপনার কৃষি ড্যাশবোর্ড` : `${user?.name ? `Welcome, ${user.name}` : "Your agriculture dashboard"}`}</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">{isBn ? "নির্বাচিত এলাকার আবহাওয়া ও তারিখযুক্ত বাজার প্রতিবেদন দেখুন। ঐতিহাসিক জলবায়ু তথ্যকে বর্তমান পর্যবেক্ষণ থেকে আলাদা রাখা হয়েছে।" : "Review weather and dated market reports for your selected area. Historical climate context is kept separate from current observations."}</p>
             <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -92,8 +92,8 @@ export default function DashboardOverview({
           </div>
           <aside className="rounded-xl border border-line bg-surface-2/60 p-4 sm:p-5">
             <p className="text-xs font-bold uppercase tracking-[0.12em] text-muted">{isBn ? "পরিকল্পনার প্রেক্ষাপট" : "PLANNING CONTEXT"}</p>
-            <p className="mt-2 text-sm leading-6 text-content">{isBn ? "এই সারাংশে স্বয়ংক্রিয়ভাবে মৌসুম বা জমির অবস্থা নির্ধারণ করা হয় না। ফসল ক্যালেন্ডার ও আমার খামার থেকে আপনার পরিকল্পনা বেছে নিন।" : "This overview does not infer a season or field condition. Choose a crop cycle in the calendar and manage field details in My Farm."}</p>
-            <Link href="/my-farm" className="mt-3 inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-emerald hover:underline">{isBn ? "আমার খামার খুলুন" : "Open My Farm"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
+            <p className="mt-2 text-sm leading-6 text-content">{isBn ? "এই সারাংশে স্বয়ংক্রিয়ভাবে মৌসুম বা জমির অবস্থা নির্ধারণ করা হয় না। ফসল ক্যালেন্ডার ও আমার ক্ষেত থেকে আপনার পরিকল্পনা বেছে নিন।" : "This overview does not infer a season or field condition. Choose a crop cycle in the calendar and manage field details in My Field."}</p>
+            <Link href="/my-farm" className="mt-3 inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-emerald hover:underline">{isBn ? "আমার ক্ষেত খুলুন" : "Open My Field"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
           </aside>
         </div>
       </section>

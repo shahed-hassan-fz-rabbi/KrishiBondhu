@@ -17,10 +17,10 @@ const PLACES = [
   { href: "/my-farm/plan", en: "Plan a crop", bn: "ফসল পরিকল্পনা" },
   { href: "/my-farm/reviews", en: "Officer review", bn: "কর্মকর্তার পর্যালোচনা" },
   { href: "/handoff", en: "Aman to mustard", bn: "আমন থেকে সরিষা" },
-  { href: "/my-farm", en: "My Farm", bn: "আমার খামার" },
+  { href: "/my-farm", en: "My Field", bn: "আমার ক্ষেত" },
   { href: "/market", en: "Market & costs", bn: "বাজার ও খরচ" },
   { href: "/climate", en: "Weather & climate", bn: "আবহাওয়া ও জলবায়ু" },
-  { href: "/assistant", en: "Farm assistant", bn: "কৃষি সহকারী" },
+  { href: "/assistant", en: "Field assistant", bn: "কৃষি সহকারী" },
   { href: "/data-sources", en: "Data sources", bn: "তথ্যের উৎস" },
   { href: "/settings", en: "Account & alerts", bn: "অ্যাকাউন্ট ও সতর্কতা" },
 ];
@@ -155,7 +155,7 @@ function findSafeTourLanding(targetRect, bottomNavHeight = 0) {
 function pageTip(pathname, bn) {
   if (pathname?.startsWith("/officer")) return bn
     ? { title: "কর্মকর্তার পর্যালোচনা ডায়েরি", text: "আপনার জেলার কৃষকদের পাঠানো ফসল পরিকল্পনার অনুরোধগুলো যাচাই করুন। মাটির আর্দ্রতা, জমির ধরন ও স্থানীয় আবহাওয়া বিবেচনা করে বাস্তবসম্মত বৈজ্ঞানিক পরামর্শ ও দিকনির্দেশনা দিন।" }
-    : { title: "Agricultural Officer Review Queue", text: "Review farm planning requests submitted by local farmers in your district. Provide practical, crop-specific guidance based on soil moisture, land type, and local weather." };
+    : { title: "Agricultural Officer Review Queue", text: "Review field planning requests submitted by local farmers in your district. Provide practical, crop-specific guidance based on soil moisture, land type, and local weather." };
   if (pathname === "/crop-calendar") return bn
     ? { title: "বাৎসরিক ফসল ক্যালেন্ডার", text: "আপনার জেলা ও ফসল নির্বাচন করে বপন, নিবিড় পরিচর্যা, সার প্রয়োগ ও কাটার সর্বোত্তম সময়সূচি জানুন। রবি, খরিফ-১ ও খরিফ-২ মৌসুমের সাথে মিলিয়ে মাঠের কাজের পরিকল্পনা করুন।" }
     : { title: "Annual Crop Calendar", text: "Select your district and crop to explore optimal sowing, crop care, fertilization, and harvest windows aligned with Bangladesh's Rabi, Kharif-1, and Kharif-2 cropping seasons." };
@@ -172,8 +172,8 @@ function pageTip(pathname, bn) {
     ? { title: "কর্মকর্তার মতামত ও পর্যালোচনা", text: "আপনার প্রেরিত ফসল পরিকল্পনায় স্থানীয় উপসহকারী কৃষি কর্মকর্তার মূল্যায়িত পরামর্শ ও মাঠের বাস্তবসম্মত নির্দেশনা এখানে দেখতে পারবেন।" }
     : { title: "Extension Officer Advisory", text: "Track personalized reviews and field recommendations submitted by your local agricultural extension officer for your submitted crop plan." };
   if (pathname?.startsWith("/my-farm")) return bn
-    ? { title: "আমার খামার ব্যবস্থাপনা", text: "নতুন খামার বা প্লট যুক্ত করুন, চলমান ফসলের পরিচর্যা ও সেচের কাজের তালিকা ট্র্যাক করুন। জরুরি আবহাওয়া ও রোগবালাই সংক্রান্ত নোটিফিকেশন পেতে সেটিংস থেকে SMS চালু রাখুন।" }
-    : { title: "Farm Management & Operations", text: "Register your farm plots, track seasonal crop lifecycles, and monitor weekly field tasks. Keep SMS alerts enabled in settings for urgent local weather advisories." };
+    ? { title: "আমার ক্ষেত ব্যবস্থাপনা", text: "নতুন ক্ষেত বা প্লট যুক্ত করুন, চলমান ফসলের পরিচর্যা ও সেচের কাজের তালিকা ট্র্যাক করুন। জরুরি আবহাওয়া ও রোগবালাই সংক্রান্ত নোটিফিকেশন পেতে সেটিংস থেকে SMS চালু রাখুন।" }
+    : { title: "Field Management & Operations", text: "Register your field plots, track seasonal crop lifecycles, and monitor weekly field tasks. Keep SMS alerts enabled in settings for urgent local weather advisories." };
   if (pathname === "/market") return bn
     ? { title: "দৈনিক বাজারদর ও মার্জিন বিশ্লেষণ", text: "কৃষি বিপণন অধিদপ্তরের (DAM) দৈনিক পাইকারি ও খুচরা দর পর্যবেক্ষণ করুন। নিজের উৎপাদন খরচ বাদ দিয়ে প্রত্যাশিত লাভ ও ফসল বিক্রির সেরা সময় নির্ধারণ করুন।" }
     : { title: "Daily Market Intelligence & Margins", text: "Examine verified daily wholesale and retail agricultural market rates from the Department of Agricultural Marketing (DAM) to determine the most profitable sale window." };
@@ -182,7 +182,7 @@ function pageTip(pathname, bn) {
     : { title: "Satellite Climate & Soil Telemetry", text: "Access high-resolution observations from NASA POWER and SMAP satellites, including 25-year rainfall trends, root-zone soil moisture, and solar radiation for your district." };
   if (pathname === "/assistant") return bn
     ? { title: "কৃষি বন্ধু এআই সহকারী", text: "ফসলের রোগবালাই, সার-কীটনাশকের সঠিক মাত্রা বা সেচ ব্যবস্থাপনা নিয়ে সরাসরি প্রশ্ন করুন। বাংলা বা ইংরেজিতে তাৎক্ষণিক বৈজ্ঞানিক পরামর্শ ও উৎস তথ্য জেনে নিন।" }
-    : { title: "KrishiBondhu AI Farm Assistant", text: "Ask any agronomic questions regarding plant pathologies, optimal fertilizer dosages, or irrigation schedules in Bangla or English for instant, grounded advisory." };
+    : { title: "KrishiBondhu AI Field Assistant", text: "Ask any agronomic questions regarding plant pathologies, optimal fertilizer dosages, or irrigation schedules in Bangla or English for instant, grounded advisory." };
   if (pathname === "/settings") return bn
     ? { title: "প্রোফাইল ও নোটিফিকেশন সেটিংস", text: "আপনার চাষের জেলা ও যোগাযোগের তথ্য হালনাগাদ রাখুন। উপগ্রহভিত্তিক খরা ও বৃষ্টির জরুরি সতর্কতা সরাসরি মোবাইলে পেতে ফোন নম্বর ভেরিফাই করুন।" }
     : { title: "Account & Alert Preferences", text: "Keep your preferred agricultural district and contact profile updated. Verify your phone number to receive critical satellite-triggered drought and weather SMS alerts." };
@@ -787,7 +787,7 @@ export function MiniGuide() {
     className={"kb-mini-guide" + (tourMode ? " is-tour-active" : "") + (flying ? " is-flying" : "")}
     style={tourPosition}
   >
-    {open && <section ref={bubbleRef} className={`kb-mini-bubble${tourMode ? " is-tour-bubble" : ""}${greeting && !tourMode ? " is-greeting" : ""}`} data-side={bubblePosition?.side || "above"} style={speechStyle} role="dialog" aria-label={bn ? "বন্ধুর কৃষি নির্দেশনা" : "Bondhu’s farm guide"} aria-describedby={tourMode ? "bondhu-tour-description" : undefined} onPointerEnter={() => { bubbleHoveredRef.current = true; }} onPointerLeave={() => { bubbleHoveredRef.current = false; }}>
+    {open && <section ref={bubbleRef} className={`kb-mini-bubble${tourMode ? " is-tour-bubble" : ""}${greeting && !tourMode ? " is-greeting" : ""}`} data-side={bubblePosition?.side || "above"} style={speechStyle} role="dialog" aria-label={bn ? "বন্ধুর কৃষি নির্দেশনা" : "Bondhu’s field guide"} aria-describedby={tourMode ? "bondhu-tour-description" : undefined} onPointerEnter={() => { bubbleHoveredRef.current = true; }} onPointerLeave={() => { bubbleHoveredRef.current = false; }}>
       <header className="kb-mini-bubble-head"><div className="kb-mini-kicker">{tourMode ? (bn ? `ধাপ ${visibleTourIndex + 1} / ${eligibleTourSteps.length}` : `STEP ${visibleTourIndex + 1} OF ${eligibleTourSteps.length}`) : (bn ? "বন্ধু · আপনার মাঠের সঙ্গী" : "BONDHU · YOUR FIELD GUIDE")}</div><button type="button" aria-label={bn ? "বন্ধ করুন" : "Close"} onClick={closeGuide} className="kb-mini-close"><X size={17}/></button></header>
       <div className="kb-mini-bubble-body">
         {greeting && !tourMode ? <p className="kb-mini-greeting-copy">{bn ? "হ্যালো! আমি বন্ধু—কৃষির কাজে পাশে আছি।" : "Hi! I’m Bondhu. I’m here to help with farming."}</p> : tourMode ? <>
@@ -817,7 +817,7 @@ export function MiniGuide() {
         </>}
         {(!greeting || tourMode) && (tourMode ? <div className="kb-mini-tour-actions"><button type="button" onClick={() => { const previous = findEligibleTourStepIndex(tourIndex - 1, isAuthenticated, BONDHU_TOUR_STEPS, -1); if (previous >= 0) { stopTourVoice(); setTourIndex(previous); savePreferences({ tourProgress: previous }); navigateTo(TOUR_STOPS[previous]); } }} disabled={paused || findEligibleTourStepIndex(tourIndex - 1, isAuthenticated, BONDHU_TOUR_STEPS, -1) < 0} className="kb-mini-quiet" aria-label={bn ? "আগের ধাপ" : "Previous step"}><ArrowLeft size={15}/>{bn ? "আগে" : "Previous"}</button><button type="button" onClick={nextStop} disabled={paused} className="kb-mini-primary">{tourIndex >= BONDHU_TOUR_STEPS.length-1 ? (bn ? "শেষ করুন" : "Finish") : (bn ? "পরের ধাপ" : "Next")}<ArrowRight size={15}/></button><button type="button" onClick={toggleTourPause} className="kb-mini-quiet" aria-label={paused ? (bn ? "আবার চালান" : "Resume tour") : (bn ? "বিরতি" : "Pause tour")}>{paused ? <Play size={15}/> : <Pause size={15}/>}<span className="sr-only">{paused ? (bn ? "চালান" : "Resume") : (bn ? "বিরতি" : "Pause")}</span></button><button type="button" onClick={readTourStep} disabled={muted || !isTourVoiceSupported} className={`kb-mini-quiet kb-mini-listen-btn ${isTourVoiceSpeaking && tourMode ? "is-speaking" : ""}`} aria-label={isTourVoiceSpeaking ? (bn ? "কণ্ঠ থামান" : "Stop speaking") : (bn ? "এই ধাপ শুনুন" : "Listen to this step")} title={isTourVoiceSpeaking ? (bn ? "কণ্ঠ থামান" : "Stop speaking") : (bn ? "এই ধাপ শুনুন" : "Listen to this step")}>{isTourVoiceSpeaking && tourMode ? <VolumeX size={15}/> : <Volume2 size={15}/>}<span>{isTourVoiceSpeaking && tourMode ? (bn ? "থামান" : "Stop") : (bn ? "শুনুন" : "Listen")}</span></button><button type="button" onClick={cancelTour} className="kb-mini-quiet"><SkipForward size={15}/>{bn ? "বাদ" : "Skip"}</button><button type="button" onClick={() => startTour(true)} className="kb-mini-quiet">{bn ? "আবার" : "Replay"}</button></div> : <>
           {!finished && <button type="button" onClick={startTour} className="kb-mini-primary kb-mini-start">{bn ? "বন্ধুর সাথে ঘুরে দেখুন" : preferences.tourProgress != null ? "Resume guided tour" : "Take a guided tour"}<Compass size={15}/></button>}
-          <a className="kb-mini-ask" href="/assistant" onClick={(event)=>{event.preventDefault();setOpen(false);setFinished(false);navigateTo("/assistant");}}><MessageCircle size={14}/>{bn ? "কৃষি সহকারীর সাথে কথা বলুন" : "Open the farm assistant"}</a>
+          <a className="kb-mini-ask" href="/assistant" onClick={(event)=>{event.preventDefault();setOpen(false);setFinished(false);navigateTo("/assistant");}}><MessageCircle size={14}/>{bn ? "কৃষি সহকারীর সাথে কথা বলুন" : "Open the field assistant"}</a>
           <details className="kb-mini-more"><summary>{bn ? "আরও বিকল্প" : "More options"}<ChevronDown size={14}/></summary>
             <div className="kb-mini-more-body">
               <details className="kb-mini-places"><summary><Map size={15}/>{bn ? "একটি পাতা দেখান" : "Choose a page"}<ChevronDown size={15}/></summary><nav aria-label={bn ? "পাতা বেছে নিন" : "Choose a page"}>{places.map((place)=><button type="button" key={place.href} onClick={()=>{cancelTour();setFinished(false);setOpen(false);navigateTo(place.href);}} aria-current={pathname===place.href?"page":undefined}>{place[bn?"bn":"en"]}<ArrowRight size={13}/></button>)}</nav></details>

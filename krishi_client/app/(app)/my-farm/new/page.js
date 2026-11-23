@@ -102,7 +102,7 @@ function NewFarmWizardPage() {
     const errs = {};
     if (step === 1) {
       if (!formData.farmName.trim()) {
-        errs.farmName = lang === "bn" ? "খামারের নাম আবশ্যক" : "Farm name is required";
+        errs.farmName = lang === "bn" ? "ক্ষেতের নাম আবশ্যক" : "Field name is required";
       } else if (formData.farmName.trim().length < 2) {
         errs.farmName = lang === "bn" ? "কমপক্ষে ২ অক্ষর হতে হবে" : "Must be at least 2 characters";
       }
@@ -152,8 +152,8 @@ function NewFarmWizardPage() {
     if (!user) {
       setSubmitError(
         lang === "bn"
-          ? "খামার স্থায়ীভাবে সংরক্ষণ করতে দয়া করে লগইন করুন।"
-          : "Please log in to save your farm plot permanently."
+          ? "ক্ষেত স্থায়ীভাবে সংরক্ষণ করতে দয়া করে লগইন করুন।"
+          : "Please log in to save your field plot permanently."
       );
       return;
     }
@@ -196,7 +196,7 @@ function NewFarmWizardPage() {
         dispatchFarmNotificationUpdate();
         router.push(`/my-farm/${res.data._id}`);
       } else {
-        setSubmitError(res.error?.message || "Failed to create farm.");
+        setSubmitError(res.error?.message || "Failed to create field.");
       }
     } catch {
       setSubmitError("A network error occurred. Please try again.");
@@ -272,7 +272,7 @@ function NewFarmWizardPage() {
             <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-300">
               {lang === "bn"
                 ? "আপনি ফর্মটি পূরণ করতে পারেন, তবে চূড়ান্ত সংরক্ষণের জন্য অ্যাকাউন্ট লগইন প্রয়োজন হবে।"
-                : "You can preview the wizard, but an account is required to persist farm records."}
+                : "You can preview the wizard, but an account is required to persist field records."}
             </p>
           </div>
           <Link

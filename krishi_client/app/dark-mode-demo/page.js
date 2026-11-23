@@ -70,11 +70,11 @@ export default function DarkModeDemoPage() {
         <Image src="/img/agri-field-background.webp" alt="" fill priority sizes="100vw" className={"kdm-heroImage"} />
         <div className={"kdm-heroShade"} />
         <div className={"kdm-heroContent"}>
-          <span className={"kdm-eyebrow"}><Leaf size={15} /> A clearer view of your farm</span>
-          <h1>Farm decisions,<br /><em>in a calmer light.</em></h1>
+          <span className={"kdm-eyebrow"}><Leaf size={15} /> A clearer view of your field</span>
+          <h1>Field decisions,<br /><em>in a calmer light.</em></h1>
           <p>Dark mode carries across the page, so every section stays comfortable to read—from the navigation to the data and cards.</p>
           <div className={"kdm-heroActions"}>
-            <a href="#services" className={"kdm-primaryButton"}>Explore farm tools <ArrowRight size={17} /></a>
+            <a href="#services" className={"kdm-primaryButton"}>Explore field tools <ArrowRight size={17} /></a>
             <a href="#weather" className={"kdm-ghostButton"}>See weather preview</a>
           </div>
         </div>
@@ -83,7 +83,7 @@ export default function DarkModeDemoPage() {
 
       <section className={"kdm-services"} id="services">
         <div className={"kdm-sectionHeading"}>
-          <div><span className={"kdm-kicker"}>TOOLS FOR YOUR FARM</span><h2>Everything works together</h2></div>
+          <div><span className={"kdm-kicker"}>TOOLS FOR YOUR FIELD</span><h2>Everything works together</h2></div>
           <p>Surfaces, labels, borders and actions all adapt to the selected theme.</p>
         </div>
         <div className={"kdm-serviceGrid"}>

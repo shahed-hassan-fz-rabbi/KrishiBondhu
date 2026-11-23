@@ -171,7 +171,7 @@ export function PublicHeader() {
     },
     {
       href: "/assistant",
-      title: locale === "bn" ? "এআই কৃষি সহকারী" : "AI Farm Assistant",
+      title: locale === "bn" ? "এআই কৃষি সহকারী" : "AI Field Assistant",
       desc: locale === "bn" ? "বাংলায় সরাসরি মুখে বা লিখে পরামর্শ নিন" : "Natural voice & chat guidance in Bangla",
       icon: MessageSquare,
       badge: locale === "bn" ? "এআই" : "AI",
@@ -593,7 +593,7 @@ export function PublicFooter() {
             {/* Agricultural Services */}
             <div className="min-w-[140px]">
               <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-300/90 mb-4">
-                {locale === "bn" ? "কৃষি সেবা" : "Farm Services"}
+                {locale === "bn" ? "কৃষি সেবা" : "Field Services"}
               </h3>
               <ul className="space-y-3 text-sm text-[#c0d2c5]">
                 <li>
@@ -618,7 +618,7 @@ export function PublicFooter() {
                 </li>
                 <li>
                   <Link href="/my-farm" className="transition-colors hover:text-[#c2e994] hover:underline underline-offset-4">
-                    {locale === "bn" ? "আমার খামার পরিচর্যা" : "My Farm Planner"}
+                    {locale === "bn" ? "আমার ক্ষেত পরিচর্যা" : "My Field Planner"}
                   </Link>
                 </li>
               </ul>
