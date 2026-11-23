@@ -23,6 +23,7 @@ import { evaluateFarmerWeatherAlert } from "./weatherAlert.service.js";
 const DEFAULT_BATCH_SIZE = 50;
 const DEFAULT_MAX_USERS = 500;
 const DEFAULT_LOCK_TTL_MS = 10 * 60 * 1000;
+const LOCK_SAFETY_MARGIN_MS = 2 * 60 * 1000;
 const DEFAULT_WINDOW_MS = 12 * 60 * 60 * 1000;
 
 function createDbCycleLock(model = WeatherAlertCycleLock) {
@@ -120,7 +121,11 @@ export async function runWeatherAlertCycle({
   maxUsers = DEFAULT_MAX_USERS,
   windowMs = DEFAULT_WINDOW_MS,
   lockTtlMs = DEFAULT_LOCK_TTL_MS,
+  // Bounded execution deadline: always stop before the lock lease expires, so
+  // a slow cycle can never overlap a newly started one.
+  deadlineMs = Math.max(30_000, lockTtlMs - LOCK_SAFETY_MARGIN_MS),
   runId = `weather-cycle-${now.getTime()}`,
+  clock = () => Date.now(),
 } = {}) {
   const summary = emptySummary(runId, now);
   const cycleLock = lock || createDbCycleLock(lockModel);
@@ -140,11 +145,15 @@ export async function runWeatherAlertCycle({
   const size = Math.max(1, Math.min(500, Number(batchSize) || DEFAULT_BATCH_SIZE));
   const cap = Math.max(0, Math.min(5000, Number(maxUsers) || DEFAULT_MAX_USERS));
   const forecasts = new Map(); // district code -> { ok, forecast }
+  const defaultDeadline = Math.max(30_000, lockTtlMs - LOCK_SAFETY_MARGIN_MS);
+  const deadlineAt = clock() + Math.max(1000, Number(deadlineMs) || defaultDeadline);
+  let deadlineHit = false;
   let lastId = null;
   let processed = 0;
 
   try {
     while (processed < cap) {
+      if (clock() >= deadlineAt) { deadlineHit = true; break; }
       const batch = await loadCandidateBatch(preferencesModel, lastId, size, now);
       if (!batch.length) break;
 
@@ -153,6 +162,7 @@ export async function runWeatherAlertCycle({
 
       for (const preferences of batch) {
         if (processed >= cap) { reachedCap = true; break; }
+        if (clock() >= deadlineAt) { deadlineHit = true; break; }
         const user = users.get(String(preferences.userId || preferences._id));
         if (!user || user.role !== "farmer") { bump(summary, "NO_FARMER"); continue; }
         if (!user.phone || !user.phoneVerifiedAt || new Date(user.phoneVerifiedAt) > now) {
@@ -208,9 +218,11 @@ export async function runWeatherAlertCycle({
       }
 
       lastId = batch[batch.length - 1]._id;
+      if (deadlineHit) break;
       if (reachedCap) { summary.stoppedEarly = "MAX_USERS"; break; }
       if (batch.length < size) break;
     }
+    if (deadlineHit) summary.stoppedEarly = "DEADLINE";
   } catch (error) {
     summary.errors += 1;
     summary.stoppedEarly = "CYCLE_ERROR";

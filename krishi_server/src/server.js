@@ -10,6 +10,7 @@ import { createApp } from "./app.js";
 import { connectDatabase, getDatabaseState } from "./config/database.js";
 import { env } from "./config/env.config.js";
 import { startFarmSmsScheduler } from "./services/farm-sms-scheduler.service.js";
+import { startWeatherAlertScheduler } from "./services/sms/weatherAlertScheduler.service.js";
 
 async function main() {
   await connectDatabase();
@@ -25,11 +26,14 @@ async function main() {
     console.log(`[server] REST API base path: /api/v1`);
   });
   const stopFarmSmsScheduler = db.readyState === 1 ? startFarmSmsScheduler() : null;
+  // Disabled by default; only starts with WEATHER_ALERT_SCHEDULER_ENABLED=1.
+  const stopWeatherAlertScheduler = startWeatherAlertScheduler().stop;
 
   // ---- Graceful shutdown ----
   const shutdown = async (signal) => {
     console.log(`[server] Received ${signal} — shutting down gracefully`);
     stopFarmSmsScheduler?.();
+    await stopWeatherAlertScheduler();
     server.close(async () => {
       const { disconnectDatabase } = await import("./config/database.js");
       await disconnectDatabase();

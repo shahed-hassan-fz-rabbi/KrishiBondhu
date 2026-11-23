@@ -53,6 +53,10 @@ export const env = {
   bulkSmsSenderId: process.env.BULKSMSBD_SENDER_ID || "",
   bulkSmsEndpoint: process.env.BULKSMSBD_ENDPOINT || "https://bulksmsbd.net/api/smsapi",
   smsLive: process.env.SMS_LIVE === "1",
+  // Weather alert scheduler is OFF unless explicitly enabled.
+  weatherAlertSchedulerEnabled: process.env.WEATHER_ALERT_SCHEDULER_ENABLED === "1",
+  weatherAlertIntervalMinutes: parseInt(process.env.WEATHER_ALERT_INTERVAL_MINUTES || "60", 10),
+  weatherAlertDbWaitTimeoutMs: parseInt(process.env.WEATHER_ALERT_DB_WAIT_TIMEOUT_MS || "30000", 10),
   get googleClientId() {
     return (process.env.GOOGLE_CLIENT_ID || "").trim();
   },

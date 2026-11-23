@@ -237,6 +237,22 @@ test("evaluation errors are counted, the lock is released, and the summary has n
   assert.equal(JSON.stringify(summary).includes("5678"), false);
 });
 
+test("a bounded deadline stops the cycle before the lock lease expires", async () => {
+  const fixtures = ["u1", "u2", "u3"].map((id) => farmer({ id }));
+  const lock = fakeLock();
+  const cycle = await makeCycle({ fixtures, lock });
+  let ticks = 0;
+  const summary = await cycle.run({
+    batchSize: 1,
+    deadlineMs: 1000,
+    clock: () => 1000 + (++ticks) * 200,
+  });
+
+  assert.equal(summary.stoppedEarly, "DEADLINE");
+  assert.ok(summary.evaluated < 3);
+  assert.equal(lock.state.released, 1, "the lock must be released before its lease expires");
+});
+
 test("a failing lock release is reported without losing the cycle summary", async () => {
   const lock = fakeLock({ failRelease: true });
   const cycle = await makeCycle({ lock });
