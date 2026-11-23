@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Check, Leaf, MapPin, Pencil, Plus, RefreshCw, Store, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Archive, Check, Leaf, MapPin, Pencil, Plus, RefreshCw, Store, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext.js";
 import { useLang } from "@/lib/i18n/LanguageContext.js";
 import { buildMarketplaceListingEditPatch, validateMarketplaceListingEdit } from "@/lib/marketplaceListingEdit.js";
-import { fetchMyMarketplaceProducts, updateMarketplaceProduct } from "@/services/api.js";
+import { archiveMarketplaceProduct, fetchMyMarketplaceProducts, updateMarketplaceProduct, updateMarketplaceProductStatus } from "@/services/api.js";
 
 const PAGE_SIZE = 20;
 const TEXT = {
@@ -15,6 +15,19 @@ const TEXT = {
   },
   bn: {
     eyebrow: "কৃষক মার্কেটপ্লেস", title: "আমার পণ্যের তালিকা", intro: "প্রকাশ্য মার্কেটপ্লেসে আপনার দেওয়া পণ্যগুলো দেখুন।", priceNote: "দাম আপনি নির্ধারণ করেছেন। এটি সরকারি যাচাইকৃত DAM বাজারদর নয়।", loadingAuth: "আপনার সাইন-ইন যাচাই হচ্ছে…", guestTitle: "আপনার তালিকা দেখতে সাইন ইন করুন", guestBody: "কৃষক হিসেবে সাইন-ইন করলে আপনার মার্কেটপ্লেসের পণ্যগুলো দেখা যাবে।", login: "সাইন ইন", restrictedTitle: "কৃষক অ্যাকাউন্ট প্রয়োজন", restrictedBody: "শুধু কৃষক অ্যাকাউন্ট থেকে নিজের মার্কেটপ্লেসের তালিকা দেখা যায়।", load: "আপনার পণ্যের তালিকা লোড হচ্ছে…", errorTitle: "আপনার পণ্যের তালিকা আনা যায়নি", errorBody: "ইন্টারনেট বা সাইন-ইন সেশন দেখে আবার চেষ্টা করুন।", retry: "আবার চেষ্টা করুন", expiredTitle: "আপনার সেশনের মেয়াদ শেষ হয়েছে", expiredBody: "ব্যক্তিগত তালিকা দেখতে আবার সাইন ইন করুন।", forbiddenTitle: "প্রবেশের অনুমতি নেই", forbiddenBody: "সার্ভার কৃষকের পণ্যের তালিকা দেখার অনুমতি দেয়নি।", emptyTitle: "এখনো কোনো পণ্য নেই", emptyBody: "প্রকাশ করা পণ্য এখানে দেখা যাবে; বিক্রি শেষ ও সরানো তালিকাও থাকবে।", sell: "আপনার ফসল বিক্রি করুন", back: "মার্কেটপ্লেস দেখুন", asking: "কৃষকের চাওয়া দাম", notDam: "DAM-যাচাইকৃত দাম নয়", quantity: "পরিমাণ", location: "পণ্য নেওয়ার এলাকা", created: "তালিকাভুক্ত", description: "বর্ণনা", previous: "আগের পৃষ্ঠা", next: "পরের পৃষ্ঠা", page: "পৃষ্ঠা", of: "এর মধ্যে", unit: { kg: "কেজি", quintal: "কুইন্টাল", ton: "টন" }, status: { active: "Active — বিক্রি চলছে", sold_out: "Sold Out — বিক্রি শেষ", archived: "Archived — সরানো হয়েছে" }, invalidDate: "তারিখ পাওয়া যায়নি", bdt: "BDT", edit: "দাম ও পরিমাণ সম্পাদনা", save: "সংরক্ষণ করুন", saving: "সংরক্ষণ হচ্ছে…", cancel: "বাতিল", priceField: "প্রতি এককের চাওয়া দাম (BDT)", quantityField: "পণ্যের পরিমাণ", saved: "সার্ভার পরিবর্তন নিশ্চিত করেছে।", noChanges: "সংরক্ষণের আগে দাম বা পরিমাণ পরিবর্তন করুন।", errors: { askingPricePerUnit: "০.০১ থেকে ৯,০০৭,১৯৯,২৫৪,৭৪০,৯৯১ BDT-এর মধ্যে সঠিক দাম লিখুন।", quantity: "০.০১ থেকে ৯,০০৭,১৯৯,২৫৪,৭৪০,৯৯১-এর মধ্যে সঠিক পরিমাণ লিখুন।", invalid: "দাম ও পরিমাণ যাচাই করে আবার চেষ্টা করুন।", unauthorized: "আপনার সাইন-ইন সেশনের মেয়াদ শেষ। সংরক্ষণের আগে আবার সাইন ইন করুন।", forbidden: "আপনার অ্যাকাউন্ট থেকে এই তালিকা সম্পাদনা করা যাবে না।", notFound: "এই তালিকাটি আর সম্পাদনার জন্য পাওয়া যাচ্ছে না।", network: "সার্ভারে সংযোগ করা যায়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।", generic: "তালিকাটি হালনাগাদ করা যায়নি। আবার চেষ্টা করুন।" }
+  },
+};
+
+const ACTION_TEXT = {
+  en: {
+    soldOut: "Mark sold out", available: "Make available again", archive: "Archive listing", updating: "Updating…", archiving: "Archiving…",
+    archiveTitle: "Archive this listing?", archiveBody: "Archiving removes this listing from public Marketplace browsing. You cannot undo this from the current dashboard.", confirmArchive: "Archive listing", statusUpdated: "Listing availability updated.", archivedSuccess: "Listing archived and removed from public browsing.",
+    errors: { badRequest: "The server rejected this action. Refresh the listing and try again.", unauthorized: "Your sign-in session expired. Sign in again before changing this listing.", forbidden: "Your account is not allowed to manage this listing.", notFound: "This listing is no longer available to manage.", network: "Could not reach the server. Check your connection and try again.", generic: "The listing could not be updated. Please try again." },
+  },
+  bn: {
+    soldOut: "বিক্রি শেষ করুন", available: "আবার বিক্রির জন্য দিন", archive: "তালিকা সরান", updating: "হালনাগাদ হচ্ছে…", archiving: "সরানো হচ্ছে…",
+    archiveTitle: "এই তালিকাটি সরাবেন?", archiveBody: "তালিকাটি সরালে প্রকাশ্য মার্কেটপ্লেসে আর দেখা যাবে না। বর্তমান ড্যাশবোর্ড থেকে এটি ফেরানো যাবে না।", confirmArchive: "তালিকা সরান", statusUpdated: "পণ্যের বিক্রির অবস্থা হালনাগাদ হয়েছে।", archivedSuccess: "তালিকাটি সরানো হয়েছে এবং প্রকাশ্য মার্কেটপ্লেস থেকে বাদ গেছে।",
+    errors: { badRequest: "সার্ভার এই কাজটি গ্রহণ করেনি। তালিকাটি রিফ্রেশ করে আবার চেষ্টা করুন।", unauthorized: "আপনার সাইন-ইন সেশনের মেয়াদ শেষ। তালিকা পরিবর্তনের আগে আবার সাইন ইন করুন।", forbidden: "আপনার অ্যাকাউন্ট থেকে এই তালিকা পরিচালনা করা যাবে না।", notFound: "এই তালিকাটি আর পরিচালনার জন্য পাওয়া যাচ্ছে না।", network: "সার্ভারে সংযোগ করা যায়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।", generic: "তালিকাটি হালনাগাদ করা যায়নি। আবার চেষ্টা করুন।" },
   },
 };
 
@@ -29,7 +42,7 @@ function date(value, locale, fallback) {
   return new Intl.DateTimeFormat(locale === "bn" ? "bn-BD" : "en-BD", { year: "numeric", month: "short", day: "numeric" }).format(parsed);
 }
 
-function ListingCard({ product, text, locale, onEdit, editing, draft, errors, feedback, saving, onDraftChange, onSave, onCancel }) {
+function ListingCard({ product, text, locale, onEdit, editing, draft, errors, feedback, saving, onDraftChange, onSave, onCancel, onStatusChange, onArchive, management }) {
   const status = ["active", "sold_out", "archived"].includes(product?.status) ? product.status : "archived";
   const statusStyle = status === "active" ? "border-green-200 bg-green-50 text-green-800" : status === "sold_out" ? "border-amber-200 bg-amber-50 text-amber-900" : "border-stone-300 bg-stone-100 text-stone-700";
   const unit = text.unit[product?.unit] || product?.unit || "—";
@@ -49,7 +62,11 @@ function ListingCard({ product, text, locale, onEdit, editing, draft, errors, fe
       <div><dt className="text-xs text-[#68776e]">{text.created}</dt><dd className="mt-0.5 font-semibold text-[#274638]">{date(product?.createdAt, locale, text.invalidDate)}</dd></div>
     </dl>
     {product?.description ? <div className="mt-4 border-t border-[#eee9dc] pt-3"><p className="text-xs font-semibold text-[#68776e]">{text.description}</p><p className="mt-1 whitespace-pre-wrap break-words text-sm leading-5 text-[#526761]">{product.description}</p></div> : null}
-    {status !== "archived" && !editing ? <button type="button" data-bondhu-no-fly onClick={() => onEdit(product)} className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-full border border-[#b9cfba] px-4 text-sm font-bold text-[#247A4B] hover:bg-[#edf4e9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#247A4B]"><Pencil className="h-4 w-4" aria-hidden="true" />{text.edit}</button> : null}
+    {status !== "archived" && !editing ? <button type="button" data-bondhu-no-fly disabled={management?.busy || saving} onClick={() => onEdit(product)} className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-full border border-[#b9cfba] px-4 text-sm font-bold text-[#247A4B] hover:bg-[#edf4e9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#247A4B] disabled:cursor-wait disabled:opacity-60"><Pencil className="h-4 w-4" aria-hidden="true" />{text.edit}</button> : null}
+    {status !== "archived" && !editing ? <div data-bondhu-no-fly className="mt-3 flex flex-wrap gap-2" aria-busy={management?.id === product?._id && management.busy}>
+      <button type="button" disabled={management?.busy || saving} onClick={() => onStatusChange(product, status === "active" ? "sold_out" : "active")} className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#247A4B] px-4 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60">{management?.id === product?._id && management.kind === "status" ? text.updating : status === "active" ? text.soldOut : text.available}</button>
+      <button type="button" disabled={management?.busy || saving} onClick={() => onArchive(product)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#d8b8aa] px-4 text-sm font-semibold text-[#8a3d2c] hover:bg-[#fff6f2] disabled:cursor-wait disabled:opacity-60"><Archive className="h-4 w-4" aria-hidden="true" />{management?.id === product?._id && management.kind === "archive" ? text.archiving : text.archive}</button>
+    </div> : null}
     {editing ? <form data-bondhu-no-fly onSubmit={onSave} className="mt-4 space-y-3 border-t border-[#eee9dc] pt-4" aria-label={text.edit}>
       {[{ name: "askingPricePerUnit", label: text.priceField }, { name: "quantity", label: text.quantityField }].map(({ name, label }) => {
         const id = `marketplace-edit-${name}-${String(product?._id).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
@@ -64,7 +81,10 @@ function ListingCard({ product, text, locale, onEdit, editing, draft, errors, fe
 export default function MarketplaceMyListings() {
   const { user, isLoading: authLoading } = useAuth();
   const { locale } = useLang();
-  const text = TEXT[locale === "bn" ? "bn" : "en"];
+  const language = locale === "bn" ? "bn" : "en";
+  const baseText = TEXT[language];
+  const actionText = ACTION_TEXT[language];
+  const text = { ...baseText, ...actionText, errors: { ...baseText.errors, ...actionText.errors } };
   const [page, setPage] = useState(1);
   const [retryKey, setRetryKey] = useState(0);
   const [state, setState] = useState({ status: "loading", page: null, products: [], pagination: null });
@@ -73,8 +93,18 @@ export default function MarketplaceMyListings() {
   const [editErrors, setEditErrors] = useState({});
   const [editFeedback, setEditFeedback] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [managementAction, setManagementAction] = useState(null);
+  const [archiveTarget, setArchiveTarget] = useState(null);
   const requestId = useRef(0);
   const editInFlight = useRef(false);
+  const managementInFlight = useRef(false);
+  const archiveDialogRef = useRef(null);
+
+  useEffect(() => {
+    const dialog = archiveDialogRef.current;
+    if (archiveTarget && dialog && !dialog.open) dialog.showModal();
+    else if (!archiveTarget && dialog?.open) dialog.close();
+  }, [archiveTarget]);
 
   useEffect(() => {
     if (authLoading || user?.role !== "farmer") return undefined;
@@ -98,8 +128,48 @@ export default function MarketplaceMyListings() {
 
   const visibleStatus = state.page === page ? state.status : "loading";
   const retry = () => { setState({ status: "loading", page, products: [], pagination: null }); setRetryKey((value) => value + 1); };
+  const replaceProduct = (productId, updatedProduct) => setState((current) => ({ ...current, products: current.products.map((item) => item._id === productId ? updatedProduct : item) }));
+  const actionError = (response) => ({ 400: text.errors.badRequest, 401: text.errors.unauthorized, 403: text.errors.forbidden, 404: text.errors.notFound }[response.status] || text.errors.generic);
+  const updateStatus = async (product, nextStatus) => {
+    if (managementInFlight.current || editInFlight.current || isSaving || editingId || !["active", "sold_out"].includes(product?.status) || !["active", "sold_out"].includes(nextStatus)) return;
+    managementInFlight.current = true;
+    setManagementAction({ id: product._id, kind: "status", busy: true });
+    setEditFeedback(null);
+    try {
+      const response = await updateMarketplaceProductStatus(product._id, nextStatus);
+      if (response.success && response.data?.product?.status === nextStatus) {
+        replaceProduct(product._id, response.data.product);
+        setEditFeedback({ id: product._id, type: "success", message: text.statusUpdated });
+      } else setEditFeedback({ id: product._id, type: "error", message: response.status === 0 ? text.errors.network : actionError(response) });
+    } catch {
+      setEditFeedback({ id: product._id, type: "error", message: text.errors.network });
+    } finally {
+      managementInFlight.current = false;
+      setManagementAction(null);
+    }
+  };
+  const confirmArchive = async () => {
+    if (managementInFlight.current || editInFlight.current || isSaving || editingId || !archiveTarget || archiveTarget.status === "archived") return;
+    const target = archiveTarget;
+    managementInFlight.current = true;
+    setManagementAction({ id: target._id, kind: "archive", busy: true });
+    setEditFeedback(null);
+    try {
+      const response = await archiveMarketplaceProduct(target._id);
+      if (response.success && response.data?.product?.status === "archived") {
+        replaceProduct(target._id, response.data.product);
+        setArchiveTarget(null);
+        setEditFeedback({ id: target._id, type: "success", message: text.archivedSuccess });
+      } else setEditFeedback({ id: target._id, type: "error", message: response.status === 0 ? text.errors.network : actionError(response) });
+    } catch {
+      setEditFeedback({ id: target._id, type: "error", message: text.errors.network });
+    } finally {
+      managementInFlight.current = false;
+      setManagementAction(null);
+    }
+  };
   const startEdit = (product) => {
-    if (!product || !["active", "sold_out"].includes(product.status) || isSaving) return;
+    if (!product || !["active", "sold_out"].includes(product.status) || isSaving || managementInFlight.current) return;
     setEditingId(product._id);
     setEditDraft({ askingPricePerUnit: String(product.askingPricePerUnit ?? ""), quantity: String(product.quantity ?? "") });
     setEditErrors({});
@@ -108,7 +178,7 @@ export default function MarketplaceMyListings() {
   const cancelEdit = () => { if (editInFlight.current) return; setEditingId(null); setEditErrors({}); setEditFeedback(null); };
   const saveEdit = async (event) => {
     event.preventDefault();
-    if (editInFlight.current || !editingId) return;
+    if (editInFlight.current || managementInFlight.current || !editingId) return;
     const product = state.products.find((item) => item._id === editingId);
     if (!product || !["active", "sold_out"].includes(product.status)) return;
     const errors = validateMarketplaceListingEdit(editDraft, text.errors);
@@ -158,11 +228,14 @@ export default function MarketplaceMyListings() {
     {visibleStatus === "forbidden" ? accessPanel(text.forbiddenTitle, text.forbiddenBody) : null}
     {visibleStatus === "ready" && state.products.length === 0 ? <section data-bondhu-no-fly className="rounded-2xl border border-dashed border-[#d7d0bd] bg-white p-8 text-center"><span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#eaf2e7] text-[#247A4B]"><Store className="h-7 w-7" aria-hidden="true" /></span><h2 className="mt-4 text-lg font-bold text-[#173B2A]">{text.emptyTitle}</h2><p className="mt-2 text-sm leading-6 text-[#62736A]">{text.emptyBody}</p><Link href="/marketplace/sell" className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#b9cfba] px-5 text-sm font-bold text-[#247A4B]"><Plus className="h-4 w-4" aria-hidden="true" />{text.sell}</Link></section> : null}
     {visibleStatus === "ready" && state.products.length > 0 ? <>
-      <section aria-label={text.title} aria-live="polite" className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-3">{state.products.map((product) => <ListingCard key={product._id} product={product} text={text} locale={locale} editing={editingId === product._id} draft={editDraft} errors={editErrors} feedback={editFeedback?.id === product._id ? editFeedback : null} saving={isSaving && editingId === product._id} onEdit={startEdit} onDraftChange={(name, value) => setEditDraft((current) => ({ ...current, [name]: value }))} onSave={saveEdit} onCancel={cancelEdit} />)}</section>
+      <section aria-label={text.title} aria-live="polite" className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-3">{state.products.map((product) => <ListingCard key={product._id} product={product} text={text} locale={locale} editing={editingId === product._id} draft={editDraft} errors={editErrors} feedback={editFeedback?.id === product._id ? editFeedback : null} saving={isSaving && editingId === product._id} onEdit={startEdit} onDraftChange={(name, value) => setEditDraft((current) => ({ ...current, [name]: value }))} onSave={saveEdit} onCancel={cancelEdit} onStatusChange={updateStatus} onArchive={setArchiveTarget} management={managementAction || { busy: isSaving || Boolean(editingId) }} />)}</section>
+      <dialog ref={archiveDialogRef} aria-labelledby="marketplace-archive-title" aria-describedby="marketplace-archive-description" onCancel={(event) => { event.preventDefault(); if (!managementInFlight.current) setArchiveTarget(null); }} className="w-[min(92vw,30rem)] rounded-3xl border border-[#e5dfd1] bg-white p-0 text-[#173B2A] shadow-2xl backdrop:bg-[#14281f]/55">
+        {archiveTarget ? <div data-bondhu-no-fly className="p-6 sm:p-7"><div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#fff0e9] text-[#8a3d2c]"><Archive className="h-6 w-6" aria-hidden="true" /></div><h2 id="marketplace-archive-title" className="mt-4 text-xl font-bold">{text.archiveTitle}</h2><p id="marketplace-archive-description" className="mt-2 text-sm leading-6 text-[#526761]">{text.archiveBody}</p><p className="mt-3 break-words rounded-xl bg-[#f5f4ed] p-3 text-sm font-semibold">{archiveTarget.productName}</p>{editFeedback?.id === archiveTarget._id && editFeedback.type === "error" ? <p role="alert" className="mt-3 text-sm font-medium text-red-700">{editFeedback.message}</p> : null}<div className="mt-5 flex flex-wrap justify-end gap-2"><button type="button" autoFocus disabled={Boolean(managementAction?.busy)} onClick={() => setArchiveTarget(null)} className="inline-flex min-h-11 items-center justify-center rounded-full border border-[#cbd7c8] px-4 text-sm font-semibold text-[#526761] disabled:opacity-60">{text.cancel}</button><button type="button" disabled={Boolean(managementAction?.busy)} onClick={confirmArchive} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#8a3d2c] px-4 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60">{managementAction?.kind === "archive" ? text.archiving : text.confirmArchive}</button></div></div> : null}
+      </dialog>
       <nav data-bondhu-no-fly className="mt-6 flex flex-wrap items-center justify-center gap-3" aria-label={locale === "bn" ? "আমার পণ্যের পৃষ্ঠা" : "My listing pages"}>
-        <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1 || visibleStatus !== "ready" || Boolean(editingId) || isSaving} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#cbd7c8] bg-white px-4 text-sm font-semibold text-[#247A4B] disabled:cursor-not-allowed disabled:opacity-45"><ArrowLeft className="h-4 w-4" aria-hidden="true" />{text.previous}</button>
+        <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1 || visibleStatus !== "ready" || Boolean(editingId) || isSaving || Boolean(managementAction)} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#cbd7c8] bg-white px-4 text-sm font-semibold text-[#247A4B] disabled:cursor-not-allowed disabled:opacity-45"><ArrowLeft className="h-4 w-4" aria-hidden="true" />{text.previous}</button>
         <span className="px-2 text-sm font-medium text-[#526761]">{text.page} {number(page, locale)} {text.of} {number(pages, locale)}</span>
-        <button type="button" onClick={() => setPage((current) => Math.min(pages, current + 1))} disabled={page >= pages || visibleStatus !== "ready" || Boolean(editingId) || isSaving} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#cbd7c8] bg-white px-4 text-sm font-semibold text-[#247A4B] disabled:cursor-not-allowed disabled:opacity-45">{text.next}<ArrowRight className="h-4 w-4" aria-hidden="true" /></button>
+        <button type="button" onClick={() => setPage((current) => Math.min(pages, current + 1))} disabled={page >= pages || visibleStatus !== "ready" || Boolean(editingId) || isSaving || Boolean(managementAction)} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#cbd7c8] bg-white px-4 text-sm font-semibold text-[#247A4B] disabled:cursor-not-allowed disabled:opacity-45">{text.next}<ArrowRight className="h-4 w-4" aria-hidden="true" /></button>
       </nav>
     </> : null}
   </div>;

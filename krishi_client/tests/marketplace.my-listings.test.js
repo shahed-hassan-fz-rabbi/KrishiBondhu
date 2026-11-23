@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { fetchMyMarketplaceProducts, updateMarketplaceProduct } from "../services/api.js";
+import { archiveMarketplaceProduct, fetchMyMarketplaceProducts, updateMarketplaceProduct, updateMarketplaceProductStatus } from "../services/api.js";
 import { buildMarketplaceListingEditPatch, validateMarketplaceListingEdit } from "../lib/marketplaceListingEdit.js";
 
 const component = readFileSync(new URL("../components/marketplace/MarketplaceMyListings.js", import.meta.url), "utf8");
@@ -72,7 +72,7 @@ test("dashboard displays all listing fields, all statuses, pagination, and read-
   assert.match(component, /data-bondhu-no-fly/);
   assert.match(component, /status !== "archived"/);
   assert.match(component, /\["active", "sold_out"\]\.includes\(product\.status\)/);
-  assert.doesNotMatch(component, /Archive listing|Delete listing|Sold Out button|onDelete/);
+  assert.doesNotMatch(component, /Delete listing|Sold Out button|onDelete/);
   assert.doesNotMatch(component, /phone|password|email|ownerId/i);
 });
 
@@ -102,7 +102,7 @@ test("listing editor is accessible, prefilled, blocks duplicate saves, and updat
   assert.match(component, /askingPricePerUnit: String\(product\.askingPricePerUnit/);
   assert.match(component, /quantity: String\(product\.quantity/);
   assert.match(component, /aria-invalid=\{Boolean\(errors\[name\]\)\}/);
-  assert.match(component, /if \(editInFlight\.current \|\| !editingId\) return/);
+  assert.match(component, /if \(editInFlight\.current \|\| managementInFlight\.current \|\| !editingId\) return/);
   assert.match(component, /response\.success && response\.data\?\.product/);
   assert.match(component, /setState\(\(current\) => \(\{ \.\.\.current, products:/);
   assert.match(component, /onClick=\{onCancel\}/);
@@ -121,4 +121,73 @@ test("listing edit API preserves backend 400, 401, 403 and 404 responses and han
   const mock = mockFetch(new Error("offline"));
   try { assert.equal((await updateMarketplaceProduct("p-1", { quantity: 2 })).status, 0); }
   finally { mock.restore(); }
+});
+
+test("status API sends only active or sold_out with the existing cookie session", async () => {
+  for (const status of ["sold_out", "active"]) {
+    const mock = mockFetch({ status: 200, body: { success: true, data: { product: { _id: "p-1", status } } } });
+    try {
+      const result = await updateMarketplaceProductStatus("p-1", status);
+      assert.equal(result.data.product.status, status);
+      assert.equal(mock.requests[0].options.method, "PATCH");
+      assert.equal(mock.requests[0].options.credentials, "include");
+      assert.deepEqual(JSON.parse(mock.requests[0].options.body), { status });
+    } finally { mock.restore(); }
+  }
+  const mock = mockFetch({ status: 200, body: { success: true } });
+  try {
+    const result = await updateMarketplaceProductStatus("p-1", "archived");
+    assert.equal(result.status, 400);
+    assert.equal(mock.requests.length, 0);
+  } finally { mock.restore(); }
+});
+
+test("archive API uses DELETE with no body and preserves backend errors", async () => {
+  const mock = mockFetch({ status: 200, body: { success: true, data: { product: { _id: "p-1", status: "archived" } } } });
+  try {
+    const result = await archiveMarketplaceProduct("p-1");
+    assert.equal(result.data.product.status, "archived");
+    assert.equal(mock.requests[0].options.method, "DELETE");
+    assert.equal(mock.requests[0].options.credentials, "include");
+    assert.equal(Object.hasOwn(mock.requests[0].options, "body"), false);
+  } finally { mock.restore(); }
+  for (const status of [400, 401, 403, 404]) {
+    const failed = mockFetch({ status, body: { success: false, error: { code: "REJECTED" } } });
+    try { assert.equal((await archiveMarketplaceProduct("p-1")).status, status); }
+    finally { failed.restore(); }
+  }
+});
+
+test("dashboard exposes only valid availability transitions and keeps archived cards read-only", () => {
+  assert.match(component, /status === "active" \? "sold_out" : "active"/);
+  assert.match(component, /text\.soldOut/);
+  assert.match(component, /text\.available/);
+  assert.match(component, /status !== "archived" && !editing/);
+  assert.match(component, /response\.data\?\.product\?\.status === nextStatus/);
+  assert.match(component, /response\.data\?\.product\?\.status === "archived"/);
+  assert.match(component, /replaceProduct\(product\.\_id, response\.data\.product\)/);
+  assert.match(component, /setEditFeedback\(\{ id: product\.\_id, type: "success", message: text\.statusUpdated \}\)/);
+});
+
+test("archive confirmation is an accessible dialog and cancellation does not call DELETE", () => {
+  assert.match(component, /<dialog ref=\{archiveDialogRef\}/);
+  assert.match(component, /aria-labelledby="marketplace-archive-title"/);
+  assert.match(component, /aria-describedby="marketplace-archive-description"/);
+  assert.match(component, /onCancel=\{\(event\) => \{ event\.preventDefault\(\)/);
+  assert.match(component, /setArchiveTarget\(null\)/);
+  assert.match(component, /cannot undo|cannot be undone/i);
+  assert.match(component, /archiveBody: "Archiving removes this listing from public Marketplace browsing/);
+  assert.match(component, /onClick=\{confirmArchive\}/);
+});
+
+test("availability and archive actions guard duplicate/conflicting requests and map errors", () => {
+  assert.match(component, /managementInFlight\.current = true/);
+  assert.match(component, /managementInFlight\.current \|\| editInFlight\.current/);
+  assert.match(component, /disabled=\{management\?\.busy \|\| saving\} onClick=\{\(\) => onEdit\(product\)\}/);
+  assert.match(component, /disabled=\{management\?\.busy \|\| saving\}/);
+  assert.match(component, /disabled=\{Boolean\(managementAction\?\.busy\)\}/);
+  for (const status of ["400", "401", "403", "404"]) assert.match(component, new RegExp(`${status}: text\\.errors\\.`));
+  assert.match(component, /response\.status === 0 \? text\.errors\.network/);
+  assert.match(component, /statusUpdated/);
+  assert.match(component, /archivedSuccess/);
 });

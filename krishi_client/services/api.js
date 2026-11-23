@@ -49,6 +49,15 @@ export function updateMarketplaceProduct(productId, input = {}) {
   const patch = Object.fromEntries(allowedFields.filter((field) => Object.hasOwn(source, field)).map((field) => [field, source[field]]));
   return request(`/marketplace/products/${encodeURIComponent(productId)}`, { method: "PATCH", body: JSON.stringify(patch) });
 }
+/** PATCH /api/v1/marketplace/products/:id — change only supported availability status. */
+export function updateMarketplaceProductStatus(productId, status) {
+  if (!["active", "sold_out"].includes(status)) return Promise.resolve({ success: false, status: 400, error: { code: "VALIDATION_ERROR" } });
+  return request(`/marketplace/products/${encodeURIComponent(productId)}`, { method: "PATCH", body: JSON.stringify({ status }) });
+}
+/** DELETE /api/v1/marketplace/products/:id — soft-archive an owned listing. */
+export function archiveMarketplaceProduct(productId) {
+  return request(`/marketplace/products/${encodeURIComponent(productId)}`, { method: "DELETE" });
+}
 export function fetchMarketPriceForecast({ commodity, division, district, upazila, market, unit, source, priceType = "wholesale", frequency = "daily", horizonDays = 30 }) {
   const query = new URLSearchParams({ commodity, priceType, frequency, horizonDays: String(horizonDays) });
   if (division) query.set("division", division);
