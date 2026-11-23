@@ -188,10 +188,11 @@ export async function sendSms({
       lastError: ok ? null : (ambiguous ? "ambiguous_submission_no_retry" : (result?.error || "provider_error")),
       metadata: {
         providerMessageId: result?.messageId || null,
+        providerRequestId: result?.requestId || null,
         providerStatus: result?.providerStatus || (ok ? "submitted" : null),
-        deliveryConfirmed: false,
+        deliveryConfirmed: Boolean(result?.deliveryConfirmed) === true,
         ambiguous,
-        providerErrorCode: result?.responseCode || null,
+        providerErrorCode: result?.responseCode ?? result?.errorCode ?? null,
         maxAttempts,
       },
     });

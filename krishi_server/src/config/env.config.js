@@ -52,6 +52,10 @@ export const env = {
   bulkSmsApiKey: process.env.BULKSMSBD_API_KEY || "",
   bulkSmsSenderId: process.env.BULKSMSBD_SENDER_ID || "",
   bulkSmsEndpoint: process.env.BULKSMSBD_ENDPOINT || "https://bulksmsbd.net/api/smsapi",
+  // Alpha SMS (sms.net.bd) — additional provider; BulkSMSBD is retained.
+  alphaSmsApiKey: process.env.SMS_NET_BD_API_KEY || "",
+  alphaSmsEndpoint: process.env.SMS_NET_BD_ENDPOINT || "https://api.sms.net.bd/sendsms",
+  alphaSmsSenderId: process.env.SMS_NET_BD_SENDER_ID || "",
   smsLive: process.env.SMS_LIVE === "1",
   // Weather alert scheduler is OFF unless explicitly enabled.
   weatherAlertSchedulerEnabled: process.env.WEATHER_ALERT_SCHEDULER_ENABLED === "1",
