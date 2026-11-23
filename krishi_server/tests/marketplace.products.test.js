@@ -162,10 +162,14 @@ test("invalid listing fields and unsupported units are rejected", async (t) => {
   t.mock.method(MarketplaceProduct, "create", async () => { createCalls += 1; });
   const invalidInputs = [
     { ...validListing, askingPricePerUnit: 0 },
+    { ...validListing, askingPricePerUnit: 0.001 },
+    { ...validListing, askingPricePerUnit: 0.009 },
     { ...validListing, askingPricePerUnit: -1 },
     { ...validListing, askingPricePerUnit: "3200" },
     { ...validListing, askingPricePerUnit: Number.MAX_SAFE_INTEGER + 1 },
     { ...validListing, quantity: 0 },
+    { ...validListing, quantity: 0.001 },
+    { ...validListing, quantity: 0.009 },
     { ...validListing, quantity: -2 },
     { ...validListing, quantity: "12" },
     { ...validListing, quantity: Number.MAX_SAFE_INTEGER + 1 },
@@ -183,6 +187,35 @@ test("invalid listing fields and unsupported units are rejected", async (t) => {
     assert.ok(payload.error.details.length > 0);
   }
   assert.equal(createCalls, 0);
+});
+
+test("minimum quantity and asking price of 0.01 are accepted by the API", async (t) => {
+  t.mock.method(User, "findById", async (id) => String(id) === String(farmerId) ? farmer : null);
+  let createCalls = 0;
+  let createdInput;
+  t.mock.method(MarketplaceProduct, "create", async (input) => {
+    createCalls += 1;
+    createdInput = input;
+    return new MarketplaceProduct({ ...input, _id: new mongoose.Types.ObjectId() });
+  });
+  t.mock.method(MarketplaceProduct, "findById", (id) => selectedQuery(() => {
+    const document = new MarketplaceProduct({ ...createdInput, _id: id });
+    const result = document.toObject();
+    delete result.ownerId;
+    return result;
+  }));
+
+  const { response, payload } = await request("POST", "/api/v1/marketplace/products", {
+    ...validListing,
+    quantity: 0.01,
+    askingPricePerUnit: 0.01,
+  }, farmerToken);
+  assert.equal(response.status, 201);
+  assert.equal(createCalls, 1);
+  assert.equal(createdInput.quantity, 0.01);
+  assert.equal(createdInput.askingPricePerUnit, 0.01);
+  assert.equal(payload.data.product.quantity, 0.01);
+  assert.equal(payload.data.product.askingPricePerUnit, 0.01);
 });
 
 test("pagination rejects malformed or excessive values", async () => {

@@ -22,9 +22,9 @@ function validateListingInput(body) {
 
   if (productName.length < 2 || productName.length > 100) errors.push({ field: "productName", message: "Product name must be 2–100 characters." });
   if (typeof description !== "string" || description.length > 2000) errors.push({ field: "description", message: "Description must be a string of at most 2000 characters." });
-  if (!Number.isFinite(body?.quantity) || body.quantity <= 0 || body.quantity > Number.MAX_SAFE_INTEGER) errors.push({ field: "quantity", message: "Quantity must be a positive, safely representable number." });
+  if (!Number.isFinite(body?.quantity) || body.quantity < 0.01 || body.quantity > Number.MAX_SAFE_INTEGER) errors.push({ field: "quantity", message: "Quantity must be at least 0.01 and safely representable." });
   if (!ALLOWED_UNITS.has(body?.unit)) errors.push({ field: "unit", message: "Unit must be kg, quintal, or ton." });
-  if (!Number.isFinite(body?.askingPricePerUnit) || body.askingPricePerUnit <= 0 || body.askingPricePerUnit > Number.MAX_SAFE_INTEGER) errors.push({ field: "askingPricePerUnit", message: "Asking price per unit must be a positive, safely representable BDT amount." });
+  if (!Number.isFinite(body?.askingPricePerUnit) || body.askingPricePerUnit < 0.01 || body.askingPricePerUnit > Number.MAX_SAFE_INTEGER) errors.push({ field: "askingPricePerUnit", message: "Asking price per unit must be at least 0.01 BDT and safely representable." });
   if (district.length < 2 || district.length > 80) errors.push({ field: "district", message: "District must be 2–80 characters." });
   if (upazila.length < 2 || upazila.length > 80) errors.push({ field: "upazila", message: "Upazila must be 2–80 characters." });
 
