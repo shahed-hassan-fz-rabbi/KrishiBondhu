@@ -12,11 +12,15 @@ import { signToken } from "../src/utils/token.util.js";
 let server;
 let baseUrl;
 const farmerId = new mongoose.Types.ObjectId();
+const otherFarmerId = new mongoose.Types.ObjectId();
 const officerId = new mongoose.Types.ObjectId();
 const spoofedOwnerId = new mongoose.Types.ObjectId();
+const productId = new mongoose.Types.ObjectId();
 const farmer = { _id: farmerId, email: "farmer@example.test", phone: "+8801712345678", passwordHash: "private-hash", role: "farmer" };
+const otherFarmer = { _id: otherFarmerId, email: "otherfarmer@example.test", phone: "+8801712345677", role: "farmer" };
 const officer = { _id: officerId, email: "officer@example.test", phone: "+8801712345679", role: "extension_officer" };
 const farmerToken = signToken(farmer);
+const otherFarmerToken = signToken(otherFarmer);
 const officerToken = signToken(officer);
 
 const validListing = {
@@ -230,7 +234,162 @@ test("schema keeps marketplace asking prices distinct and constrains fields", ()
   const paths = MarketplaceProduct.schema.paths;
   assert.equal(paths.ownerId.options.ref, "User");
   assert.deepEqual(paths.unit.options.enum, ["kg", "quintal", "ton"]);
-  assert.deepEqual(paths.status.options.enum, ["active", "sold_out"]);
+  assert.deepEqual(paths.status.options.enum, ["active", "sold_out", "archived"]);
   const invalid = new MarketplaceProduct({ ...validListing, ownerId: farmerId, askingPricePerUnit: 0 });
   assert.ok(invalid.validateSync().errors.askingPricePerUnit);
+});
+
+test("owner can partially update an owned listing with an atomic ownership-scoped query", async (t) => {
+  t.mock.method(User, "findById", async (id) => String(id) === String(farmerId) ? farmer : null);
+  let queryFilter;
+  let update;
+  let options;
+  let selectedFields;
+  t.mock.method(MarketplaceProduct, "findOneAndUpdate", (filter, changes, opts) => {
+    queryFilter = filter;
+    update = changes;
+    options = opts;
+    return selectedQuery((fields) => {
+      selectedFields = fields;
+      return publicProduct({ _id: productId, productName: "Updated rice", status: "sold_out" });
+    });
+  });
+
+  const { response, payload } = await request("PATCH", `/api/v1/marketplace/products/${productId}`, { productName: "Updated rice", status: "sold_out" }, farmerToken);
+  assert.equal(response.status, 200);
+  assert.equal(payload.data.product.productName, "Updated rice");
+  assert.equal(payload.data.product.status, "sold_out");
+  assert.deepEqual(queryFilter, { _id: productId.toString(), ownerId: farmerId, status: { $ne: "archived" } });
+  assert.deepEqual(update, { $set: { productName: "Updated rice", status: "sold_out" } });
+  assert.deepEqual(options, { new: true, runValidators: true });
+  assert.doesNotMatch(selectedFields, /ownerId|email|phone|passwordHash/);
+  assert.equal("ownerId" in payload.data.product, false);
+});
+
+test("another farmer cannot update or delete a listing they do not own", async (t) => {
+  t.mock.method(User, "findById", async (id) => String(id) === String(otherFarmerId) ? otherFarmer : null);
+  const filters = [];
+  t.mock.method(MarketplaceProduct, "findOneAndUpdate", (filter) => {
+    filters.push(filter);
+    return selectedQuery(() => null);
+  });
+
+  const update = await request("PATCH", `/api/v1/marketplace/products/${productId}`, { productName: "Stolen listing" }, otherFarmerToken);
+  const remove = await request("DELETE", `/api/v1/marketplace/products/${productId}`, undefined, otherFarmerToken);
+  assert.equal(update.response.status, 404);
+  assert.equal(remove.response.status, 404);
+  assert.equal(update.payload.error.code, "NOT_FOUND");
+  assert.equal(remove.payload.error.code, "NOT_FOUND");
+  assert.deepEqual(filters, [
+    { _id: productId.toString(), ownerId: otherFarmerId, status: { $ne: "archived" } },
+    { _id: productId.toString(), ownerId: otherFarmerId, status: { $ne: "archived" } },
+  ]);
+});
+
+test("guest and extension officer are denied edit and delete", async (t) => {
+  const guestPatch = await request("PATCH", `/api/v1/marketplace/products/${productId}`, { productName: "No auth" });
+  const guestDelete = await request("DELETE", `/api/v1/marketplace/products/${productId}`);
+  assert.equal(guestPatch.response.status, 401);
+  assert.equal(guestDelete.response.status, 401);
+
+  t.mock.method(User, "findById", async (id) => String(id) === String(officerId) ? officer : null);
+  let updateCalls = 0;
+  t.mock.method(MarketplaceProduct, "findOneAndUpdate", async () => { updateCalls += 1; });
+  const officerPatch = await request("PATCH", `/api/v1/marketplace/products/${productId}`, { productName: "No role" }, officerToken);
+  const officerDelete = await request("DELETE", `/api/v1/marketplace/products/${productId}`, undefined, officerToken);
+  assert.equal(officerPatch.response.status, 403);
+  assert.equal(officerDelete.response.status, 403);
+  assert.equal(updateCalls, 0);
+});
+
+test("patch rejects empty, invalid, archived-status, owner, and protected-field updates before database access", async (t) => {
+  t.mock.method(User, "findById", async (id) => String(id) === String(farmerId) ? farmer : null);
+  let updateCalls = 0;
+  t.mock.method(MarketplaceProduct, "findOneAndUpdate", async () => { updateCalls += 1; });
+  const invalidBodies = [
+    {},
+    { askingPricePerUnit: 0 },
+    { askingPricePerUnit: 0.009 },
+    { askingPricePerUnit: "100" },
+    { quantity: 0 },
+    { quantity: 0.009 },
+    { quantity: "10" },
+    { status: "archived" },
+    { ownerId: String(spoofedOwnerId) },
+    { _id: String(spoofedOwnerId) },
+    { createdAt: "2026-01-01T00:00:00.000Z" },
+    { updatedAt: "2026-01-01T00:00:00.000Z" },
+    { email: "attacker@example.test" },
+    { passwordHash: "attacker-value" },
+  ];
+
+  for (const body of invalidBodies) {
+    const { response, payload } = await request("PATCH", `/api/v1/marketplace/products/${productId}`, body, farmerToken);
+    assert.equal(response.status, 400);
+    assert.equal(payload.error.code, "VALIDATION_ERROR");
+  }
+  assert.equal(updateCalls, 0);
+});
+
+test("owner can archive a listing without deleting it", async (t) => {
+  t.mock.method(User, "findById", async (id) => String(id) === String(farmerId) ? farmer : null);
+  let queryFilter;
+  let update;
+  let deleteCalls = 0;
+  t.mock.method(MarketplaceProduct, "findOneAndUpdate", (filter, changes) => {
+    queryFilter = filter;
+    update = changes;
+    return selectedQuery(() => publicProduct({ _id: productId, status: "archived" }));
+  });
+  t.mock.method(MarketplaceProduct, "deleteOne", async () => { deleteCalls += 1; });
+
+  const { response, payload } = await request("DELETE", `/api/v1/marketplace/products/${productId}`, undefined, farmerToken);
+  assert.equal(response.status, 200);
+  assert.equal(payload.data.product.status, "archived");
+  assert.deepEqual(queryFilter, { _id: productId.toString(), ownerId: farmerId, status: { $ne: "archived" } });
+  assert.deepEqual(update, { $set: { status: "archived" } });
+  assert.equal(deleteCalls, 0);
+});
+
+test("archived listings are excluded from public browse and cannot be reactivated", async (t) => {
+  let browseFilter;
+  t.mock.method(MarketplaceProduct, "find", (filter) => {
+    browseFilter = filter;
+    return {
+      sort() { return this; }, skip() { return this; }, limit() { return this; }, select() { return this; },
+      lean: async () => [publicProduct({ status: "active" })],
+    };
+  });
+  t.mock.method(MarketplaceProduct, "countDocuments", async (filter) => {
+    assert.deepEqual(filter, { status: "active" });
+    return 1;
+  });
+  const browse = await request("GET", "/api/v1/marketplace/products");
+  assert.equal(browse.response.status, 200);
+  assert.deepEqual(browseFilter, { status: "active" });
+  assert.ok(browse.payload.data.products.every((item) => item.status === "active"));
+
+  t.mock.method(User, "findById", async (id) => String(id) === String(farmerId) ? farmer : null);
+  let queryFilter;
+  t.mock.method(MarketplaceProduct, "findOneAndUpdate", (filter) => {
+    queryFilter = filter;
+    return selectedQuery(() => null);
+  });
+  for (const body of [{ status: "active" }, { productName: "Edit archived listing" }]) {
+    const archivedUpdate = await request("PATCH", `/api/v1/marketplace/products/${productId}`, body, farmerToken);
+    assert.equal(archivedUpdate.response.status, 404);
+    assert.deepEqual(queryFilter, { _id: productId.toString(), ownerId: farmerId, status: { $ne: "archived" } });
+  }
+});
+
+test("malformed product IDs return 400 without querying the database", async (t) => {
+  t.mock.method(User, "findById", async (id) => String(id) === String(farmerId) ? farmer : null);
+  let updateCalls = 0;
+  t.mock.method(MarketplaceProduct, "findOneAndUpdate", async () => { updateCalls += 1; });
+  for (const method of ["PATCH", "DELETE"]) {
+    const { response, payload } = await request(method, "/api/v1/marketplace/products/not-an-object-id", method === "PATCH" ? { productName: "Valid" } : undefined, farmerToken);
+    assert.equal(response.status, 400);
+    assert.equal(payload.error.code, "INVALID_ID");
+  }
+  assert.equal(updateCalls, 0);
 });
