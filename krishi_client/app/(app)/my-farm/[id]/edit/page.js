@@ -107,7 +107,7 @@ function EditFarmContent() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.farmName.trim()) {
-      setSubmitError(lang === "bn" ? "ক্ষেতের নাম আবশ্যক" : "Field name is required");
+      setSubmitError(lang === "bn" ? "মাঠের নাম আবশ্যক" : "Field name is required");
       return;
     }
     const areaNum = parseFloat(formData.area);
@@ -201,7 +201,7 @@ function EditFarmContent() {
       <div className="rounded-[24px] border border-line bg-surface p-5 shadow-km-sm sm:p-7">
         <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-forest/5 px-3 py-1 text-xs font-semibold text-forest dark:bg-forest/20 dark:text-emerald-300">
           <Tractor className="h-3.5 w-3.5" />
-          {lang === "bn" ? "ক্ষেতের তথ্য" : "FIELD PROFILE"}
+          {lang === "bn" ? "মাঠের তথ্য" : "FIELD PROFILE"}
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-content sm:text-3xl">
           {t("myFarm.editFarm")}

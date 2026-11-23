@@ -102,7 +102,7 @@ function NewFarmWizardPage() {
     const errs = {};
     if (step === 1) {
       if (!formData.farmName.trim()) {
-        errs.farmName = lang === "bn" ? "ক্ষেতের নাম আবশ্যক" : "Field name is required";
+        errs.farmName = lang === "bn" ? "মাঠের নাম আবশ্যক" : "Field name is required";
       } else if (formData.farmName.trim().length < 2) {
         errs.farmName = lang === "bn" ? "কমপক্ষে ২ অক্ষর হতে হবে" : "Must be at least 2 characters";
       }
@@ -152,7 +152,7 @@ function NewFarmWizardPage() {
     if (!user) {
       setSubmitError(
         lang === "bn"
-          ? "ক্ষেত স্থায়ীভাবে সংরক্ষণ করতে দয়া করে লগইন করুন।"
+          ? "মাঠ স্থায়ীভাবে সংরক্ষণ করতে দয়া করে লগইন করুন।"
           : "Please log in to save your field plot permanently."
       );
       return;

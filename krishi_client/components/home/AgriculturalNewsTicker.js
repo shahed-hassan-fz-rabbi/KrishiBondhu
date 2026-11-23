@@ -228,14 +228,14 @@ export function AgriculturalNewsTicker() {
               }`}
               title={
                 isUserFarmDistrict("cumilla")
-                  ? (locale === "bn" ? "আপনার নিবন্ধিত ক্ষেত: কুমিল্লা" : "Your Registered Field: Cumilla")
+                  ? (locale === "bn" ? "আপনার নিবন্ধিত মাঠ: কুমিল্লা" : "Your Registered Field: Cumilla")
                   : (locale === "bn" ? "কুমিল্লা জেলা নির্বাচন করুন" : "Select Cumilla")
               }
             >
               <span>{t("ticker.cumilla") || "Cumilla"}</span>
               {isUserFarmDistrict("cumilla") && (
                 <span className="text-[9px] bg-emerald-800 text-emerald-100 px-1 rounded uppercase font-bold tracking-tight">
-                  {locale === "bn" ? "ক্ষেত" : "Farm"}
+                  {locale === "bn" ? "মাঠ" : "Field"}
                 </span>
               )}
             </button>
@@ -249,14 +249,14 @@ export function AgriculturalNewsTicker() {
               }`}
               title={
                 isUserFarmDistrict("chattogram")
-                  ? (locale === "bn" ? "আপনার নিবন্ধিত ক্ষেত: চট্টগ্রাম" : "Your Registered Field: Chattogram")
+                  ? (locale === "bn" ? "আপনার নিবন্ধিত মাঠ: চট্টগ্রাম" : "Your Registered Field: Chattogram")
                   : (locale === "bn" ? "চট্টগ্রাম জেলা নির্বাচন করুন" : "Select Chattogram")
               }
             >
               <span>{t("ticker.chattogram") || "Chattogram"}</span>
               {isUserFarmDistrict("chattogram") && (
                 <span className="text-[9px] bg-emerald-800 text-emerald-100 px-1 rounded uppercase font-bold tracking-tight">
-                  {locale === "bn" ? "ক্ষেত" : "Farm"}
+                  {locale === "bn" ? "মাঠ" : "Field"}
                 </span>
               )}
             </button>

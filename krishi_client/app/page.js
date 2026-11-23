@@ -916,7 +916,7 @@ export default function LandingPage() {
                   <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
                   <span>
                     {locale === "bn"
-                      ? "এটি এআই সহকারীর ইন্টারফেস প্রদর্শনের জন্য একটি সাধারণ নমুনা প্রশ্নোত্তর। এটি আপনার ক্ষেতের ব্যক্তিগত সুপারিশ বা অনুমোদন নয়।"
+                      ? "এটি এআই সহকারীর ইন্টারফেস প্রদর্শনের জন্য একটি সাধারণ নমুনা প্রশ্নোত্তর। এটি আপনার মাঠের ব্যক্তিগত সুপারিশ বা অনুমোদন নয়।"
                       : "This is an illustrative demonstration of the conversational interface, not a personalized agronomic recommendation for your plot."}
                   </span>
                 </div>

@@ -198,7 +198,7 @@ function MyFarmPage() {
 
       {user && farmDataIsCurrent && activityOverviewError && (
         <div role="status" className="flex flex-col gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 sm:flex-row sm:items-center sm:justify-between dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
-          <span>{lang === "bn" ? "ক্ষেতের কাজের সারাংশ লোড হয়নি।" : "Field activity summary could not be loaded."}</span>
+          <span>{lang === "bn" ? "মাঠের কাজের সারাংশ লোড হয়নি।" : "Field activity summary could not be loaded."}</span>
           <button type="button" onClick={() => loadFarmsAndActivities(undefined, currentUserId)} className="min-h-9 rounded-lg border border-amber-400 px-3 py-2 text-xs font-semibold hover:bg-amber-100 dark:border-amber-800 dark:hover:bg-amber-950/60">
             {lang === "bn" ? "আবার চেষ্টা করুন" : "Retry"}
           </button>
@@ -300,7 +300,7 @@ function MyFarmPage() {
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400" />
             <div>
-              <p className="text-sm font-semibold text-red-900 dark:text-red-200">{lang === "bn" ? "ক্ষেতের তথ্য লোড করা যায়নি" : "Field data could not be loaded"}</p>
+              <p className="text-sm font-semibold text-red-900 dark:text-red-200">{lang === "bn" ? "মাঠের তথ্য লোড করা যায়নি" : "Field data could not be loaded"}</p>
               <p className="mt-1 text-sm text-red-800 dark:text-red-300">{error}</p>
             </div>
           </div>
@@ -341,20 +341,20 @@ function MyFarmPage() {
         </div>
       ) : (
         /* Farm Cards Grid */
-        <section aria-label={lang === "bn" ? "নিবন্ধিত ক্ষেত" : "Registered fields"}>
+        <section aria-label={lang === "bn" ? "নিবন্ধিত মাঠ" : "Registered fields"}>
         <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-emerald-100 bg-surface/80 p-4 sm:flex-row sm:items-end sm:justify-between dark:border-emerald-900">
           <div>
-            <h2 className="text-xl font-bold tracking-tight text-content">{lang === "bn" ? "আপনার ক্ষেত" : "Your fields"}</h2>
+            <h2 className="text-xl font-bold tracking-tight text-content">{lang === "bn" ? "আপনার মাঠ" : "Your fields"}</h2>
             <p className="mt-1 text-sm text-muted">{lang === "bn" ? "প্রতিটি প্লটের তথ্য ও কাজ এক জায়গায় দেখুন" : "Field details and field activities in one place"}</p>
           </div>
           <span className="inline-flex w-fit items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-muted">
             <Layers className="h-3.5 w-3.5 text-forest dark:text-emerald-300" />
-            {digits(displayedSummary?.totalFarms ?? displayedFarms.length)} {lang === "bn" ? "টি ক্ষেত" : "fields"}
+            {digits(displayedSummary?.totalFarms ?? displayedFarms.length)} {lang === "bn" ? "টি মাঠ" : "fields"}
           </span>
         </div>
         <div className="mb-4 grid gap-3 rounded-2xl border border-line bg-surface p-3 sm:grid-cols-[minmax(0,1fr)_13rem] sm:p-4">
           <label className="block text-xs font-semibold text-muted">
-            <span>{lang === "bn" ? "ক্ষেত খুঁজুন" : "Find a field"}</span>
+            <span>{lang === "bn" ? "মাঠ খুঁজুন" : "Find a field"}</span>
             <span className="relative mt-1.5 block">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden="true" />
               <input value={farmSearch} onChange={(event) => setFarmSearch(event.target.value)} type="search" className="min-h-11 w-full rounded-xl border border-line bg-bg pl-9 pr-3 text-sm font-normal text-content outline-none focus-visible:ring-2 focus-visible:ring-emerald/40" placeholder={lang === "bn" ? "নাম, এলাকা বা ফসল" : "Name, place, or crop"} />
@@ -363,13 +363,13 @@ function MyFarmPage() {
           <label className="block text-xs font-semibold text-muted">
             <span>{lang === "bn" ? "অবস্থা অনুযায়ী দেখুন" : "Filter by status"}</span>
             <select value={farmStatusFilter} onChange={(event) => setFarmStatusFilter(event.target.value)} className="mt-1.5 min-h-11 w-full rounded-xl border border-line bg-bg px-3 text-sm font-normal text-content outline-none focus-visible:ring-2 focus-visible:ring-emerald/40">
-              <option value="all">{lang === "bn" ? "সব ক্ষেত" : "All fields"}</option>
+              <option value="all">{lang === "bn" ? "সব মাঠ" : "All fields"}</option>
               {["active", "planning", "harvested", "archived"].map((status) => <option key={status} value={status}>{t(`myFarm.status.${status}`)}</option>)}
             </select>
           </label>
         </div>
         {visibleFarms.length === 0 && <div className="mb-4 rounded-2xl border border-dashed border-line bg-surface p-6 text-center">
-          <p className="text-sm font-semibold text-content">{lang === "bn" ? "এই খোঁজে কোনো ক্ষেত পাওয়া যায়নি" : "No fields match these filters"}</p>
+          <p className="text-sm font-semibold text-content">{lang === "bn" ? "এই খোঁজে কোনো মাঠ পাওয়া যায়নি" : "No fields match these filters"}</p>
           <button type="button" onClick={() => { setFarmSearch(""); setFarmStatusFilter("all"); }} className="mt-3 min-h-10 rounded-lg border border-line px-3 py-2 text-sm font-medium text-content hover:bg-surface-2">{lang === "bn" ? "ফিল্টার মুছুন" : "Clear filters"}</button>
         </div>}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">

@@ -1854,3 +1854,18 @@ article:hover > .kb-dataset-visual img { transform: scale(1.035); }
   line-height: 1.65;
   text-align: center;
 }
+
+.kb-dashboard-backdrop {
+  background-color: #f7f6f0;
+  background-image:
+    linear-gradient(rgba(247, 246, 240, 0.54), rgba(247, 246, 240, 0.54)),
+    url("/img/photos/harvest-home.jpg");
+  background-position: center 44%;
+  background-size: cover;
+}
+.dark .kb-dashboard-backdrop {
+  background-color: #0b1f17;
+  background-image:
+    linear-gradient(rgba(11, 31, 23, 0.68), rgba(11, 31, 23, 0.68)),
+    url("/img/photos/harvest-home.jpg");
+}

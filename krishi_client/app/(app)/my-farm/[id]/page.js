@@ -433,7 +433,7 @@ function FarmDetailsContent() {
     return (
       <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center shadow-km-sm dark:border-red-900/30 dark:bg-red-950/20">
         <p className="text-base font-semibold text-red-800 dark:text-red-300">
-          {!user ? (lang === "bn" ? "ক্ষেত দেখতে লগইন করুন।" : "Please log in to view this field.") : (error || "Field not found")}
+          {!user ? (lang === "bn" ? "মাঠ দেখতে লগইন করুন।" : "Please log in to view this field.") : (error || "Field not found")}
         </p>
         <div className="mt-4">
           <Link
@@ -525,7 +525,7 @@ function FarmDetailsContent() {
 
       {dataError && (
         <div role="status" className="flex flex-col gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 sm:flex-row sm:items-center sm:justify-between dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
-          <span>{lang === "bn" ? "কিছু ক্ষেত-সম্পর্কিত তথ্য লোড হয়নি। সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।" : "Some field details could not be loaded. Check the connection and retry."}</span>
+          <span>{lang === "bn" ? "কিছু মাঠ-সম্পর্কিত তথ্য লোড হয়নি। সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।" : "Some field details could not be loaded. Check the connection and retry."}</span>
           <button type="button" onClick={() => loadData(undefined, currentUserId)} className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-amber-400 px-3 py-2 text-xs font-semibold hover:bg-amber-100 dark:border-amber-800 dark:hover:bg-amber-950/60">
             <RefreshCw className="h-3.5 w-3.5" />
             {lang === "bn" ? "আবার চেষ্টা করুন" : "Retry field data"}
@@ -996,7 +996,7 @@ function FarmDetailsContent() {
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-bold uppercase tracking-wider text-stone-700 dark:text-muted flex items-center gap-1.5">
                   <ListTodo className="h-3.5 w-3.5 text-forest-700" />
-                  {lang === "bn" ? "অতিরিক্ত ক্ষেত কাজ" : "Additional Field Tasks"}
+                  {lang === "bn" ? "অতিরিক্ত মাঠ কাজ" : "Additional Field Tasks"}
                 </span>
                 <span className="text-xs text-stone-500 font-mono">
                   {localDigits(unassigned.length)} {lang === "bn" ? "টি কাজ" : "tasks"}
