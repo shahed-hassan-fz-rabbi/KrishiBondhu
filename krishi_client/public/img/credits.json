@@ -158,5 +158,13 @@
     "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
     "artist": "David Stanley",
     "bytes": 148324
+  },
+  "photos/agricultural-field-guidance.jpg": {
+    "title": "User-provided AI-generated image of a farmer receiving field advice",
+    "page": null,
+    "license": "User-provided image",
+    "licenseUrl": null,
+    "artist": "User-provided",
+    "bytes": 845923
   }
 }

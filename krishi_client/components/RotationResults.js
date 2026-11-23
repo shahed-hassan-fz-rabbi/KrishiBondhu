@@ -60,12 +60,20 @@ export function RotationResults({ result, publicMode, onSave, saveBusy, explainB
       const delta = strategy.waterRequirementMm - baseline.waterRequirementMm;
       const mainWarnings = strategy.warnings.filter((key) => ["boro_no_irrigation", "boro_limited_irrigation", "mustard_drainage"].includes(key));
       const climateKey = !strategy.climateCheck?.checked || strategy.climateCheck?.missing > 0 ? "temperatureMissing" : strategy.climateCheck.outside > 0 ? "temperatureReview" : "temperatureMatch";
+      const sequence = strategy.cropCodes.map(cropName).join(" → ");
+      const transitions = strategy.cropCodes.slice(0, -1).map((crop, cropIndex) => `${cropName(crop)} কাটার পর ${cropName(strategy.cropCodes[cropIndex + 1])} লাগানোর সময়`);
+      const whyText = strategy.isBaseline
+        ? (bn ? `আপনি বর্তমানে ${sequence} চাষের পরিকল্পনা করেছেন। তাই অন্য পদ্ধতিগুলোর সঙ্গে তুলনা করার জন্য এটিকে মূল পদ্ধতি হিসেবে দেখানো হয়েছে।` : t("rotationGuide.baseline"))
+        : t(delta < 0 ? "rotationGuide.waterLower" : delta > 0 ? "rotationGuide.waterHigher" : "rotationGuide.waterEqual");
+      const timingText = strategy.warnings.includes("calendar_overlap")
+        ? (bn ? `হিসাব অনুযায়ী, ${transitions.join(" এবং ")} নিয়ে সময়ের সংঘাত হতে পারে। তাই জমি প্রস্তুত করে পরের ফসল লাগানোর তারিখগুলো ভালোভাবে মিলিয়ে নিন।` : t("rotationGuide.overlap"))
+        : t("rotationGuide.noOverlap");
       return <article key={strategy.id} className="min-w-0 rounded-2xl border border-line bg-surface p-5 sm:p-6">
         <p className="text-xs font-semibold text-emerald-strong">{t(strategy.isBaseline ? "rotation.baselineLabel" : "rotation.alternative")} {!strategy.isBaseline && num(index)}</p>
         <h3 className="mt-3 break-words text-lg font-semibold leading-8 text-content">{strategy.cropCodes.map(cropName).join(" → ")}</h3>
         <div className="mt-5 space-y-4 text-sm leading-7">
-          <div><h4 className="font-semibold text-content">{t("rotationGuide.why")}</h4><p className="mt-1 text-muted">{t(strategy.isBaseline ? "rotationGuide.baseline" : delta < 0 ? "rotationGuide.waterLower" : delta > 0 ? "rotationGuide.waterHigher" : "rotationGuide.waterEqual")}</p>{!strategy.isBaseline && strategy.cropCodes.length < baseline.cropCodes.length && <p className="mt-1 text-muted">{t("rotationGuide.fewerCrops")}</p>}</div>
-          <div><h4 className="font-semibold text-content">{t("rotationGuide.timingTitle")}</h4><p className={`mt-1 ${strategy.warnings.includes("calendar_overlap") ? "text-amber-strong" : "text-muted"}`}>{t(strategy.warnings.includes("calendar_overlap") ? "rotationGuide.overlap" : "rotationGuide.noOverlap")}</p></div>
+          <div><h4 className="font-semibold text-content">{t("rotationGuide.why")}</h4><p className="mt-1 text-muted">{whyText}</p>{!strategy.isBaseline && strategy.cropCodes.length < baseline.cropCodes.length && <p className="mt-1 text-muted">{t("rotationGuide.fewerCrops")}</p>}</div>
+          <div><h4 className="font-semibold text-content">{t("rotationGuide.timingTitle")}</h4><p className={`mt-1 ${strategy.warnings.includes("calendar_overlap") ? "text-amber-strong" : "text-muted"}`}>{timingText}</p></div>
           <div><h4 className="font-semibold text-content">{t("rotationGuide.temperatureTitle")}</h4><p className={`mt-1 ${climateKey === "temperatureReview" ? "text-amber-strong" : "text-muted"}`}>{t(`rotationGuide.${climateKey}`)}</p>{strategy.climateCheck?.outside > 0 && climateKey === "temperatureMissing" && <p className="mt-1 text-amber-strong">{t("rotationGuide.temperatureReview")}</p>}</div>
           {mainWarnings.length > 0 && <div className="rounded-lg bg-amber/10 p-3"><h4 className="font-semibold text-amber-strong">{t("rotationGuide.important")}</h4>{mainWarnings.map((key) => <p key={key} className="mt-1 text-amber-strong">{t(`rotation.warnings.${key}`)}</p>)}</div>}
         </div>

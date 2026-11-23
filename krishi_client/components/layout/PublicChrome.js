@@ -214,11 +214,11 @@ export function PublicHeader() {
   );
 
   return (
-    <header className="sticky top-2 z-40 mx-auto w-full min-w-0 max-w-7xl rounded-2xl border border-line/90 bg-surface/95 px-3 py-2 shadow-km-sm backdrop-blur-md transition-shadow duration-200">
+    <header className="sticky top-2 z-50 mx-auto w-full min-w-0 max-w-7xl rounded-2xl border border-line/90 bg-surface/95 px-3 py-2 text-content shadow-km-sm backdrop-blur-md transition-colors duration-200">
       <div className="flex h-14 w-full min-w-0 items-center justify-between gap-1 px-2 sm:gap-3 sm:px-4">
         {/* Left: Brand + Geographic context pill */}
         <div className="flex items-center gap-3">
-          <BrandMark tone="light" />
+          <BrandMark tone="light" showSubtitle={false} />
 
           {/* Regional Context Chip (inspired by reference location breadcrumb) */}
           <div className="hidden items-center gap-1.5 rounded-full border border-line bg-surface-2/80 px-2.5 py-1 text-xs text-muted xl:inline-flex">
@@ -229,7 +229,7 @@ export function PublicHeader() {
         </div>
 
         {/* Center: Desktop Navigation with Services Dropdown */}
-        <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary">
+        <nav className="hidden items-center gap-1 xl:flex" aria-label="Primary">
           <Link
             href="/"
             onClick={(e) => handleNavClick(e, "/")}
@@ -342,12 +342,12 @@ export function PublicHeader() {
 
         {/* Right: Language, Theme, Auth / Profile */}
         <div className="flex items-center gap-2">
-          <div className="hidden items-center gap-1.5 sm:flex">
+          <div className="hidden items-center gap-1.5 xl:flex">
             <LanguageSwitcher />
             <ThemeSwitcher />
           </div>
 
-          <div className="hidden h-5 w-px bg-line/80 mx-0.5 sm:block" />
+          <div className="hidden h-5 w-px bg-line/80 mx-0.5 xl:block" />
 
           {/* User actions */}
           <div className="flex items-center gap-1.5 sm:gap-2">
@@ -419,7 +419,7 @@ export function PublicHeader() {
             aria-controls="public-mobile-navigation"
             aria-label={open ? (locale === "bn" ? "মেনু বন্ধ করুন" : "Close menu") : (locale === "bn" ? "মেনু খুলুন" : "Open menu")}
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-line bg-surface text-content transition-colors hover:bg-surface-2 lg:hidden cursor-pointer"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-line bg-surface text-content transition-colors hover:bg-surface-2 xl:hidden cursor-pointer"
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -428,7 +428,7 @@ export function PublicHeader() {
 
       {/* Mobile Drawer */}
       {open && (
-        <div id="public-mobile-navigation" className="mt-3 border-t border-line bg-surface pt-3 pb-2 px-2 lg:hidden animate-in fade-in slide-in-from-top-2 duration-150">
+        <div id="public-mobile-navigation" className="mt-3 max-h-[calc(100dvh-6rem)] overflow-y-auto overscroll-contain border-t border-line bg-surface pt-3 pb-2 px-2 xl:hidden animate-in fade-in slide-in-from-top-2 duration-150">
           <div className="mb-3 flex items-center justify-between rounded-xl bg-surface-2/80 p-2.5 text-xs">
             <span className="flex items-center gap-1.5 font-semibold text-content">
               <MapPin className="h-3.5 w-3.5 text-[#247A4B]" />
@@ -449,7 +449,7 @@ export function PublicHeader() {
                 aria-current={isActive(l.href) ? (l.href.includes("#") ? "location" : "page") : undefined}
                 className={`rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
                   isActive(l.href)
-                    ? "bg-[#247A4B]/15 text-[#123D2A] dark:text-emerald-300"
+                    ? "bg-[#247A4B]/15 text-[#123D2A] dark:bg-emerald-950/60 dark:text-emerald-300"
                     : "text-muted hover:bg-surface-2 hover:text-content"
                 }`}
               >
