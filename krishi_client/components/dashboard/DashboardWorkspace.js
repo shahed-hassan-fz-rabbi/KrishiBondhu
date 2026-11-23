@@ -56,21 +56,35 @@ export default function DashboardWorkspace({ view = "overview", children }) {
 
   const observationDetailsRef = useRef(null);
   const weatherDetailsRef = useRef(null);
+  // Controlled open state keeps SSR and the first client render identical; mutating
+  // the DOM's `open` property imperatively caused a hydration mismatch on /climate.
+  const [observationsOpen, setObservationsOpen] = useState(false);
+  const [weatherOpen, setWeatherOpen] = useState(false);
   useEffect(() => {
     const revealLinkedRecord = () => {
-      if (/^#(power|rainfall|soil-moisture|vegetation)$/.test(window.location.hash) && observationDetailsRef.current) observationDetailsRef.current.open = true;
-      if (/^#short-term-weather$/.test(window.location.hash) && weatherDetailsRef.current) {
-        weatherDetailsRef.current.open = true;
-        weatherDetailsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
+      const hash = window.location.hash;
+      const showObservations = /^#(power|rainfall|soil-moisture|vegetation)$/.test(hash);
+      const showWeather = /^#short-term-weather$/.test(hash);
+      if (!showObservations && !showWeather) return;
+      const frame = window.requestAnimationFrame(() => {
+        if (showObservations) setObservationsOpen(true);
+        if (showWeather) {
+          setWeatherOpen(true);
+          weatherDetailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+      return () => window.cancelAnimationFrame(frame);
     };
-    revealLinkedRecord();
+    const cleanup = revealLinkedRecord();
     window.addEventListener("hashchange", revealLinkedRecord);
-    return () => window.removeEventListener("hashchange", revealLinkedRecord);
+    return () => {
+      window.removeEventListener("hashchange", revealLinkedRecord);
+      cleanup?.();
+    };
   }, []);
   const revealRecordLink = (event) => {
     const href = event.target.closest("a")?.getAttribute("href");
-    if (href && /^(?:\/climate)?#(power|rainfall|soil-moisture|vegetation)$/.test(href) && observationDetailsRef.current) observationDetailsRef.current.open = true;
+    if (href && /^(?:\/climate)?#(power|rainfall|soil-moisture|vegetation)$/.test(href)) setObservationsOpen(true);
   };
 
   const [summaryData, setSummaryData] = useState(null);
@@ -85,10 +99,14 @@ export default function DashboardWorkspace({ view = "overview", children }) {
   // Reveal the short-term weather panel after the workspace finishes its first load,
   // so deep links such as /climate#short-term-weather open even on a cold visit.
   useEffect(() => {
-    if (!isLoading && weatherDetailsRef.current && /^#short-term-weather$/.test(window.location.hash)) {
-      weatherDetailsRef.current.open = true;
-      weatherDetailsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (!isLoading && /^#short-term-weather$/.test(window.location.hash)) {
+      const frame = window.requestAnimationFrame(() => {
+        setWeatherOpen(true);
+        weatherDetailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      return () => window.cancelAnimationFrame(frame);
     }
+    return undefined;
   }, [isLoading]);
 
   useEffect(() => {
@@ -465,8 +483,8 @@ export default function DashboardWorkspace({ view = "overview", children }) {
         modisData={currentEnvironmental?.modis}
         isLoading={isLoading}
       />
-      <details ref={observationDetailsRef} className="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-surface p-4 sm:p-5 dark:border-emerald-900 dark:from-emerald-950/30"><summary className="cursor-pointer font-semibold text-content">{t("dashboardUi.observationDetails")}</summary><div className="mt-5">{children}</div></details>
-      <details ref={weatherDetailsRef} id="short-term-weather" className="scroll-mt-24 rounded-2xl border border-sky-200 bg-gradient-to-r from-sky-50 to-surface p-4 sm:p-5 dark:border-sky-900 dark:from-sky-950/30">
+      <details ref={observationDetailsRef} open={observationsOpen} className="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-surface p-4 sm:p-5 dark:border-emerald-900 dark:from-emerald-950/30"><summary className="cursor-pointer font-semibold text-content">{t("dashboardUi.observationDetails")}</summary><div className="mt-5">{children}</div></details>
+      <details ref={weatherDetailsRef} id="short-term-weather" open={weatherOpen} className="scroll-mt-24 rounded-2xl border border-sky-200 bg-gradient-to-r from-sky-50 to-surface p-4 sm:p-5 dark:border-sky-900 dark:from-sky-950/30">
         <summary className="cursor-pointer text-base font-semibold text-content">{t("dashboardUi.weatherTitle")}</summary>
         <div className="mt-5">
       <WeatherIntelligenceSection

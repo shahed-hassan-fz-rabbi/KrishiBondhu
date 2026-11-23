@@ -177,7 +177,10 @@ test("dashboard overview shows API-backed weather with the full weather workspac
   assert.match(overview, /<WeatherIntelligenceSection locationCode=\{district\}/);
   assert.match(source, /<WeatherIntelligenceSection/);
   assert.match(source, /<details[^>]*>\s*<summary[^>]*>\{t\("dashboardUi.weatherTitle"\)\}/);
-  assert.doesNotMatch(source, /<details[^>]*\bopen[= >]/);
+  // Details stay collapsed by default: no literal `open` attribute, and the
+  // controlled state used for deep links starts false on both server and client.
+  assert.doesNotMatch(source, /<details[^>]*\bopen(?:\s|>)/);
+  assert.match(source, /useState\(false\)[^\n]*\n[^\n]*useState\(false\)/);
   const cards = await readFile(new URL("../components/dashboard/EnvironmentalIntelligenceCards.js", import.meta.url), "utf8");
   assert.match(cards, /cards.filter\(\(card\) => card.id !== "power"\)/);
   assert.match(cards, /<details[\s\S]*card.technicalCode[\s\S]*card.metadata/);
