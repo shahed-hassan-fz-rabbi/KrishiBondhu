@@ -10,18 +10,13 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
-  BarChart3,
   Bookmark,
   Bot,
   Calendar,
   Check,
   ChevronDown,
-  ChevronRight,
   Copy,
-  Droplets,
-  FileText,
   Info,
-  ListTodo,
   MapPin,
   MessageCircle,
   Mic,
@@ -32,11 +27,9 @@ import {
   Plus,
   Send,
   Sparkles,
-  Sprout,
   Square,
   Sun,
   Tractor,
-  TrendingUp,
   Trash2,
   User,
   Volume2,
@@ -197,6 +190,7 @@ function AssistantContent() {
   const loadedConvIdRef = useRef(null);
   const textareaRef = useRef(null);
   const voiceBaseInputRef = useRef("");
+  const voiceQuestionPendingRef = useRef(false);
   const sendInFlightRef = useRef(false);
   const conversationStateRef = useRef({ conversationId, isGuestSession });
   useEffect(() => {
@@ -206,11 +200,11 @@ function AssistantContent() {
   // Voice Input (STT) Hook
   const handleFinalTranscript = useCallback((finalText) => {
     if (!finalText) return;
-    setInputValue((prev) => {
-      const trimmed = prev.trim();
-      if (!trimmed) return finalText;
-      return `${trimmed} ${finalText}`;
-    });
+    const base = voiceBaseInputRef.current.trim();
+    // Replace the live interim preview with the final transcript, so the same
+    // recognized words are not appended twice when the browser stops listening.
+    setInputValue([base, finalText.trim()].filter(Boolean).join(" "));
+    voiceQuestionPendingRef.current = true;
     setTimeout(() => {
       textareaRef.current?.focus();
     }, 50);
@@ -419,6 +413,7 @@ function AssistantContent() {
     setConversationId(null);
     setConversationTitle("");
     setMessages([]);
+    voiceQuestionPendingRef.current = false;
     setError(null);
     setFailedPrompt("");
     setIsGuestSession(false);
@@ -465,11 +460,13 @@ function AssistantContent() {
               : null;
         const wantsTour = /ঘুরে দেখ|পরিচিতি|গাইডেড টুর|guided tour|show me around|how.*(use|work).*website|ওয়েবসাইট.*(ব্যবহার|চালাব)/.test(query);
         if (wantsTour) {
+          voiceQuestionPendingRef.current = false;
           setInputValue("");
           window.dispatchEvent(new CustomEvent("krishi:tour-start", { detail: { restart: true } }));
           return;
         }
         if (destination) {
+          voiceQuestionPendingRef.current = false;
           setInputValue("");
           router.push(destination);
           return;
@@ -545,6 +542,11 @@ function AssistantContent() {
         };
 
         setMessages((prev) => [...prev, assistantMessage]);
+        if (voiceQuestionPendingRef.current) {
+          voiceQuestionPendingRef.current = false;
+          setTtsTargetId(assistantMessage.id);
+          if (!isMascotVoiceMuted()) speakTts(assistantMessage.text, { id: assistantMessage.id });
+        }
         setFailedPrompt("");
       } catch (err) {
         console.error("[AssistantPage] Send failed:", err);
@@ -574,6 +576,7 @@ function AssistantContent() {
       isListening,
       stopListening,
       stopTts,
+      speakTts,
       router,
       setMessages,
       setInputValue,
@@ -596,17 +599,6 @@ function AssistantContent() {
   // District display label
   const districtLabel = selectedDistrict === "chattogram" ? "Chattogram" : "Cumilla";
   const districtLabelBn = selectedDistrict === "chattogram" ? "চট্টগ্রাম" : "কুমিল্লা";
-
-  // These prompt starters route through the existing evidence-grounded assistant.
-  const QUICK_QUESTIONS = [
-    { id: "market-price", title: isBn ? "বাজারদরের তথ্য" : "Market price", query: isBn ? districtLabelBn + " জেলায় টমেটোর সর্বশেষ যাচাইকৃত বাজারদরের তথ্য ও পর্যবেক্ষণের তারিখ কী?" : "What is the latest verified tomato market price information for " + districtLabel + ", and when was it observed?", icon: Layers },
-    { id: "price-outlook", title: isBn ? "দরের পূর্বাভাস" : "Price outlook", subtitle: isBn ? "যোগ্য যাচাইকৃত ইতিহাস থাকলেই Python মডেল" : "Python price model only when verified history is eligible", query: isBn ? districtLabelBn + " জেলায় টমেটোর দরের পূর্বাভাস আছে কি? পর্যাপ্ত যাচাইকৃত ইতিহাস না থাকলে তা বলো।" : "Is a tomato price forecast available for " + districtLabel + "? Say so if verified history is insufficient.", icon: TrendingUp },
-    { id: "crop-choice", title: isBn ? "পরের ফসল বাছাই" : "Choose the next crop", query: isBn ? districtLabelBn + " জেলার জমিতে আমন কাটার পর কোন ফসল বিবেচনা করা যায়? ক্যালেন্ডারের সীমাবদ্ধতা বলো।" : "What crops could be considered after Aman harvest in " + districtLabel + "? Explain calendar limits.", icon: Sprout },
-    { id: "planting-window", title: isBn ? "বপনের সময়" : "Planting window", query: isBn ? "আমন ধানের জন্য উপলভ্য বপন বা রোপণের সময় এবং এর উৎস কী?" : "What planting window is available for Aman rice, and what is its source?", icon: Calendar },
-    { id: "rainfall", title: isBn ? "বৃষ্টির তথ্য" : "Rainfall information", query: isBn ? districtLabelBn + " জেলার সাম্প্রতিক বৃষ্টির তথ্য ও তারিখ কী?" : "What dated recent rainfall information is available for " + districtLabel + "?", icon: Droplets },
-    { id: "soil-water", title: isBn ? "মাটি ও পানি" : "Soil and water", query: isBn ? districtLabelBn + " জেলার মাটি ও পানির আঞ্চলিক উপাত্ত কী? তারিখ ও সীমাবদ্ধতাও বলো।" : "What regional soil and water data are available for " + districtLabel + "? Include dates and limits.", icon: Droplets },
-    { id: "field-tasks", title: isBn ? "মাঠের কাজ" : "Field tasks", query: isBn ? "আমার মাঠের নির্ধারিত কাজগুলো কী?" : "What scheduled tasks are recorded for my field?", icon: ListTodo },
-  ];
 
   return (
     <div className="mx-auto flex h-[calc(100dvh-13.5rem)] min-h-[28rem] w-full max-w-[1320px] flex-col overflow-hidden lg:h-[calc(100dvh-7.75rem)] lg:min-h-0">
@@ -685,104 +677,32 @@ function AssistantContent() {
           >
             {messages.length === 0 ? (
               /* EMPTY STATE: Clean SaaS Hero Card + Try Asking About */
-              <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-3">
                 {/* Hero Card with Crisp Brand Typography & Badges */}
-                <div className="relative overflow-hidden rounded-3xl border border-emerald-200 bg-gradient-to-br from-lime-100 via-emerald-50 to-sky-100 p-6 sm:p-8 text-center shadow-sm dark:border-emerald-900 dark:from-lime-950/30 dark:via-emerald-950/30 dark:to-sky-950/30">
-                  {/* Centered Content */}
-                  <div className="relative z-10 flex flex-col items-center max-w-xl mx-auto py-1">
+                <div className="relative flex min-h-24 items-center gap-4 overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-r from-lime-100 via-emerald-50 to-sky-100 p-4 shadow-sm dark:border-emerald-900 dark:from-lime-950/30 dark:via-emerald-950/30 dark:to-sky-950/30 sm:gap-5 sm:p-5">
+                  <div className="relative z-10 flex min-w-0 items-center gap-4 sm:gap-5">
                     {/* Logo Emblem */}
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface border border-line shadow-xs mb-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-surface border border-line shadow-xs sm:h-14 sm:w-14">
                       <Image
                         src={BRAND_LOGO_SRC}
                         alt="KrishiBondhu Logo"
-                        width={48}
-                        height={48}
+                        width={44}
+                        height={44}
                         unoptimized
-                        className="h-12 w-12 object-contain brightness-110 saturate-125"
+                        className="h-10 w-10 object-contain brightness-110 saturate-125 sm:h-12 sm:w-12"
                       />
                     </div>
 
-                    <h2 className="text-xl sm:text-2xl font-bold text-content tracking-tight">
-                      {t("assistant.homePrompt")}
-                    </h2>
-                    <p className="text-sm font-medium text-muted mt-1">
-                      {t("assistant.homePromptSubtitle")}
-                    </p>
-
+                    <div className="min-w-0 text-left">
+                      <h2 className="text-lg font-bold tracking-tight text-content sm:text-xl">
+                        {t("assistant.homePrompt")}
+                      </h2>
+                      <p className="mt-0.5 text-sm font-medium leading-5 text-muted">
+                        {t("assistant.homePromptSubtitle")}
+                      </p>
+                    </div>
                   </div>
                 </div>
-
-                <section aria-label={isBn ? "প্রস্তাবিত কৃষি প্রশ্ন" : "Suggested farming questions"} className="rounded-2xl border border-line bg-surface p-4">
-                  <h3 className="mb-3 text-sm font-bold text-content">{isBn ? "কী জানতে চান?" : "What would you like to know?"}</h3>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    {QUICK_QUESTIONS.map((question) => {
-                      const Icon = question.icon;
-                      return <button key={question.id} type="button" onClick={() => handleSendMessage(question.query)} className="flex min-h-11 items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-left text-sm font-semibold text-content transition hover:border-emerald/40 hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald"><Icon className="h-4 w-4 shrink-0 text-emerald" aria-hidden="true" /><span className="min-w-0">{question.title}{question.subtitle ? <small className="mt-0.5 block font-normal text-muted">{question.subtitle}</small> : null}</span></button>;
-                    })}
-                  </div>
-                </section>
-
-                {/* Farm-Aware Specific Quick Prompts (if active farm selected) */}
-                {activeFarm ? (
-                  <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/5 p-4 shadow-2xs">
-                    <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider mb-2.5">
-                      <Tractor className="h-4 w-4 text-emerald" />
-                      <span>
-                        {isBn
-                          ? `"${activeFarm.farmName}" সংক্রান্ত গুরুত্বপূর্ণ প্রশ্নসমূহ`
-                          : `Specific Questions for "${activeFarm.farmName}"`}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      {[
-                        {
-                          title: isBn ? "বকেয়া ও আসন্ন কৃষি কাজ" : "Due & Upcoming Tasks",
-                          query: "আমার মাঠে কী কী কৃষিকাজ বাকি আছে?",
-                          icon: ListTodo,
-                          color: "text-amber-600 bg-amber-500/15",
-                        },
-                        {
-                          title: isBn ? "বর্তমান বৃদ্ধির পর্যায় ও দিন" : "Current Crop Stage",
-                          query: "আমার ফসল এখন কোন বৃদ্ধির পর্যায়ে আছে?",
-                          icon: Sprout,
-                          color: "text-emerald-600 bg-emerald-500/15",
-                        },
-                        {
-                          title: isBn ? "মাটি ও পানির তথ্য" : "Soil and water context",
-                          query: "আমার মাঠের মাটি ও পানির জন্য কী যাচাইকৃত এলাকার তথ্য পাওয়া যায়? পর্যবেক্ষণের তারিখ ও সীমাবদ্ধতা বলো।",
-                          icon: Droplets,
-                          color: "text-blue-600 bg-blue-500/15",
-                        },
-                        {
-                          title: isBn ? "বর্তমান পর্যায়ের সরকারি নির্দেশিকা" : "Official Stage Advisory",
-                          query: "আমার ফসলের বর্তমান বৃদ্ধির পর্যায়ের জন্য সরকারি কৃষি নির্দেশনা কী?",
-                          icon: FileText,
-                          color: "text-purple-600 bg-purple-500/15",
-                        },
-                      ].map((item, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => handleSendMessage(item.query)}
-                          className="flex items-center justify-between gap-3 p-3 rounded-xl border border-emerald-500/20 bg-surface hover:bg-surface-hover hover:border-emerald-500/40 transition-all text-left group cursor-pointer shadow-2xs"
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${item.color}`}>
-                              <item.icon className="h-4 w-4" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold text-content group-hover:text-emerald transition-colors">
-                                {item.title}
-                              </p>
-                              <p className="text-[11px] text-muted truncate mt-0.5">{item.query}</p>
-                            </div>
-                          </div>
-                          <ChevronRight className="h-4 w-4 text-muted group-hover:text-emerald group-hover:translate-x-0.5 transition-all shrink-0" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
 
               </div>
             ) : (
@@ -1149,6 +1069,13 @@ function AssistantContent() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
+                // Stop and finalize the transcript first; the farmer can review
+                // or edit it, then send it with the same button.
+                if (isListening) {
+                  stopListening();
+                  return;
+                }
+                if (isTranscribing) return;
                 handleSendMessage();
               }}
               aria-busy={isLoading}
@@ -1216,7 +1143,7 @@ function AssistantContent() {
               {/* Round Send Button */}
               <button
                 type="submit"
-                disabled={!inputValue.trim() || isLoading}
+                disabled={!inputValue.trim() || isLoading || isListening || isTranscribing}
                 aria-label={isBn ? "বার্তা পাঠান" : "Send message"}
                 className={`flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full transition-all duration-200 ${
                   inputValue.trim() && !isLoading

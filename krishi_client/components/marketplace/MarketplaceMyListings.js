@@ -220,8 +220,9 @@ export default function MarketplaceMyListings() {
   if (user.role !== "farmer") return <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">{accessPanel(text.restrictedTitle, text.restrictedBody)}<div className="mt-5 text-center"><Link href="/marketplace" className="text-sm font-semibold text-[#247A4B]">← {text.back}</Link></div></div>;
 
   const pages = Math.max(Number(state.pagination?.pages) || 0, 1);
-  return <div className="mx-auto w-full max-w-7xl min-w-0 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-    <header className="mb-6 flex min-w-0 flex-col gap-4 rounded-3xl border border-[#e5dfd1] bg-gradient-to-br from-[#f7f5eb] to-[#edf4e9] p-5 sm:flex-row sm:items-end sm:justify-between sm:p-7">
+  return <div className="relative isolate mx-auto w-full max-w-7xl min-w-0 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+    <div aria-hidden="true" className="kb-my-listings-bg pointer-events-none fixed inset-0 -z-10" />
+    <header className="mb-6 flex min-w-0 flex-col gap-4 rounded-3xl border border-[#e5dfd1] bg-gradient-to-br from-[#f7f5eb]/95 to-[#edf4e9]/95 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-7">
       <div className="min-w-0"><p className="text-xs font-bold uppercase tracking-[0.16em] text-[#65796b]">{text.eyebrow}</p><h1 className="mt-2 break-words text-2xl font-extrabold text-[#173B2A] sm:text-3xl">{text.title}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-[#526761]">{text.intro}</p><p className="mt-3 max-w-2xl text-xs font-medium leading-5 text-[#68776e]">{text.priceNote}</p></div>
       <Link data-bondhu-no-fly href="/marketplace/sell" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-[#247A4B] px-5 text-sm font-bold text-white hover:bg-[#1c633d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#247A4B]"><Plus className="h-4 w-4" aria-hidden="true" />{text.sell}</Link>
     </header>
