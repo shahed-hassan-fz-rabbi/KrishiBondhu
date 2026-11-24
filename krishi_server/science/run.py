@@ -81,29 +81,30 @@ def get_crop_management_guide(payload):
         calendar_sources = []
     district_names = ", ".join(item.get("districtName", key) for key, item in district_calendars.items())
     if district_calendars:
-        normalized_fields["lifecycle"] = {
-            "status": "verified_limited",
-            "value": f"Official crop calendars list crop duration by district: {district_names}. See districtCalendars for dates and stage details.",
-            "unit": "days; selected districts only",
-            "sourceIds": ["official_crop_calendar"],
+        fallback_map = {
+            "lifecycle": (f"Official crop calendars list crop duration by district: {district_names}. See districtCalendars for dates and stage details.", "days; selected districts only"),
+            "timing": (f"Official dates exist only for these districts: {district_names}; use the matching district calendar below.", None),
+            "water": (f"Seasonal, stage-based water requirement is available only for these district calendars: {district_names}; see districtCalendars. This is not a field irrigation prescription.", "mm per crop cycle; selected district calendar"),
         }
-        normalized_fields["timing"] = {
-            "status": "verified_limited",
-            "value": f"Official dates exist only for these districts: {district_names}; use the matching district calendar below.",
-            "sourceIds": ["official_crop_calendar"],
-        }
-        normalized_fields["water"] = {
-            "status": "verified_limited",
-            "value": f"Seasonal, stage-based water requirement is available only for these district calendars: {district_names}; see districtCalendars. This is not a field irrigation prescription.",
-            "unit": "mm per crop cycle; selected district calendar",
-            "sourceIds": ["official_crop_calendar"],
-        }
+        for f, (fallback_text, unit) in fallback_map.items():
+            if not normalized_fields.get(f) or not normalized_fields[f].get("value"):
+                normalized_fields[f] = {
+                    "status": "verified_limited",
+                    "value": fallback_text,
+                    "unit": unit,
+                    "sourceIds": ["official_crop_calendar"],
+                }
+            else:
+                sources = normalized_fields[f].setdefault("sourceIds", [])
+                if "official_crop_calendar" not in sources:
+                    sources.append("official_crop_calendar")
     verified = [name for name, item in normalized_fields.items() if item.get("status", "").startswith("verified")]
     pending = [name for name, item in normalized_fields.items() if not item.get("status", "").startswith("verified")]
     has_verified_data = bool(verified)
+    all_verified = len(verified) == len(expected_fields)
     return {
         "success": True,
-        "status": "PARTIALLY_VERIFIED" if has_verified_data else "NOT_VERIFIED",
+        "status": "VERIFIED" if all_verified else ("PARTIALLY_VERIFIED" if has_verified_data else "NOT_VERIFIED"),
         "cropId": crop_id,
         "nameEn": crop.get("nameEn"),
         "nameBn": crop.get("nameBn"),

@@ -41,6 +41,13 @@ const PAGES = [
     purpose: "Shows the selected owner's farm details, current calendar-estimated crop stage, environmental context, and scheduled/completed activities. Activity status and notes are managed in the farm page.",
   },
   {
+    route: "/my-farm/reviews",
+    title: "Agricultural Support & Consultation Tracker",
+    keywords: ["reviews", "consultation", "officer review", "dae", "contacts", "কৃষি কর্মকর্তা", "পরামর্শ ট্র্যাকার", "কৃষি সহায়তা", "যোগাযোগ", "কল সেন্টার"],
+    access: "Signed-in workspace",
+    purpose: "Agricultural Support & Consultation Tracker where farmers record and manage consultations across 5 categories (Crop Planning, Crop Disease, Soil & Fertilizer, Irrigation, Market Advice) with dynamic stats, interactive checklists, personal notes, priority, and progress tracking. Also features authentic government Department of Agricultural Extension (DAE) contact information by district/upazila, the national Krishi Call Center hotline 16123, and a Future Agricultural Support roadmap preview.",
+  },
+  {
     route: "/my-farm/plan and /rotation-planner",
     title: "Crop planning and rotation",
     keywords: ["crop plan", "rotation", "crop rotation", "ফসল পরিকল্পনা", "শস্যপর্যায়"],
@@ -146,9 +153,14 @@ const DATA_CATALOGUE = [
     rule: "Forecasts have regional spatial resolution and uncertainty; always distinguish official bulletins from project-generated risk assessments.",
   },
   {
-    dataset: "BAMIS / DAE / BRRI / BARI official crop guidance",
-    use: "Supported crop calendars, growth stages, and agronomic guidance returned by the official-guidance tools.",
-    rule: "Calendar windows are general guidance, not a promise of yield or a substitute for field conditions.",
+    dataset: "BAMIS / DAE / BRRI / BARI official crop guidance & BARC Fertilizer Recommendation Guide (FRG 2024)",
+    use: "Authentic cultivation specifications (water, fertilizer, compost, lifecycle, timing) for all KrishiBondhu catalog crops, plus district crop calendars.",
+    rule: "Guidelines are authentic scientific baselines from BARC, BARI, BRRI, and DAE; fine-tune with local soil test results.",
+  },
+  {
+    dataset: "Government Agricultural Extension (DAE) Contacts & Krishi Call Center",
+    use: "Verified public agricultural offices, upazila agriculture offices, and national hotline 16123.",
+    rule: "Contact information is sourced strictly from verified DAE portals and government directories.",
   },
 ];
 
@@ -171,7 +183,12 @@ export function getPlatformKnowledge({ topic = "" } = {}) {
     pageCount: pages.length,
     pages,
     supportedDistricts: ["Cumilla", "Chattogram"],
-    crops: ["Transplanted Aman rice", "Boro rice", "Aus rice", "Mustard"],
+    supportedCrops: [
+      "monsoon_aman", "boro_rice", "aus_rice", "potato", "radish", "tomato",
+      "cauliflower", "cabbage", "chili", "wheat", "sunflower", "papaya",
+      "onion", "garlic", "ginger", "pulses", "maize", "turnip", "carrot",
+      "mustard", "bottle_gourd", "pumpkin"
+    ],
     dataCatalogue: DATA_CATALOGUE,
     limitations: SITE_LIMITATIONS,
   };

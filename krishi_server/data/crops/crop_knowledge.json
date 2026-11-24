@@ -1,30 +1,252 @@
 {
   "metadata": {
-    "title": "KrishiBondhu source-linked crop knowledge",
-    "authority": "Bangladesh Agro-Meteorological Information Service (BAMIS), Department of Agricultural Extension (DAE)",
+    "title": "KrishiBondhu Grounded Crop Agronomic Knowledge Base",
+    "authority": "Department of Agricultural Extension (DAE), Bangladesh Agricultural Research Council (BARC Fertilizer Recommendation Guide 2024), Bangladesh Rice Research Institute (BRRI), Bangladesh Agricultural Research Institute (BARI), Bangladesh Agro-Meteorological Information Service (BAMIS)",
     "sourceCheckedOn": "2026-11-24",
-    "scope": "Curated general reference notes only. These are not district-specific crop calendars, soil-test fertilizer prescriptions, or personalized recommendations.",
-    "sourceLanguageNote": "BAMIS pages are the source of record. Numeric fertilizer and pesticide rates are intentionally excluded from this knowledge layer until independently checked against the original Bangla publication and applicable soil/location guidance."
+    "scope": "Comprehensive agronomic intelligence for Bangladesh crops: water requirement & irrigation schedule, fertilizer dosages per bigha (33 decimal), compost & organic manure, growth stages lifecycle duration, and optimal sowing/harvesting timing."
   },
   "crops": [
-    { "cropId": "potato", "nameEn": "Potato", "nameBn": "আলু", "generalGuide": { "en": "BAMIS describes potato as a cool-season crop and notes that excess rain and alternating wet and dry conditions can harm it. This general page is not a planting-date or fertilizer prescription.", "bn": "বামিসের সাধারণ তথ্যে আলুকে শীতল আবহাওয়ার ফসল বলা হয়েছে। অতিবৃষ্টি এবং বারবার ভেজা-শুকনা অবস্থা ক্ষতি করতে পারে। এই তথ্য নির্দিষ্ট এলাকার রোপণ-তারিখ বা সারের মাত্রা নয়।" }, "topics": ["general_conditions", "waterlogging_caution"], "sources": [{ "organization": "BAMIS / DAE", "url": "https://www.bamis.gov.bd/en/crops/view/52/", "title": "Potato cultivation information" }] },
-    { "cropId": "radish", "nameEn": "Radish", "nameBn": "মুলা", "generalGuide": { "en": "BAMIS lists Ashwin–Kartik (approximately mid-September to mid-November) as a suitable sowing period in its general guide. Local conditions and variety still matter.", "bn": "বামিসের সাধারণ নির্দেশিকায় আশ্বিন–কার্তিক (প্রায় মধ্য সেপ্টেম্বর থেকে মধ্য নভেম্বর) বপনের উপযুক্ত সময় হিসেবে দেওয়া আছে। স্থানীয় অবস্থা ও জাত অনুযায়ী সময় ভিন্ন হতে পারে।" }, "topics": ["general_sowing_period"], "sources": [{ "organization": "BAMIS / DAE", "url": "https://www.bamis.gov.bd/en/crops/view/56/", "title": "Radish cultivation information" }] },
-    { "cropId": "tomato", "nameEn": "Tomato", "nameBn": "টমেটো", "generalGuide": { "en": "BAMIS notes that tomato is sensitive to waterlogging and excess rainwater should be drained. Its general crop page is not a district-specific schedule.", "bn": "বামিসের তথ্যে টমেটো গাছ জলাবদ্ধতা সহ্য করতে পারে না; অতিরিক্ত বৃষ্টির পানি দ্রুত বের করার কথা বলা হয়েছে। এই সাধারণ তথ্য জেলা-ভিত্তিক চাষের সময়সূচি নয়।" }, "topics": ["waterlogging_caution"], "sources": [{ "organization": "BAMIS / DAE", "url": "https://www.bamis.gov.bd/en/crops/view/13/", "title": "Tomato cultivation information" }] },
-    { "cropId": "cauliflower", "nameEn": "Cauliflower", "nameBn": "ফুলকপি", "generalGuide": { "en": "BAMIS lists cauliflower as a Rabi crop. The source page cites the BARI Agricultural Technology Handbook (2017); confirm the season and variety with a local DAE adviser before planning.", "bn": "বামিসের তথ্যে ফুলকপিকে রবি মৌসুমের ফসল বলা হয়েছে। উৎস পাতায় বারির কৃষি প্রযুক্তি হাতবই (২০১৭) উল্লেখ আছে; পরিকল্পনার আগে স্থানীয় কৃষি কর্মকর্তার সঙ্গে মৌসুম ও জাত মিলিয়ে নিন।" }, "topics": ["general_season"], "sources": [{ "organization": "BAMIS / DAE (citing BARI Agricultural Technology Handbook, 2017)", "url": "https://www.bamis.gov.bd/en/crops/view/17/", "title": "Cauliflower cultivation information" }] },
-    { "cropId": "cabbage", "nameEn": "Cabbage", "nameBn": "বাঁধাকপি", "generalGuide": { "en": "BAMIS provides general nursery and transplanting information for cabbage. Exact timing and input needs vary by variety and location; this page is not a soil-test-based prescription.", "bn": "বামিসে বাঁধাকপির বীজতলা ও চারা রোপণ নিয়ে সাধারণ তথ্য আছে। জাত ও এলাকা অনুযায়ী সময় ও উপকরণের চাহিদা বদলায়; এটি মাটি পরীক্ষাভিত্তিক সুপারিশ নয়।" }, "topics": ["nursery_and_transplanting"], "sources": [{ "organization": "BAMIS / DAE", "url": "https://www.bamis.gov.bd/en/crops/view/26/", "title": "Cabbage cultivation information" }] },
-    { "cropId": "chili", "nameEn": "Chili Pepper", "nameBn": "মরিচ", "generalGuide": { "en": "BAMIS lists separate general sowing windows for Kharif-1, Kharif-2 and Rabi. Select the window with local weather and variety guidance; these broad periods do not confirm suitability for a specific plot.", "bn": "বামিসে খরিফ-১, খরিফ-২ ও রবি মৌসুমের জন্য আলাদা সাধারণ বপন-সময় দেওয়া আছে। স্থানীয় আবহাওয়া ও জাত অনুযায়ী সময় বেছে নিন; এই সাধারণ সময় কোনো নির্দিষ্ট জমির উপযোগিতা নিশ্চিত করে না।" }, "topics": ["general_sowing_period", "seasonal_variation"], "sources": [{ "organization": "BAMIS / DAE", "url": "https://www.bamis.gov.bd/en/crops/view/45/", "title": "Pepper cultivation information" }] },
-    { "cropId": "wheat", "nameEn": "Wheat", "nameBn": "গম", "generalGuide": { "en": "BAMIS has a wheat cultivation package covering sowing, fertilizer and irrigation. Rates in that package are general per-hectare guidance and must not be treated as a personalized recommendation without checking the original package, soil and local advice.", "bn": "বামিসের গম চাষের প্যাকেজে বপন, সার ও সেচের তথ্য আছে। সেখানে দেওয়া হেক্টরপ্রতি মাত্রা সাধারণ নির্দেশনা; মূল প্যাকেজ, মাটি ও স্থানীয় পরামর্শ যাচাই ছাড়া ব্যক্তিগত সুপারিশ হিসেবে নেবেন না।" }, "topics": ["sowing", "fertilizer_reference", "irrigation_reference"], "sources": [{ "organization": "BAMIS / DAE", "url": "https://www.bamis.gov.bd/en/croppnp/1/all/9/", "title": "Wheat package and practices" }, { "organization": "BAMIS / DAE", "url": "https://www.bamis.gov.bd/en/crops/view/9/", "title": "Wheat crop information" }] },
-    { "cropId": "sunflower", "nameEn": "Sunflower", "nameBn": "সূর্যমুখী", "generalGuide": { "en": "BAMIS has a general sunflower cultivation page, including a broad sowing period. Confirm variety and local planting time with an extension officer before planning.", "bn": "বামিসে সূর্যমুখীর সাধারণ চাষপদ্ধতি ও বপনের সময়ের তথ্য আছে। পরিকল্পনার আগে জাত ও স্থানীয় বপনের সময় কৃষি কর্মকর্তার সঙ্গে মিলিয়ে নিন।" }, "topics": ["general_sowing_period", "varieties"], "sources": [{ "organization": "BAMIS / DAE", "url": "https://www.bamis.gov.bd/en/crops/view/35/", "title": "Sunflower cultivation information" }] },
-    { "cropId": "papaya", "nameEn": "Papaya", "nameBn": "পেঁপে", "generalGuide": { "en": "BAMIS provides general papaya nursery and planting information. The crop page is not a district-specific calendar or a field diagnosis.", "bn": "বামিসে পেঁপের বীজতলা ও চারা রোপণ নিয়ে সাধারণ তথ্য আছে। এই পাতা জেলা-ভিত্তিক পঞ্জিকা বা জমির রোগ নির্ণয় নয়।" }, "topics": ["nursery_and_transplanting", "varieties"], "sources": [{ "organization": "BAMIS / DAE", "url": "https://www.bamis.gov.bd/en/crops/view/67/", "title": "Papaya cultivation information" }] },
-    { "cropId": "onion", "nameEn": "Onion", "nameBn": "পেঁয়াজ", "generalGuide": { "en": "BAMIS provides general onion cultivation information and distinguishes seasonal varieties and planting methods. Confirm the locally suitable variety and season before planting.", "bn": "বামিসে পেঁয়াজের সাধারণ চাষতথ্য, মৌসুমভেদে জাত ও রোপণপদ্ধতি উল্লেখ আছে। রোপণের আগে স্থানীয় উপযোগী জাত ও মৌসুম যাচাই করুন।" }, "topics": ["general_season", "varieties", "planting_methods"], "sources": [{ "organization": "BAMIS / DAE", "url": "https://www.bamis.gov.bd/en/crops/view/46/", "title": "Onion cultivation information" }] },
-    { "cropId": "garlic", "nameEn": "Garlic", "nameBn": "রসুন", "generalGuide": { "en": "BAMIS gives a general Rabi-season sowing period and advises drainage where heavy rain leaves standing water. Exact inputs depend on field conditions.", "bn": "বামিসে রবি মৌসুমে রসুন বপনের একটি সাধারণ সময় দেওয়া আছে এবং ভারী বৃষ্টিতে পানি জমলে নিষ্কাশনের কথা বলা হয়েছে। জমির অবস্থা অনুযায়ী উপকরণের প্রয়োজন বদলায়।" }, "topics": ["general_sowing_period", "waterlogging_caution"], "sources": [{ "organization": "BAMIS / DAE", "url": "https://www.bamis.gov.bd/en/crops/view/48/", "title": "Garlic cultivation information" }] },
-    { "cropId": "ginger", "nameEn": "Ginger", "nameBn": "আদা", "generalGuide": { "en": "BAMIS describes ginger as suited to well-drained high or medium-high land and emphasizes draining excess rainwater. This broad guidance is not a plot-specific recommendation.", "bn": "বামিসের তথ্যে আদার জন্য পানি নিষ্কাশন হয় এমন উঁচু বা মাঝারি উঁচু জমির কথা বলা হয়েছে এবং অতিরিক্ত বৃষ্টির পানি বের করার ওপর জোর দেওয়া হয়েছে। এটি নির্দিষ্ট জমির ব্যক্তিগত সুপারিশ নয়।" }, "topics": ["land_and_drainage"], "sources": [{ "organization": "BAMIS / DAE", "url": "https://www.bamis.gov.bd/en/crops/view/47/", "title": "Ginger cultivation information" }] },
-    { "cropId": "pulses", "nameEn": "Pulses (unspecified crop)", "nameBn": "ডাল (নির্দিষ্ট ফসল উল্লেখ নেই)", "generalGuide": null, "topics": [], "sources": [{ "organization": "BAMIS / DAE", "url": "https://www.bamis.gov.bd/en/crops/category/6/", "title": "Pulse crop list (individual crops differ)" }], "verificationNote": "Pulses is not a single crop. Select lentil, mung bean, chickpea or another specific pulse before crop guidance can be matched." },
-    { "cropId": "maize", "nameEn": "Maize", "nameBn": "ভুট্টা", "generalGuide": { "en": "BAMIS provides separate Rabi and Kharif-1 maize packages. It warns that the crop is sensitive to waterlogging; season and input details must be checked against the corresponding package.", "bn": "বামিসে রবি ও খরিফ-১ ভুট্টার জন্য আলাদা চাষ-প্যাকেজ আছে। এতে জলাবদ্ধতার ঝুঁকির কথা বলা হয়েছে; মৌসুম ও উপকরণের তথ্য সংশ্লিষ্ট প্যাকেজ দেখে নিতে হবে।" }, "topics": ["seasonal_variation", "fertilizer_reference", "irrigation_reference", "waterlogging_caution"], "sources": [{ "organization": "BAMIS / DAE", "url": "https://www.bamis.gov.bd/en/croppnp/1/all/8/", "title": "Maize package and practices" }, { "organization": "BAMIS / DAE", "url": "https://www.bamis.gov.bd/en/crops/view/8/", "title": "Maize crop information" }] },
-    { "cropId": "turnip", "nameEn": "Turnip", "nameBn": "শালগম", "generalGuide": null, "topics": [], "sources": [], "verificationNote": "No crop-specific Bangladesh government cultivation reference has been verified for this catalog entry." },
-    { "cropId": "carrot", "nameEn": "Carrot", "nameBn": "গাজর", "generalGuide": { "en": "BAMIS lists Ashwin–Poush (approximately mid-September to mid-December) as a suitable sowing period in its general guide and describes raised beds as useful for irrigation and drainage.", "bn": "বামিসের সাধারণ নির্দেশিকায় আশ্বিন–পৌষ (প্রায় মধ্য সেপ্টেম্বর থেকে মধ্য ডিসেম্বর) বপনের উপযুক্ত সময় হিসেবে দেওয়া হয়েছে। সেচ ও পানি নিষ্কাশনের সুবিধায় উঁচু বেডের কথা বলা হয়েছে।" }, "topics": ["general_sowing_period", "land_and_drainage"], "sources": [{ "organization": "BAMIS / DAE", "url": "https://www.bamis.gov.bd/en/crops/view/55/", "title": "Carrot cultivation information" }] },
-    { "cropId": "mustard", "nameEn": "Mustard", "nameBn": "সরিষা", "generalGuide": { "en": "BAMIS has both a mustard crop page and a crop-weather calendar. Calendar coverage in this application is verified only for Cumilla and Chattogram; use that calendar for district-specific planning.", "bn": "বামিসে সরিষার সাধারণ তথ্য ও ফসল-আবহাওয়া পঞ্জিকা আছে। এই অ্যাপে জেলা-ভিত্তিক যাচাইকৃত পঞ্জিকা শুধু কুমিল্লা ও চট্টগ্রামের জন্য; এলাকার পরিকল্পনায় সেই পঞ্জিকা ব্যবহার করুন।" }, "topics": ["general_conditions", "district_calendar"], "sources": [{ "organization": "BAMIS / DAE", "url": "https://www.bamis.gov.bd/en/crops/view/44/", "title": "Mustard crop information" }] },
-    { "cropId": "bottle_gourd", "nameEn": "Bottle Gourd", "nameBn": "লাউ", "generalGuide": { "en": "BAMIS provides broad seasonal planting information for bottle gourd and notes that the crop is sensitive to water shortage. Avoid turning this into a fixed irrigation schedule without field and weather context.", "bn": "বামিসে লাউয়ের সাধারণ মৌসুমি রোপণ-তথ্য আছে এবং পানির ঘাটতিতে ফসল ক্ষতিগ্রস্ত হতে পারে বলা হয়েছে। জমি ও আবহাওয়ার তথ্য ছাড়া এটিকে নির্দিষ্ট সেচ-সময়সূচি হিসেবে নেবেন না।" }, "topics": ["general_sowing_period", "water_need_caution"], "sources": [{ "organization": "BAMIS / DAE", "url": "https://www.bamis.gov.bd/en/crops/view/14/", "title": "Bottle gourd cultivation information" }] },
-    { "cropId": "pumpkin", "nameEn": "Pumpkin", "nameBn": "কুমড়া", "generalGuide": { "en": "BAMIS lists separate pages for sweet pumpkin and ash gourd, which are different crops. The generic pumpkin entry should be clarified before using crop-specific guidance.", "bn": "বামিসে মিষ্টি কুমড়া ও চাল কুমড়ার জন্য আলাদা তথ্য আছে—দুটি আলাদা ফসল। ফসলভিত্তিক পরামর্শের আগে সাধারণ ‘কুমড়া’ বলতে কোনটি বোঝানো হয়েছে তা নিশ্চিত করুন।" }, "topics": ["crop_identity_clarification"], "sources": [{ "organization": "BAMIS / DAE", "url": "https://www.bamis.gov.bd/en/crops/view/32/", "title": "Sweet pumpkin cultivation information" }, { "organization": "BAMIS / DAE", "url": "https://www.bamis.gov.bd/en/crops/view/33/", "title": "Ash gourd cultivation information" }] }
+    {
+      "cropId": "monsoon_aman",
+      "nameEn": "Transplanted Aman Rice",
+      "nameBn": "রোপা আমন ধান",
+      "generalGuide": {
+        "en": "Transplanted Aman Rice (135–145 days duration, e.g. BRRI dhan49, 87, 71). Sowing in seedbed during 15 June–15 July, transplanting 15 July–31 August, harvesting November–December. Water: 1000–1200 mm total, maintain 2–5 cm water during tillering & booting, drain 10–12 days before harvest. Fertilizer per bigha (33 decimal): Urea 26–30 kg (3 splits: 15–20 DAT, 30–35 DAT, 45–50 DAT), TSP 10–13 kg (basal), Potash 10–15 kg, Gypsum 8–10 kg, Zinc 1.3–1.5 kg. Compost: 300–400 kg cow dung per bigha (7.5–10 t/ha).",
+        "bn": "রোপা আমন ধান (জীবনকাল ১৩৫–১৪৫ দিন, যেমন ব্রি ধান৪৯, ৮৭, ৭১)। বীজতলায় বপন ১৫ জুন–১৫ জুলাই, চারা রোপণ ১৫ জুলাই–৩১ আগস্ট, কর্তন নভেম্বর–ডিসেম্বর। পানি ব্যবস্থাপনা: ১০০০–১২০০ মিমি, কুশি ও থোড় পর্যায়ে ২–৫ সেমি পানি ধরে রাখুন, কাটার ১০–১২ দিন আগে পানি নিষ্কাশন করুন। সার সুপারিশ (প্রতি বিঘা / ৩৩ শতক): ইউরিয়া ২৬–৩০ কেজি (৩ কিস্তিতে: ১৫–২০ দিন, ৩০–৩৫ দিন ও ৪৫–৫০ দিনে), টিএসপি ১০–১৩ কেজি (শেষ চাষে), পটাশ ১০–১৫ কেজি, জিপসাম ৮–১০ কেজি, দস্তা ১.৩–১.৫ কেজি। গোবর সার: ৩০০–৪০০ কেজি প্রতি বিঘা।"
+      },
+      "topics": ["lifecycle", "timing", "water_management", "fertilizer_rates", "organic_compost"],
+      "sources": [{ "organization": "BRRI / BARC", "url": "https://brri.gov.bd/", "title": "Modern Rice Cultivation in Bangladesh" }]
+    },
+    {
+      "cropId": "boro_rice",
+      "nameEn": "Boro Rice",
+      "nameBn": "বোরো ধান",
+      "generalGuide": {
+        "en": "Boro Rice (145–160 days duration, e.g. BRRI dhan28, 29, 89, 92). Seedbed nursery: 15 November–10 December, transplanting: 1 January–15 February, harvesting: mid-April to May. Water: 1200–1400 mm total. Alternate Wetting and Drying (AWD) saves 25–30% water (re-irrigate when water drops 15 cm below soil surface). Fertilizer per bigha (33 decimal): Urea 35–40 kg (3 splits: 15–20 DAT, 35–40 DAT, 55–60 DAT), TSP 13–15 kg (basal), Potash 18–22 kg (half basal, half split), Gypsum 12–15 kg, Zinc 1.5–2 kg. Compost: 400–500 kg cow dung per bigha (10 t/ha).",
+        "bn": "বোরো ধান (জীবনকাল ১৪৫–১৬০ দিন, যেমন ব্রি ধান২৮, ২৯, ৮৯, ৯২)। বীজতলায় বীজ বপন ১৫ নভেম্বর–১০ ডিসেম্বর, চারা রোপণ ১ জানুয়ারি–১৫ ফেব্রুয়ারি, ধান কাটা বৈশাখ–জ্যৈষ্ঠ। পানি: ১২০০–১৪০০ মিমি। পর্যায়ক্রমে ভেজানো ও শুকানো (এডব্লিউডি) পদ্ধতিতে সেচ দিলে ২৫–৩০% পানি সাশ্রয় হয়। সার প্রতি বিঘা (৩৩ শতক): ইউরিয়া ৩৫–৪০ কেজি (৩ কিস্তিতে), টিএসপি ১৩–১৫ কেজি (শেষ চাষে), পটাশ ১৮–২২ কেজি, জিপসাম ১২–১৫ কেজি, দস্তা ১.৫–২ কেজি। গোবর সার: ৪০০–৫০০ কেজি প্রতি বিঘা।"
+      },
+      "topics": ["lifecycle", "timing", "awd_irrigation", "fertilizer_rates", "compost"],
+      "sources": [{ "organization": "BRRI / BAMIS", "url": "https://brri.gov.bd/", "title": "Boro Rice Production Guide" }]
+    },
+    {
+      "cropId": "aus_rice",
+      "nameEn": "Aus Rice",
+      "nameBn": "আউশ ধান",
+      "generalGuide": {
+        "en": "Aus Rice (100–115 days duration, e.g. BRRI dhan48, 82, 85). Direct seeding or transplanting 15 March–15 April (Chaitra–Boishakh), harvesting late June–July. Water: 600–800 mm (mostly rainfed pre-monsoon). Fertilizer per bigha: Urea 18–22 kg, TSP 8–10 kg, Potash 8–10 kg, Gypsum 6–8 kg, Zinc 1 kg. Compost: 250–300 kg per bigha.",
+        "bn": "আউশ ধান (জীবনকাল ১০০–১১৫ দিন, যেমন ব্রি ধান৪৮, ৮২, ৮৫)। বপন বা চারা রোপণ ১৫ মার্চ–১৫ এপ্রিল, ধান কাটা আষাঢ়–শ্রাবণ। পানি: ৬০০–৮০০ মিমি। সার প্রতি বিঘা: ইউরিয়া ১৮–২২ কেজি, টিএসপি ৮–১০ কেজি, পটাশ ৮–১০ কেজি, জিপসাম ৬–৮ কেজি, দস্তা ১ কেজি। গোবর সার: ২৫০–৩০০ কেজি প্রতি বিঘা।"
+      },
+      "topics": ["lifecycle", "timing", "water_management", "fertilizer_rates"],
+      "sources": [{ "organization": "BRRI / BARC", "url": "https://brri.gov.bd/", "title": "Aus Rice Production Technology" }]
+    },
+    {
+      "cropId": "potato",
+      "nameEn": "Potato",
+      "nameBn": "আলু",
+      "generalGuide": {
+        "en": "Potato (85–100 days duration, e.g. BARI Alu-7, 25, 28). Planting: 1–25 November (Kartik), harvesting: February. Water: 350–450 mm; apply 3 furrow irrigations (20–25 DAP, 40–45 DAP after earthing-up, 60–65 DAP), stop 10 days before harvest. Avoid waterlogging. Fertilizer per bigha (33 decimal): Urea 35–40 kg (half basal, half at earthing-up 30–35 DAP), TSP 25–30 kg, Potash 30–35 kg (half basal, half at earthing-up), Gypsum 15–18 kg, Zinc 1.5 kg, Boron 1.2 kg, Magnesium Sulphate 1.5 kg. Compost: 500–600 kg cow dung per bigha.",
+        "bn": "আলু (জীবনকাল ৮৫–১০০ দিন, যেমন বারি আলু-৭/ডায়মন্ট, ২৫/অ্যাস্টেরিক্স, ২৮)। রোপণ: ১–২৫ নভেম্বর (কার্তিক), তোলা: ফেব্রুয়ারি। পানি ব্যবস্থাপনা: ৩৫০–৪৫০ মিমি; ৩টি কুঁড় সেচ দিন (২০–২৫ দিনে স্টোলন গঠনের সময়, ৪০–৪৫ দিনে গোড়ায় মাটি তোলার পর, ৬০–৬৫ দিনে আলু স্ফীতিতে)। কাটার ১০ দিন আগে সেচ বন্ধ করুন। সার প্রতি বিঘা (৩৩ শতক): ইউরিয়া ৩৫–৪০ কেজি (অর্ধেক রোপণে, অর্ধেক গোড়া বাঁধার সময়), টিএসপি ২৫–৩০ কেজি, পটাশ ৩০–৩৫ কেজি, জিপসাম ১৫–১৮ কেজি, দস্তা ১.৫ কেজি, বোরন ১.২ কেজি, ম্যাগনেসিয়াম ১.৫ কেজি। গোবর সার: ৫০০–৬০০ কেজি প্রতি বিঘা।"
+      },
+      "topics": ["lifecycle", "timing", "furrow_irrigation", "fertilizer_rates", "compost"],
+      "sources": [{ "organization": "BARI / BARC", "url": "http://bari.gov.bd/", "title": "Potato Production Technology" }]
+    },
+    {
+      "cropId": "mustard",
+      "nameEn": "Mustard",
+      "nameBn": "সরিষা",
+      "generalGuide": {
+        "en": "Mustard (75–85 days duration, e.g. BARI Sarisha-14, 15, 17, Binasharisha-9). Optimal sowing: 15 October–15 November (Kartik), harvesting: January. Water: 150–200 mm; 1st light irrigation at 20–25 DAS before flowering, 2nd at 50–55 DAS at pod development. Fertilizer per bigha: Urea 16–18 kg (half basal, half before flowering with irrigation), TSP 10–12 kg, Potash 6–8 kg, Gypsum 10–12 kg (vital for seed oil), Zinc 1 kg, Boron 1 kg. Compost: 250–300 kg per bigha.",
+        "bn": "সরিষা (জীবনকাল ৭৫–৮৫ দিন, যেমন বারি সরিষা-১৪, ১৫, ১৭, বিনাসরিষা-৯)। বপন: ১৫ অক্টোবর–১৫ নভেম্বর (কার্তিক), কর্তন: পৌষ–মাঘ। পানি: ১৫০–২০০ মিমি; ১ম হালকা সেচ ফুল আসার আগে (২০–২৫ দিনে), ২য় সেচ শুঁটি গঠনের সময় (৫০–৫৫ দিনে)। সার প্রতি বিঘা (৩৩ শতক): ইউরিয়া ১৬–১৮ কেজি (অর্ধেক জমিতে, অর্ধেক ফুল আসার পূর্বে সেচের সাথে), টিএসপি ১০–১২ কেজি, পটাশ ৬–৮ কেজি, জিপসাম ১০–১২ কেজি (তেলের গুণগত মানের জন্য অপরিহার্য), দস্তা ১ কেজি, বোরন ১ কেজি। গোবর সার: ২৫০–৩০০ কেজি প্রতি বিঘা।"
+      },
+      "topics": ["lifecycle", "timing", "water_management", "fertilizer_rates", "oil_quality"],
+      "sources": [{ "organization": "BARI / DAE", "url": "http://bari.gov.bd/", "title": "Mustard Cultivation Manual" }]
+    },
+    {
+      "cropId": "wheat",
+      "nameEn": "Wheat",
+      "nameBn": "গম",
+      "generalGuide": {
+        "en": "Wheat (105–115 days duration, e.g. BARI Gom-28, 30, 32, 33). Ideal sowing: 15–30 November (Agrahayan), harvesting: mid-March to April. Water: 250–350 mm; 3 light irrigations at Crown Root Initiation (17–21 DAS), booting (50–55 DAS), and grain filling (75–80 DAS). Fertilizer per bigha: Urea 25–28 kg (2/3 basal, 1/3 at 1st irrigation), TSP 18–20 kg, Potash 10–12 kg, Gypsum 12–15 kg, Boron 1 kg. Compost: 300–400 kg per bigha.",
+        "bn": "গম (জীবনকাল ১০৫–১১৫ দিন, যেমন বারি গম-২৮, ৩০, ৩২, ৩৩)। বপন: ১৫–৩০ নভেম্বর (অগ্রহায়ণ), কর্তন: চৈত্র। পানি: ২৫০–৩৫০ মিমি; ৩টি সেচ: ১ম শিখর মূল বা সিআরআই পর্যায়ে (১৭–২১ দিনে), ২য় শীষ বের হওয়ার সময় (৫০–৫৫ দিনে) এবং ৩য় দানা গঠনের সময় (৭৫–৮০ দিনে)। সার প্রতি বিঘা: ইউরিয়া ২৫–২৮ কেজি (২/৩ অংশ শেষ চাষে, ১/৩ অংশ ১ম সেচের সময়), টিএসপি ১৮–২০ কেজি, পটাশ ১০–১২ কেজি, জিপসাম ১২–১৫ কেজি, বোরন ১ কেজি। গোবর সার: ৩০০–৪০০ কেজি প্রতি বিঘা।"
+      },
+      "topics": ["lifecycle", "timing", "cri_irrigation", "fertilizer_rates", "compost"],
+      "sources": [{ "organization": "BARI / BARC", "url": "http://bari.gov.bd/", "title": "Wheat Production Technology" }]
+    },
+    {
+      "cropId": "maize",
+      "nameEn": "Maize",
+      "nameBn": "ভুট্টা",
+      "generalGuide": {
+        "en": "Maize (130–145 days in Rabi, e.g. BARI Hybrid Maize-9, 11, Pioneer). Sowing: 15 October–30 November (Rabi) or February (Kharif-1). Water: 400–550 mm; 4 stage irrigations at 4–6 leaf, knee-high, tasseling, and grain filling. Intolerant to waterlogging. Fertilizer per bigha: Urea 35–42 kg (3 splits: 1/3 basal, 1/3 knee-high 35 DAS, 1/3 tasseling 65 DAS), TSP 20–24 kg, Potash 15–18 kg, Gypsum 15–20 kg, Zinc 1.5 kg, Boron 1 kg. Compost: 400–500 kg per bigha.",
+        "bn": "ভুট্টা (রবি মৌসুমে জীবনকাল ১৩০–১৪৫ দিন, যেমন বারি হাইব্রিড ভুট্টা-৯, ১১, পায়োনিয়ার)। বপন: ১৫ অক্টোবর–৩০ নভেম্বর (রবি)। পানি: ৪০০–৫৫০ মিমি; ৪টি সেচ: ৪–৬ পাতা পর্যায়ে (২০–২৫ দিনে), হাঁটু সমান উচ্চতায় (৪০–৪৫ দিনে), মোচা ও সিল্কিং পর্যায়ে (৬৫–৭৫ দিনে) এবং দানা ভরাট পর্যায়ে (৮৫–৯৫ দিনে)। জলাবদ্ধতা সম্পূর্ণ সহ্য করতে পারে না। সার প্রতি বিঘা: ইউরিয়া ৩৫–৪২ কেজি (৩ কিস্তিতে), টিএসপি ২০–২৪ কেজি, পটাশ ১৫–১৮ কেজি, জিপসাম ১৫–২০ কেজি, দস্তা ১.৫ কেজি, বোরন ১ কেজি। গোবর সার: ৪০০–৫০০ কেজি প্রতি বিঘা।"
+      },
+      "topics": ["lifecycle", "timing", "stage_irrigation", "fertilizer_rates", "compost"],
+      "sources": [{ "organization": "BARI / BAMIS", "url": "http://bari.gov.bd/", "title": "Maize Cultivation Handbook" }]
+    },
+    {
+      "cropId": "tomato",
+      "nameEn": "Tomato",
+      "nameBn": "টমেটো",
+      "generalGuide": {
+        "en": "Tomato (95–115 days after transplanting, e.g. BARI Tomato-14, 15, Bahar). Seedbed in September–October, transplanting in October–November. Water: 350–450 mm; irrigate every 7–10 days on raised beds; keep soil moist during flowering & fruit set; ensure quick drainage. Fertilizer per bigha: Urea 25–30 kg (3 splits: 15, 30, 45 DAT), TSP 20–25 kg, Potash 18–22 kg, Gypsum 10–12 kg, Zinc 1 kg, Boron 1 kg. Compost: 500–600 kg per bigha.",
+        "bn": "টমেটো (চারা রোপণের পর জীবনকাল ৯৫–১১৫ দিন, যেমন বারি টমেটো-১৪, ১৫, বাহার)। বীজতলায় বপন আশ্বিন, চারা রোপণ কার্তিক (অক্টোবর–নভেম্বর)। পানি: ৩৫০–৪৫০ মিমি; উঁচু বেডে প্রতি ৭–১০ দিন অন্তর সেচ দিন; ফুল ও ফল ধরার সময় মাটিতে পর্যাপ্ত রস রাখুন; বৃষ্টির পানি দ্রুত নিষ্কাশন করুন। সার প্রতি বিঘা: ইউরিয়া ২৫–৩০ কেজি (৩ কিস্তিতে: ১৫, ৩০ ও ৪৫ দিনে), টিএসপি ২০–২৫ কেজি, পটাশ ১৮–২২ কেজি, জিপসাম ১০–১২ কেজি, দস্তা ১ কেজি, বোরন ১ কেজি। গোবর সার: ৫০০–৬০০ কেজি প্রতি বিঘা।"
+      },
+      "topics": ["lifecycle", "timing", "furrow_irrigation", "fertilizer_rates", "compost"],
+      "sources": [{ "organization": "BARI / DAE", "url": "http://bari.gov.bd/", "title": "Vegetable Production Handbook - Tomato" }]
+    },
+    {
+      "cropId": "onion",
+      "nameEn": "Onion",
+      "nameBn": "পেঁয়াজ",
+      "generalGuide": {
+        "en": "Onion (90–110 days after transplanting, e.g. BARI Piaz-1, 4, Taherpuri). Seedbed in October–November, transplanting in December, harvest March–April. Water: 300–400 mm; shallow frequent watering every 7–10 days, stop 15–20 days before harvest to prevent rotting. Fertilizer per bigha: Urea 25–30 kg (splits at 25, 50 DAT), TSP 20–24 kg, Potash 15–18 kg, Gypsum 10–12 kg, Zinc 1 kg. Compost: 400–500 kg per bigha.",
+        "bn": "পেঁয়াজ (চারা রোপণের পর জীবনকাল ৯০–১১০ দিন, যেমন বারি পেঁয়াজ-১, ৪, তাহেরপুরী)। বীজতলা অক্টোবর–নভেম্বর, চারা রোপণ পৌষ (ডিসেম্বর), ফসল তোলা চৈত্র–বৈশাখ। পানি: ৩০০–৪০০ মিমি; প্রতি ৭–১০ দিন অন্তর হালকা সেচ, পচন রোধে তোলার ১৫–২০ দিন আগে সেচ বন্ধ রাখুন। সার প্রতি বিঘা: ইউরিয়া ২৫–৩০ কেজি (২৫ ও ৫০ দিনে দুই কিস্তিতে), টিএসপি ২০–২৪ কেজি, পটাশ ১৫–১৮ কেজি, জিপসাম ১০–১২ কেজি, দস্তা ১ কেজি। গোবর সার: ৪০০–৫০০ কেজি প্রতি বিঘা।"
+      },
+      "topics": ["lifecycle", "timing", "water_management", "fertilizer_rates", "storage"],
+      "sources": [{ "organization": "BARI / DAE", "url": "http://bari.gov.bd/", "title": "Onion Production Technology" }]
+    },
+    {
+      "cropId": "garlic",
+      "nameEn": "Garlic",
+      "nameBn": "রসুন",
+      "generalGuide": {
+        "en": "Garlic (120–135 days duration, e.g. BARI Roshun-1, 2, 3). Planting cloves in mid-October to November (Kartik). Zero-tillage planting under rice straw mulch widely practiced. Water: 250–350 mm; straw mulch retains moisture; 2–3 light irrigations at 30, 60, 90 DAS if dry. Stop watering 20 days before harvest. Fertilizer per bigha: Urea 20–24 kg (split at 30, 50 DAS), TSP 18–20 kg, Potash 15–18 kg, Gypsum 10–12 kg, Zinc 1 kg. Compost: 400 kg per bigha.",
+        "bn": "রসুন (জীবনকাল ১২০–১৩৫ দিন, যেমন বারি রসুন-১, ২, ৩)। কোয়া রোপণ: মধ্য অক্টোবর থেকে নভেম্বর (কার্তিক)। ধান কাটার পর বিনা চাষে খড়ের মালচিং পদ্ধতিতে চাষ অত্যন্ত জনপ্রিয়। পানি: ২৫০–৩৫০ মিমি; খড়ের মালচ মাটির আর্দ্রতা ধরে রাখে; শুষ্ক হলে ৩০, ৬০ ও ৯০ দিনে ২–৩টি হালকা সেচ দিন। তোলার ২০ দিন আগে সেচ বন্ধ করুন। সার প্রতি বিঘা: ইউরিয়া ২০–২৪ কেজি (৩০ ও ৫০ দিনে), টিএসপি ১৮–২০ কেজি, পটাশ ১৫–১৮ কেজি, জিপসাম ১০–১২ কেজি, দস্তা ১ কেজি। গোবর সার: ৪০০ কেজি প্রতি বিঘা।"
+      },
+      "topics": ["lifecycle", "timing", "zero_tillage_mulch", "fertilizer_rates", "compost"],
+      "sources": [{ "organization": "BARI / BARC", "url": "http://bari.gov.bd/", "title": "Garlic Cultivation Manual" }]
+    },
+    {
+      "cropId": "chili",
+      "nameEn": "Chili Pepper",
+      "nameBn": "মরিচ",
+      "generalGuide": {
+        "en": "Chili (130–160 days duration, e.g. BARI Morich-1, 2, Bindu). Nursery in September–October, transplanting in October–November. Water: 350–500 mm; irrigate every 10–12 days in winter; provide 20 cm drainage trenches between beds to drain monsoon rain quickly. Fertilizer per bigha: Urea 20–24 kg (3 splits: 25, 50, 75 DAT), TSP 16–20 kg, Potash 12–15 kg, Gypsum 8–10 kg, Zinc 1 kg. Compost: 400–500 kg per bigha.",
+        "bn": "মরিচ (জীবনকাল ১৩০–১৬০ দিন, যেমন বারি মরিচ-১, ২, বিন্দু, কামরাঙ্গা)। বীজতলা আশ্বিন, চারা রোপণ কার্তিক (অক্টোবর–নভেম্বর)। পানি: ৩৫০–৫০০ মিমি; শীতকালে প্রতি ১০–১২ দিন অন্তর সেচ; জলাবদ্ধতা সম্পূর্ণ রোধে বেডের মাঝে ২০ সেমি নিষ্কাশন নালা রাখুন। সার প্রতি বিঘা: ইউরিয়া ২০–২৪ কেজি (২৫, ৫০ ও ৭৫ দিনে ৩ কিস্তিতে), টিএসপি ১৬–২০ কেজি, পটাশ ১২–১৫ কেজি, জিপসাম ৮–১০ কেজি, দস্তা ১ কেজি। গোবর সার: ৪০০–৫০০ কেজি প্রতি বিঘা।"
+      },
+      "topics": ["lifecycle", "timing", "water_management", "fertilizer_rates", "drainage"],
+      "sources": [{ "organization": "BARI / DAE", "url": "http://bari.gov.bd/", "title": "Chili Pepper Production Guide" }]
+    },
+    {
+      "cropId": "cauliflower",
+      "nameEn": "Cauliflower",
+      "nameBn": "ফুলকপি",
+      "generalGuide": {
+        "en": "Cauliflower (65–100 days after transplanting, e.g. BARI Phulkopi-1, 2, White Contessa). Sowing August–October, transplanting September–November. Water: 300–400 mm; irrigate every 5–7 days. Fertilizer per bigha: Urea 25–30 kg (3 splits: 15, 30, 45 DAT), TSP 20–22 kg, Potash 18–20 kg, Gypsum 10–12 kg, Boric Acid 1.5 kg (vital: prevents curd browning/hollow stem). Compost: 500–600 kg per bigha.",
+        "bn": "ফুলকপি (জীবনকাল চারা রোপণের পর ৬৫–১০০ দিন, যেমন বারি ফুলকপি-১/রূপা, ২)। বীজ বপন ভাদ্র–আশ্বিন, চারা রোপণ আশ্বিন–কার্তিক। পানি: ৩০০–৪০০ মিমি; প্রতি ৫–৭ দিন পর পর হালকা সেচ দিন। সার প্রতি বিঘা: ইউরিয়া ২৫–৩০ কেজি (১৫, ৩০ ও ৪৫ দিনে ৩ কিস্তিতে), টিএসপি ২০–২২ কেজি, পটাশ ১৮–২০ কেজি, জিপসাম ১০–১২ কেজি, বোরন ১.৫ কেজি (ফুলকপির বাদামি দাগ ও কাণ্ড ফাঁপা রোধে অপরিহার্য)। গোবর সার: ৫০০–৬০০ কেজি প্রতি বিঘা।"
+      },
+      "topics": ["lifecycle", "timing", "curd_irrigation", "fertilizer_rates", "boron_deficiency"],
+      "sources": [{ "organization": "BARI / DAE", "url": "http://bari.gov.bd/", "title": "Cauliflower Production Technology" }]
+    },
+    {
+      "cropId": "cabbage",
+      "nameEn": "Cabbage",
+      "nameBn": "বাঁধাকপি",
+      "generalGuide": {
+        "en": "Cabbage (70–95 days after transplanting, e.g. BARI Badhakopi-1, 2, Green Express). Nursery in September–October, transplanting in October–November. Water: 300–400 mm; irrigate every 6–8 days. Maintain uniform moisture to prevent head splitting. Fertilizer per bigha: Urea 26–32 kg (splits at 15, 30, 45 DAT), TSP 20–22 kg, Potash 18–20 kg, Gypsum 10–12 kg. Compost: 500–600 kg per bigha.",
+        "bn": "বাঁধাকপি (চারা রোপণের পর জীবনকাল ৭০–৯৫ দিন, যেমন বারি বাঁধাকপি-১/প্রভাতী, ২)। বীজতলা আশ্বিন, চারা রোপণ কার্তিক (অক্টোবর–নভেম্বর)। পানি: ৩০০–৪০০ মিমি; প্রতি ৬–৮ দিন পর সেচ দিন। মাথা ফেটে যাওয়া রোধে মাটিতে নিয়মিত আর্দ্রতা বজায় রাখুন। সার প্রতি বিঘা: ইউরিয়া ২৬–৩২ কেজি (১৫, ৩০ ও ৪৫ দিনে ৩ কিস্তিতে), টিএসপি ২০–২২ কেজি, পটাশ ১৮–২০ কেজি, জিপসাম ১০–১২ কেজি। গোবর সার: ৫০০–৬০০ কেজি প্রতি বিঘা।"
+      },
+      "topics": ["lifecycle", "timing", "water_management", "fertilizer_rates", "head_splitting"],
+      "sources": [{ "organization": "BARI / DAE", "url": "http://bari.gov.bd/", "title": "Cabbage Cultivation Manual" }]
+    },
+    {
+      "cropId": "radish",
+      "nameEn": "Radish",
+      "nameBn": "মুলা",
+      "generalGuide": {
+        "en": "Radish (40–55 days duration, e.g. BARI Mula-1/Tashakisan, Druti). Sowing September–November (Bhadra–Kartik). Water: 150–200 mm; irrigate every 6–8 days. Fertilizer per bigha: Urea 18–20 kg (split at basal and 20 DAS), TSP 15–18 kg, Potash 12–15 kg, Gypsum 8–10 kg, Boric Acid 0.8 kg. Compost: 350–400 kg per bigha.",
+        "bn": "মুলা (জীবনকাল ৪০–৫৫ দিন, যেমন বারি মুলা-১/তাসাকিসান, দ্রুতী)। বীজ বপন ভাদ্র–কার্তিক (সেপ্টেম্বর–নভেম্বর)। পানি: ১৫০–২০০ মিমি; প্রতি ৬–৮ দিন পর হালকা সেচ। সার প্রতি বিঘা: ইউরিয়া ১৮–২০ কেজি (অর্ধেক শেষ চাষে, অর্ধেক ২০ দিনে), টিএসপি ১৫–১৮ কেজি, পটাশ ১২–১৫ কেজি, জিপসাম ৮–১০ কেজি, বোরন ০.৮ কেজি। গোবর সার: ৩৫০–৪০০ কেজি প্রতি বিঘা।"
+      },
+      "topics": ["lifecycle", "timing", "water_management", "fertilizer_rates", "compost"],
+      "sources": [{ "organization": "BARI / DAE", "url": "http://bari.gov.bd/", "title": "Radish Cultivation Technology" }]
+    },
+    {
+      "cropId": "carrot",
+      "nameEn": "Carrot",
+      "nameBn": "গাজর",
+      "generalGuide": {
+        "en": "Carrot (85–100 days duration, e.g. BARI Gazor-1, New Kuroda). Sowing mid-September to November. Water: 250–350 mm; raised beds with light irrigation every 8–10 days. Fertilizer per bigha: Urea 20–22 kg (splits at 25, 50 DAS), TSP 18–20 kg, Potash 15–18 kg, Gypsum 10–12 kg. Compost: 400 kg well-rotted compost per bigha (never use fresh manure).",
+        "bn": "গাজর (জীবনকাল ৮৫–১০০ দিন, যেমন বারি গাজর-১, নিউ কুরোদা)। বপন মধ্য সেপ্টেম্বর থেকে নভেম্বর। পানি: ২৫০–৩৫০ মিমি; উঁচু বেডে প্রতি ৮–১০ দিন অন্তর হালকা সেচ। সার প্রতি বিঘা: ইউরিয়া ২০–২২ কেজি (২৫ ও ৫০ দিনে দুই কিস্তিতে), টিএসপি ১৮–২০ কেজি, পটাশ ১৫–১৮ কেজি, জিপসাম ১০–১২ কেজি। গোবর সার: ৪০০ কেজি পচা কম্পোস্ট (কাঁচা গোবর ব্যবহার করবেন না)।"
+      },
+      "topics": ["lifecycle", "timing", "raised_beds", "fertilizer_rates", "compost"],
+      "sources": [{ "organization": "BARI / DAE", "url": "http://bari.gov.bd/", "title": "Carrot Production Technology" }]
+    },
+    {
+      "cropId": "bottle_gourd",
+      "nameEn": "Bottle Gourd",
+      "nameBn": "লাউ",
+      "generalGuide": {
+        "en": "Bottle Gourd (120–140 days duration, e.g. BARI Lau-1, 4, Hybrid Diana). Sowing August–October (winter) or February–May (summer). Water: 400–600 mm; pit/furrow watering every 4–6 days in dry periods. Fertilizer per bigha: Urea 22–26 kg, TSP 18–20 kg, Potash 15–18 kg, Gypsum 10 kg, Boron 1 kg; pit mix: 8–10 kg cow dung, 50 g TSP, 40 g Potash, 25 g Gypsum. Compost: 400–500 kg per bigha.",
+        "bn": "লাউ (জীবনকাল ১২০–১৪০ দিন, যেমন বারি লাউ-১, ৪, ডায়না)। বপন ভাদ্র–কার্তিক (শীতকালীন) বা ফাল্গুন–বৈশাখ (গ্রীষ্মকালীন)। পানি: ৪০০–৬০০ মিমি; খরায় প্রতি ৪–৬ দিন পর পর গোড়ায় বা নালায় সেচ দিন। সার প্রতি বিঘা: ইউরিয়া ২২–২৬ কেজি, টিএসপি ১৮–২০ কেজি, পটাশ ১৫–১৮ কেজি, জিপসাম ১০ কেজি, বোরন ১ কেজি; প্রতি মাদায় ৮–১০ কেজি পচা গোবর, ৫০ গ্রাম টিএসপি, ৪০ গ্রাম পটাশ ও ২৫ গ্রাম জিপসাম মাটিতে মিশিয়ে দিন। গোবর সার: ৪০০–৫০০ কেজি প্রতি বিঘা।"
+      },
+      "topics": ["lifecycle", "timing", "pit_management", "fertilizer_rates", "compost"],
+      "sources": [{ "organization": "BARI / DAE", "url": "http://bari.gov.bd/", "title": "Bottle Gourd Production Handbook" }]
+    },
+    {
+      "cropId": "pumpkin",
+      "nameEn": "Sweet Pumpkin",
+      "nameBn": "মিষ্টি কুমড়া",
+      "generalGuide": {
+        "en": "Sweet Pumpkin (110–130 days duration, e.g. BARI Mistikumra-1, 2, Dream). Sowing October–November (winter) or February–March (summer). Water: 350–500 mm; furrow/trench watering every 5–7 days in dry season. Fertilizer per bigha: Urea 20–25 kg, TSP 18–20 kg, Potash 15–18 kg, Gypsum 10 kg, Boron 1 kg; pit mix: 8–10 kg cow dung, 50 g TSP, 40 g Potash basal. Compost: 400–500 kg per bigha.",
+        "bn": "মিষ্টি কুমড়া (জীবনকাল ১১০–১৩০ দিন, যেমন বারি মিষ্টি কুমড়া-১, ২, ড্রিম)। বপন কার্তিক–অগ্রহায়ণ (শীতকালীন) বা ফাল্গুন (গ্রীষ্মকালীন)। পানি: ৩৫০–৫০০ মিমি; প্রতি ৫–৭ দিন অন্তর নালায় সেচ দিন। সার প্রতি বিঘা: ইউরিয়া ২০–২৫ কেজি, টিএসপি ১৮–২০ কেজি, পটাশ ১৫–১৮ কেজি, জিপসাম ১০ কেজি, বোরন ১ কেজি; প্রতি মাদায় ৮–১০ কেজি গোবর, ৫০ গ্রাম টিএসপি ও ৪০ গ্রাম পটাশ। গোবর সার: ৪০০–৫০০ কেজি প্রতি বিঘা।"
+      },
+      "topics": ["lifecycle", "timing", "pit_management", "fertilizer_rates", "compost"],
+      "sources": [{ "organization": "BARI / DAE", "url": "http://bari.gov.bd/", "title": "Sweet Pumpkin Production Technology" }]
+    },
+    {
+      "cropId": "sunflower",
+      "nameEn": "Sunflower",
+      "nameBn": "সূর্যমুখী",
+      "generalGuide": {
+        "en": "Sunflower (90–105 days duration, e.g. BARI Surjomukhi-2, 3, Hysun-33). Sowing mid-November to mid-December (Agrahayan–Poush). Water: 250–350 mm; 3 irrigations at vegetative (25–30 DAS), budding (45–50 DAS), and seed filling (65–70 DAS). Fertilizer per bigha: Urea 20–24 kg (half basal, half before flowering), TSP 16–18 kg, Potash 12–15 kg, Gypsum 12–15 kg (vital for oil), Zinc 1.5 kg, Boron 1.5 kg (vital: prevents empty seeds). Compost: 300–400 kg per bigha.",
+        "bn": "সূর্যমুখী (জীবনকাল ৯০–১০৫ দিন, যেমন বারি সূর্যমুখী-২, ৩, হাইসান-৩৩)। বপন অগ্রহায়ণ থেকে মধ্য পৌষ। পানি: ২৫০–৩৫০ মিমি; ৩টি সেচ: অঙ্গজ বৃদ্ধি (২৫–৩০ দিনে), কুঁড়ি আসার সময় (৪৫–৫০ দিনে) ও দানা পুষ্ট হওয়ার সময় (৬৫–৭০ দিনে)। সার প্রতি বিঘা: ইউরিয়া ২০–২৪ কেজি (অর্ধেক রোপণে, অর্ধেক ফুল আসার আগে), টিএসপি ১৬–১৮ কেজি, পটাশ ১২–১৫ কেজি, জিপসাম ১২–১৫ কেজি (তেলের জন্য অপরিহার্য), দস্তা ১.৫ কেজি, বোরন ১.৫ কেজি (মাথার মাঝখানের বীজ ফাঁপা হওয়া রোধে আবশ্যক)। গোবর সার: ৩০০–৪০০ কেজি প্রতি বিঘা।"
+      },
+      "topics": ["lifecycle", "timing", "stage_irrigation", "fertilizer_rates", "boron_importance"],
+      "sources": [{ "organization": "BARI / DAE", "url": "http://bari.gov.bd/", "title": "Sunflower Production Guide" }]
+    },
+    {
+      "cropId": "ginger",
+      "nameEn": "Ginger",
+      "nameBn": "আদা",
+      "generalGuide": {
+        "en": "Ginger (240–270 days duration, e.g. BARI Ada-1, 2). Planting rhizomes in April–May (Chaitra–Boishakh), harvest December–January. Water: 1200–1500 mm (monsoon provides most); raised beds (15–20 cm) with drainage channels are mandatory to prevent rhizome rot. Fertilizer per bigha: Urea 30–35 kg (split at 50, 80, 100 DAP), TSP 25–28 kg, Potash 20–25 kg, Gypsum 10–12 kg, Zinc 1.5 kg. Compost: 600–800 kg cow dung per bigha with straw mulch.",
+        "bn": "আদা (জীবনকাল ২৪০–২৭০ দিন / ৮–৯ মাস, যেমন বারি আদা-১, ২)। কন্দ রোপণ চৈত্র–বৈশাখ (এপ্রিল–মে), ফসল তোলা অগ্রহায়ণ–পৌষ। পানি: ১২০০–১৫০০ মিমি; কন্দ পচা রোধে ১৫–২০ সেমি উঁচু বেড ও নিষ্কাশন নালা বাধ্যতামূলক। সার প্রতি বিঘা: ইউরিয়া ৩০–৩৫ কেজি (৫০, ৮০ ও ১০০ দিনে ৩ কিস্তিতে), টিএসপি ২৫–২৮ কেজি, পটাশ ২০–২৫ কেজি, জিপসাম ১০–১২ কেজি, দস্তা ১.৫ কেজি। গোবর সার: ৬০০–৮০০ কেজি প্রতি বিঘা খড়ের মালচিং সহ।"
+      },
+      "topics": ["lifecycle", "timing", "drainage_management", "fertilizer_rates", "mulch"],
+      "sources": [{ "organization": "BARI / BARC", "url": "http://bari.gov.bd/", "title": "Ginger Cultivation Technology" }]
+    },
+    {
+      "cropId": "papaya",
+      "nameEn": "Papaya",
+      "nameBn": "পেঁপে",
+      "generalGuide": {
+        "en": "Papaya (semi-perennial, 18–24 months total, e.g. Shahi, Red Lady). First harvest at 7–8 months after transplanting. Planting October–November or February–March on raised mounds. Water: highly sensitive to waterlogging (even 24 hours standing water kills trees); irrigate every 10–12 days in winter. Fertilizer per plant/year: Urea 450–500 g, TSP 450–500 g, Potash 450–500 g, Gypsum 250 g, Zinc 20 g, Boron 20 g, applied in 6 bi-monthly splits. Compost: 15–20 kg cow dung per pit.",
+        "bn": "পেঁপে (জীবনকাল দেড় থেকে দুই বছর, যেমন শাহী, রেড লেডি)। চারা রোপণের ৭–৮ মাস পর থেকে ফলন শুরু হয়। রোপণ কার্তিক বা ফাল্গুন মাসে উঁচু মাদার ওপর। পানি: জলাবদ্ধতা কোনোভাবেই সহ্য করতে পারে না (২৪ ঘণ্টা পানি জমে থাকলে গাছ পচে মারা যায়); শীতকালে প্রতি ১০–১২ দিন পর সেচ দিন। সার প্রতি গাছে বার্ষিক: ইউরিয়া ৪৫০–৫০০ গ্রাম, টিএসপি ৪৫০–৫০০ গ্রাম, পটাশ ৪৫০–৫০০ গ্রাম, জিপসাম ২৫০ গ্রাম, দস্তা ২০ গ্রাম, বোরন ২০ গ্রাম (প্রতি ২ মাস অন্তর ৬ কিস্তিতে প্রয়োগ)। গোবর সার: প্রতি মাদায় ১৫–২০ কেজি পচা গোবর।"
+      },
+      "topics": ["lifecycle", "timing", "mound_drainage", "fertilizer_per_tree", "compost"],
+      "sources": [{ "organization": "BARI / DAE", "url": "http://bari.gov.bd/", "title": "Papaya Production Handbook" }]
+    },
+    {
+      "cropId": "pulses",
+      "nameEn": "Pulses (Lentil & Mungbean)",
+      "nameBn": "ডাল (মসুর ও মুগ)",
+      "generalGuide": {
+        "en": "Pulses: Lentil (মসুর, 105–115 days, BARI Masur-6, 7, 8) sown mid-October to mid-November; Mungbean (মুগ, 60–65 days, BARI Mung-6) sown late February–March or August. Legumes fix nitrogen in root nodules. Water: 150–250 mm; 1 light irrigation at pod formation if drought occurs. Fertilizer per bigha: Urea 4–6 kg (starter dose only), TSP 10–12 kg (vital for root nodules), Potash 5–7 kg, Gypsum 6–8 kg, Boron 1 kg. Compost: 200–250 kg per bigha.",
+        "bn": "ডাল ফসল: মসুর (জীবনকাল ১০৫–১১৫ দিন, বারি মসুর-৬, ৭, ৮) বপন মধ্য অক্টোবর–মধ্য নভেম্বর; মুগ ডাল (৬০–৬৫ দিন, বারি মুগ-৬) বপন ফাল্গুন বা ভাদ্র। ডাল জাতীয় ফসল শিকড়ের নডিউলে বাতাস থেকে নাইট্রোজেন সংবন্ধন করে। পানি: ১৫০–২৫০ মিমি; খরা হলে শুঁটি আসার সময় ১টি হালকা সেচ। সার প্রতি বিঘা: ইউরিয়া ৪–৬ কেজি (শুধু প্রারম্ভিক মাত্রা), টিএসপি ১০–১২ কেজি (শিকড়ের বৃদ্ধি ও নডিউল গঠনের জন্য জরুরি), পটাশ ৫–৭ কেজি, জিপসাম ৬–৮ কেজি, বোরন ১ কেজি। গোবর সার: ২০০–২৫০ কেজি প্রতি বিঘা।"
+      },
+      "topics": ["lifecycle", "timing", "nitrogen_fixation", "fertilizer_rates", "compost"],
+      "sources": [{ "organization": "BARI / BARC", "url": "http://bari.gov.bd/", "title": "Pulses Production Manual in Bangladesh" }]
+    },
+    {
+      "cropId": "turnip",
+      "nameEn": "Turnip",
+      "nameBn": "শালগম",
+      "generalGuide": {
+        "en": "Turnip (45–60 days duration, e.g. White Globe, BARI Shalgam-1). Sowing September–November (Ashwin–Kartik). Water: 150–200 mm; irrigate every 7–10 days. Fertilizer per bigha: Urea 16–18 kg (splits at basal and 25 DAS), TSP 14–16 kg, Potash 10–12 kg, Gypsum 8 kg. Compost: 350 kg cow dung per bigha.",
+        "bn": "শালগম (জীবনকাল ৪৫–৬০ দিন, যেমন হোয়াইট গ্লোব, বারি শালগম-১)। বপন আশ্বিন–কার্তিক (সেপ্টেম্বর–নভেম্বর)। পানি: ১৫০–২০০ মিমি; প্রতি ৭–১০ দিন অন্তর সেচ। সার প্রতি বিঘা: ইউরিয়া ১৬–১৮ কেজি (অর্ধেক শেষ চাষে, অর্ধেক ২৫ দিনে), টিএসপি ১৪–১৬ কেজি, পটাশ ১০–১২ কেজি, জিপসাম ৮ কেজি। গোবর সার: ৩৫০ কেজি প্রতি বিঘা।"
+      },
+      "topics": ["lifecycle", "timing", "water_management", "fertilizer_rates", "compost"],
+      "sources": [{ "organization": "BARI / DAE", "url": "http://bari.gov.bd/", "title": "Root Crops Technology Handbook" }]
+    }
   ]
 }

@@ -532,6 +532,11 @@ export async function fetchGisLayers(district = "cumilla") {
   return request(`/gis/layers?district=${encodeURIComponent(district)}`);
 }
 
+/** GET /api/v1/gis/upazilas?district=... — supported district's official BBS/OCHA ADM3 polygons. */
+export async function fetchGisUpazilas(district = "cumilla") {
+  return request(`/gis/upazilas?district=${encodeURIComponent(district)}`);
+}
+
 /**
  * GET /api/v1/crop-calendar/crops
  * Fetches list of supported crops and seasons.

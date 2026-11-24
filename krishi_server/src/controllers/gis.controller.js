@@ -29,6 +29,7 @@ import { findLatestRecommendedSmapObservation, latestRecommendedSmapSnapshot } f
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const geojsonPath = path.resolve(__dirname, "../../data/gis/bbs_admin2_cumilla_chattogram.geojson");
+const admin3GeojsonPath = path.resolve(__dirname, "../../data/gis/bgd_admin3_ocha_simplified.geojson");
 
 // District P-Code mapping
 const DISTRICT_MAP = {
@@ -55,6 +56,7 @@ const DISTRICT_MAP = {
 };
 
 let cachedGeoJson = null;
+let cachedAdmin3GeoJson = null;
 
 function loadGeoJson() {
   if (cachedGeoJson) return cachedGeoJson;
@@ -64,6 +66,113 @@ function loadGeoJson() {
   const raw = fs.readFileSync(geojsonPath, "utf-8");
   cachedGeoJson = JSON.parse(raw);
   return cachedGeoJson;
+}
+
+function loadAdmin3GeoJson() {
+  if (cachedAdmin3GeoJson) return cachedAdmin3GeoJson;
+  if (!fs.existsSync(admin3GeojsonPath)) throw new Error(`Upazila boundary file missing at ${admin3GeojsonPath}`);
+  cachedAdmin3GeoJson = JSON.parse(fs.readFileSync(admin3GeojsonPath, "utf-8"));
+  return cachedAdmin3GeoJson;
+}
+
+function pointInRing(longitude, latitude, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i] || [];
+    const [xj, yj] = ring[j] || [];
+    if (![xi, yi, xj, yj].every(Number.isFinite)) continue;
+    const crosses = (yi > latitude) !== (yj > latitude)
+      && longitude < ((xj - xi) * (latitude - yi)) / ((yj - yi) || Number.EPSILON) + xi;
+    if (crosses) inside = !inside;
+  }
+  return inside;
+}
+
+function pointInPolygonGeometry(longitude, latitude, geometry) {
+  const polygons = geometry?.type === "Polygon" ? [geometry.coordinates]
+    : geometry?.type === "MultiPolygon" ? geometry.coordinates : [];
+  return polygons.some((rings) => Array.isArray(rings) && rings.length > 0
+    && pointInRing(longitude, latitude, rings[0])
+    && !rings.slice(1).some((ring) => pointInRing(longitude, latitude, ring)));
+}
+
+function representativePoint(feature) {
+  const polygons = feature?.geometry?.type === "Polygon" ? [feature.geometry.coordinates]
+    : feature?.geometry?.type === "MultiPolygon" ? feature.geometry.coordinates : [];
+  let largest = null;
+  let largestArea = -1;
+  for (const polygon of polygons) {
+    const ring = polygon?.[0];
+    if (!Array.isArray(ring) || ring.length < 4) continue;
+    let twiceArea = 0;
+    let longitudeSum = 0;
+    let latitudeSum = 0;
+    for (let i = 0; i < ring.length - 1; i += 1) {
+      const [x1, y1] = ring[i];
+      const [x2, y2] = ring[i + 1];
+      const cross = x1 * y2 - x2 * y1;
+      twiceArea += cross;
+      longitudeSum += (x1 + x2) * cross;
+      latitudeSum += (y1 + y2) * cross;
+    }
+    const area = Math.abs(twiceArea);
+    if (area > largestArea && area > 0) {
+      largestArea = area;
+      largest = [longitudeSum / (3 * twiceArea), latitudeSum / (3 * twiceArea)];
+    }
+  }
+  if (largest && pointInPolygonGeometry(largest[0], largest[1], feature.geometry)) return largest;
+
+  // A bounds midpoint is a safe fallback for narrow/concave polygons.
+  let minLon = Infinity; let minLat = Infinity; let maxLon = -Infinity; let maxLat = -Infinity;
+  const visit = (coords) => {
+    if (!Array.isArray(coords)) return;
+    if (coords.length >= 2 && Number.isFinite(coords[0]) && Number.isFinite(coords[1])) {
+      minLon = Math.min(minLon, coords[0]); maxLon = Math.max(maxLon, coords[0]);
+      minLat = Math.min(minLat, coords[1]); maxLat = Math.max(maxLat, coords[1]);
+      return;
+    }
+    coords.forEach(visit);
+  };
+  visit(feature?.geometry?.coordinates);
+  if ([minLon, minLat, maxLon, maxLat].every(Number.isFinite)) return [(minLon + maxLon) / 2, (minLat + maxLat) / 2];
+  return null;
+}
+
+/** GET /api/v1/gis/upazilas?district=cumilla — BBS/OCHA 2020 Admin-3 polygons. */
+export async function getGisUpazilas(req, res, next) {
+  try {
+    const districtCode = (req.query.district || "").trim().toLowerCase();
+    const mapping = DISTRICT_MAP[districtCode];
+    if (!mapping) return errorResponse(res, 400, "Choose a supported district to load its upazilas.", "INVALID_DISTRICT");
+
+    const districtFeature = loadGeoJson().features.find((feature) => feature.properties?.adm2_pcode === mapping.pCode);
+    if (!districtFeature) return errorResponse(res, 404, "District boundary is unavailable.", "BOUNDARY_NOT_FOUND");
+
+    const features = loadAdmin3GeoJson().features.flatMap((feature) => {
+      const point = representativePoint(feature);
+      if (!point || !pointInPolygonGeometry(point[0], point[1], districtFeature.geometry)) return [];
+      return [{
+        ...feature,
+        properties: {
+          ...feature.properties,
+          districtCode,
+          representativePoint: { latitude: point[1], longitude: point[0] },
+        },
+      }];
+    });
+
+    return successResponse(res, 200, { type: "FeatureCollection", features }, {
+      provenance: "geoBoundaries ADM3, sourced from Bangladesh Bureau of Statistics (BBS) and OCHA ROAP",
+      sourceUrl: "https://www.geoboundaries.org/api/current/gbOpen/BGD/ADM3/",
+      sourceDataset: "Bangladesh ADM3 2020 (simplified geometry)",
+      license: "CC BY 3.0 IGO",
+      districtCode,
+      featureCount: features.length,
+    });
+  } catch (error) {
+    next(error);
+  }
 }
 
 /**

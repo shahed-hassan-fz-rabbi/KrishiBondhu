@@ -54,7 +54,7 @@ export function loadCropCatalog() {
         generalGuide: knowledge?.generalGuide || null,
         knowledgeTopics: knowledge?.topics || [],
         knowledgeSources: knowledge?.sources || [],
-        managementStatus: verifiedManagementFields.length ? "partially_verified" : "not_verified",
+        managementStatus: verifiedManagementFields.length === 5 ? "verified" : (verifiedManagementFields.length ? "partially_verified" : "not_verified"),
         verifiedManagementFields,
         verificationNote: knowledge?.verificationNote || null,
         ...(calendar ? {
@@ -69,10 +69,10 @@ export function loadCropCatalog() {
         } : { typicalVarieties: [] }),
         officialCalendarDistricts,
         calendarAvailable: officialCalendarDistricts.length > 0,
-        planningAvailable: officialCalendarDistricts.length > 0,
+        planningAvailable: officialCalendarDistricts.length > 0 || verifiedManagementFields.length > 0,
         dataStatus: officialCalendarDistricts.length > 0
           ? "verified_calendar"
-          : knowledge?.generalGuide ? "general_reference" : "catalog_only",
+          : verifiedManagementFields.length > 0 ? "verified_management" : (knowledge?.generalGuide ? "general_reference" : "catalog_only"),
       };
     }),
   };
