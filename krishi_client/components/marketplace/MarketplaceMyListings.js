@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowLeft, ArrowRight, Archive, Check, Leaf, MapPin, Pencil, Plus, RefreshCw, Store, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext.js";
 import { useLang } from "@/lib/i18n/LanguageContext.js";
@@ -48,6 +49,9 @@ function ListingCard({ product, text, locale, onEdit, editing, draft, errors, fe
   const statusStyle = status === "active" ? "border-green-200 bg-green-50 text-green-800" : status === "sold_out" ? "border-amber-200 bg-amber-50 text-amber-900" : "border-stone-300 bg-stone-100 text-stone-700";
   const unit = text.unit[product?.unit] || product?.unit || "—";
   return <article className="flex min-w-0 flex-col rounded-2xl border border-[#e5dfd1] bg-white p-4 shadow-sm sm:p-5">
+    {product?.productImageDataUrl ? <div className="relative mb-4 h-40 overflow-hidden rounded-xl bg-[#edf2e8]">
+      <Image src={product.productImageDataUrl} alt={product?.productName || text.title} fill unoptimized sizes="(max-width: 640px) 100vw, 33vw" className="object-cover" />
+    </div> : null}
     <div className="flex min-w-0 items-start justify-between gap-3">
       <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#eaf2e7] text-[#247A4B]"><Leaf className="h-5 w-5" aria-hidden="true" /></span>
       <span data-bondhu-no-fly className={`max-w-[75%] break-words rounded-full border px-3 py-1 text-xs font-bold leading-5 ${statusStyle}`}>{text.status[status]}</span>

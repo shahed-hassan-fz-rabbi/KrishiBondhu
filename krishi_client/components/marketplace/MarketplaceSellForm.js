@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowLeft, CheckCircle2, ImagePlus, ShieldCheck, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext.js";
 import { useLang } from "@/lib/i18n/LanguageContext.js";
 import { createMarketplaceProduct } from "@/services/api.js";
 
-const INITIAL_FORM = { productName: "", description: "", quantity: "", unit: "kg", askingPricePerUnit: "", district: "", upazila: "" };
+const INITIAL_FORM = { productName: "", productImageDataUrl: "", description: "", quantity: "", unit: "kg", askingPricePerUnit: "", district: "", upazila: "" };
 const UNITS = ["kg", "quintal", "ton"];
 const KG_PER_UNIT = { kg: 1, quintal: 100, ton: 1000 };
 const MAX_IMAGE_FILE_BYTES = 12 * 1024 * 1024;
@@ -84,9 +85,9 @@ function errorMessages(result, text) {
   return { summary: result.status === 400 ? text.serverError : (result.error?.message || text.genericError), fieldErrors };
 }
 
-function Field({ name, label, error, children }) {
+function Field({ name, label, error, children, className = "" }) {
   const errorId = `${name}-error`;
-  return <div className="min-w-0"><label htmlFor={name} className="mb-1.5 block text-sm font-semibold text-[#274638]">{label}</label>{children}{error ? <p id={errorId} className="mt-1 text-sm leading-5 text-red-700" role="alert">{error}</p> : null}</div>;
+  return <div className={`min-w-0 ${className}`}><label htmlFor={name} className="mb-1.5 block text-sm font-semibold text-[#274638]">{label}</label>{children}{error ? <p id={errorId} className="mt-1 text-sm leading-5 text-red-700" role="alert">{error}</p> : null}</div>;
 }
 
 export default function MarketplaceSellForm() {
@@ -212,8 +213,21 @@ export default function MarketplaceSellForm() {
       <Field name="askingPricePerUnit" label={text.fields.askingPricePerUnit} error={errors.askingPricePerUnit}><input id="askingPricePerUnit" name="askingPricePerUnit" type="number" inputMode="decimal" min="0.01" max={Number.MAX_SAFE_INTEGER} step="any" value={form.askingPricePerUnit} onChange={updateField} required placeholder={text.placeholders.askingPricePerUnit} className={inputClass} {...fieldErrorProps("askingPricePerUnit")} /></Field>
       <Field name="district" label={text.fields.district} error={errors.district}><input id="district" name="district" value={form.district} onChange={updateField} minLength={2} maxLength={80} required autoComplete="address-level2" placeholder={text.placeholders.district} className={inputClass} {...fieldErrorProps("district")} /></Field>
       <Field name="upazila" label={text.fields.upazila} error={errors.upazila}><input id="upazila" name="upazila" value={form.upazila} onChange={updateField} minLength={2} maxLength={80} required placeholder={text.placeholders.upazila} className={inputClass} {...fieldErrorProps("upazila")} /></Field>
+      <Field name="productImageDataUrl" label={text.fields.productImageDataUrl} error={errors.productImageDataUrl} className="sm:col-span-2">
+        <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_220px]">
+          <label htmlFor="productImageDataUrl" className="flex min-h-28 cursor-pointer items-center gap-3 rounded-xl border border-dashed border-[#9bb79f] bg-[#f7faf5] px-4 py-4 text-sm text-[#526761] hover:border-[#247A4B] hover:bg-[#f1f7ef] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#247A4B]">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#e5f0e3] text-[#247A4B]"><ImagePlus className="h-5 w-5" aria-hidden="true" /></span>
+            <span className="min-w-0"><span className="block font-semibold text-[#274638]">{isImageProcessing ? text.imageProcessing : text.imageChoose}</span><span id="product-image-hint" className="mt-1 block text-xs leading-5">{text.imageHint}</span></span>
+            <input id="productImageDataUrl" name="productImageDataUrl" type="file" accept="image/jpeg,image/png,image/webp" onChange={selectProductImage} disabled={isImageProcessing} className="sr-only" aria-invalid={Boolean(errors.productImageDataUrl)} aria-describedby={errors.productImageDataUrl ? "productImageDataUrl-error" : "product-image-hint"} />
+          </label>
+          {form.productImageDataUrl ? <div className="relative min-h-28 overflow-hidden rounded-xl border border-[#d5dfd1] bg-[#f3f5ef]">
+            <Image src={form.productImageDataUrl} alt={form.productName ? `${form.productName} product photo` : text.fields.productImageDataUrl} fill unoptimized sizes="220px" className="object-cover" />
+            <button type="button" onClick={() => setForm((current) => ({ ...current, productImageDataUrl: "" }))} aria-label={text.imageRemove} title={text.imageRemove} className="absolute right-2 top-2 grid h-9 w-9 place-items-center rounded-full bg-white/95 text-[#496254] shadow hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#247A4B]"><X className="h-4 w-4" aria-hidden="true" /></button>
+          </div> : null}
+        </div>
+      </Field>
       <Field name="description" label={text.fields.description} error={errors.description}><textarea id="description" name="description" value={form.description} onChange={updateField} maxLength={2000} rows={4} placeholder={text.placeholders.description} className={`${inputClass} resize-y`} {...fieldErrorProps("description")} /></Field>
-      <div className="flex flex-col justify-end gap-3 sm:col-span-2 sm:flex-row sm:items-center"><p className="mr-auto text-xs leading-5 text-[#68776e]">{text.priceNotice}</p><button type="submit" disabled={isSubmitting} aria-busy={isSubmitting} className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#247A4B] px-6 text-sm font-bold text-white hover:bg-[#1c633d] disabled:cursor-wait disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#247A4B] sm:w-auto">{isSubmitting ? text.submitting : text.submit}</button></div>
+      <div className="flex flex-col justify-end gap-3 sm:col-span-2 sm:flex-row sm:items-center"><p className="mr-auto text-xs leading-5 text-[#68776e]">{text.priceNotice}</p><button type="submit" disabled={isSubmitting || isImageProcessing} aria-busy={isSubmitting || isImageProcessing} className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#247A4B] px-6 text-sm font-bold text-white hover:bg-[#1c633d] disabled:cursor-wait disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#247A4B] sm:w-auto">{isImageProcessing ? text.imageProcessing : isSubmitting ? text.submitting : text.submit}</button></div>
     </form>}
   </div>;
 }
