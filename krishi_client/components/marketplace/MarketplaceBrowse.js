@@ -61,7 +61,6 @@ const copy = {
     validation: "Search must be 100 characters or fewer and district 80 characters or fewer.",
     source: "Listings are provided by farmers; details should be confirmed with the seller before making arrangements.",
     available: "Available listings",
-    priceNote: "Seller-set prices · Browse listings only",
     browseTitle: "Find produce for your needs",
     browseIntro: "Search by crop and narrow the list by district.",
     productFallback: "Farm produce",
@@ -108,7 +107,6 @@ const copy = {
     validation: "ফসলের নাম ১০০ অক্ষর এবং জেলার নাম ৮০ অক্ষরের মধ্যে লিখুন।",
     source: "তালিকাগুলো কৃষকের দেওয়া। কেনার আগে বিক্রেতার সঙ্গে পণ্যের তথ্য ও শর্ত যাচাই করুন।",
     available: "পণ্যের তালিকা",
-    priceNote: "বিক্রেতার নির্ধারিত দাম · এখানে শুধু পণ্য দেখা যাবে",
     browseTitle: "আপনার প্রয়োজনের পণ্য খুঁজুন",
     browseIntro: "ফসলের নাম লিখুন এবং জেলা দিয়ে তালিকা ছোট করুন।",
     productFallback: "কৃষিপণ্য",
@@ -246,7 +244,7 @@ export default function MarketplaceBrowse() {
         <Link href="/marketplace/sell" data-bondhu-no-fly className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#247a4b] bg-[#247a4b] px-5 text-sm font-bold text-white shadow-[0_7px_16px_rgba(36,122,75,.18)] transition hover:-translate-y-0.5 hover:bg-[#1b633d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#247a4b]"><Store className="h-4 w-4" aria-hidden="true" />{text.sell}</Link>
       </div>
 
-      <header className="relative isolate grid min-w-0 overflow-hidden rounded-[1.75rem] border border-[#d7dfcb] bg-[linear-gradient(118deg,#eaf0e2_0%,#eff1e5_48%,#f4ebd7_100%)] shadow-[0_12px_32px_rgba(46,71,46,.055)] lg:grid-cols-[minmax(0,1.25fr)_minmax(270px,.75fr)]">
+      <header className="relative isolate grid min-w-0 overflow-hidden rounded-[1.75rem] border border-[#d7dfcb] bg-[linear-gradient(118deg,#eaf0e2_0%,#eff1e5_48%,#f4ebd7_100%)] shadow-[0_12px_32px_rgba(46,71,46,.055)]">
         <div aria-hidden="true" className="absolute inset-0 -z-10 opacity-40" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, rgba(46,92,58,.16) 1px, transparent 0)", backgroundSize: "23px 23px", maskImage: "linear-gradient(90deg,black,transparent 90%)" }} />
         <div className="min-w-0 px-5 py-7 sm:px-8 sm:py-9 lg:px-10 lg:py-11">
           <p className="inline-flex items-center gap-2 rounded-full border border-[#bdd1b8] bg-white/65 px-3 py-1.5 text-[10px] font-extrabold tracking-[.16em] text-[#46744e] sm:text-xs"><Sprout className="h-4 w-4" aria-hidden="true" />{text.eyebrow}</p>
@@ -256,11 +254,6 @@ export default function MarketplaceBrowse() {
             <Link href="/marketplace/sell" data-bondhu-no-fly className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[#247a4b] px-5 text-sm font-extrabold text-white shadow-md transition hover:-translate-y-0.5 hover:bg-[#1b633d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174f34]"><Store className="h-4 w-4" aria-hidden="true" />{text.sell}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
             {totalListings !== null ? <span className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#c8d5bd] bg-white/55 px-3 text-xs font-semibold text-[#53685a]"><Check className="h-4 w-4 text-[#247a4b]" aria-hidden="true" />{totalListings} {text.available}</span> : null}
           </div>
-        </div>
-        <div className="relative hidden min-h-[260px] items-center justify-center border-l border-white/55 px-6 py-7 lg:flex">
-          <div aria-hidden="true" className="absolute h-56 w-56 rounded-full border border-[#7fa37f]/30 bg-[radial-gradient(circle,#ffffff99_0%,#e1ecd8aa_58%,transparent_60%)] shadow-[0_0_0_16px_rgba(255,255,255,.16)]" />
-          <div className="relative grid h-36 w-36 place-items-center rounded-[2.5rem] border border-white/75 bg-white/60 text-[#418054] shadow-[0_18px_40px_rgba(49,81,49,.11)] backdrop-blur-sm"><Wheat className="h-20 w-20 stroke-[1.15]" aria-hidden="true" /><span className="absolute -right-5 top-2 grid h-12 w-12 place-items-center rounded-2xl border border-white bg-[#fffaf0] text-[#9a7028] shadow-md"><Leaf className="h-6 w-6" aria-hidden="true" /></span></div>
-          <div className="absolute bottom-8 left-6 max-w-[235px] rounded-2xl border border-white/80 bg-white/80 px-4 py-3 shadow-md backdrop-blur"><p className="text-xs font-extrabold text-[#254b35]">{text.priceType}</p><p className="mt-1 text-[11px] leading-4 text-[#667568]">{text.priceNote}</p></div>
         </div>
       </header>
 

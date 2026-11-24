@@ -1,0 +1,39 @@
+{
+  "metadata": {
+    "sourceCheckedOn": "2026-11-24",
+    "areaUnits": "decimal",
+    "decimalPerBigha": 33,
+    "notes": "Only crop-variety rates directly stated by inspected official sources are calculable. Missing rates stay unavailable. Area-scaled values are arithmetic from the source rate, not soil-test-adjusted prescriptions."
+  },
+  "references": {
+    "boro_rice|BRRI dhan28": {
+      "cropCode": "boro_rice",
+      "variety": "BRRI dhan28",
+      "basis": "BRRI Rice Profile states these product rates per bigha (33 decimals) for BRRI dhan28. Confirm soil-test and local AEZ suitability with DAE before application.",
+      "fertilizersPerBighaKg": [
+        { "nameEn": "Urea", "nameBn": "ইউরিয়া", "amount": 35 },
+        { "nameEn": "TSP / DAP", "nameBn": "টিএসপি / ডিএপি", "amount": 12 },
+        { "nameEn": "MOP", "nameBn": "এমওপি", "amount": 20 },
+        { "nameEn": "Gypsum", "nameBn": "জিপসাম", "amount": 15 },
+        { "nameEn": "Zinc sulphate", "nameBn": "জিংক সালফেট", "amount": 1.5 }
+      ],
+      "compostPerBighaKg": 300,
+      "seed": null,
+      "waterVolume": null,
+      "waterGuidanceEn": "Use alternate wetting and drying from 15 days after transplanting until panicle initiation; keep standing water from panicle initiation until flowering. Stop irrigation 10–15 days before maturity. Actual irrigation volume depends on rainfall and field conditions.",
+      "waterGuidanceBn": "চারা রোপণের ১৫ দিন পর থেকে কাইচ থোড় আসা পর্যন্ত পর্যায়ক্রমে ভেজানো ও শুকানো (AWD) পদ্ধতিতে সেচ দিন। কাইচ থোড় থেকে ফুল আসা পর্যন্ত জমিতে পানি রাখুন। পাকার ১০–১৫ দিন আগে সেচ বন্ধ করুন। প্রকৃত সেচের পরিমাণ বৃষ্টি ও জমির অবস্থার ওপর নির্ভর করে।",
+      "sources": [
+        {
+          "organization": "BRRI Rice Profile",
+          "title": "ব্রি ধান২৮ — চাষাবাদ পদ্ধতি",
+          "url": "https://riceprofile.brri.gov.bd/varieties/1"
+        },
+        {
+          "organization": "BARC",
+          "title": "Fertilizer Recommendation Guide 2024",
+          "url": "https://apps.barc.gov.bd/fertilizer_recommendation/FRG%20English%2030.10.2024.pdf"
+        }
+      ]
+    }
+  }
+}

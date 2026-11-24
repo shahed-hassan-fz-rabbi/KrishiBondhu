@@ -67,6 +67,7 @@ import {
 import { dispatchFarmNotificationUpdate } from "@/lib/farmNotificationEvents.js";
 import WeatherIntelligenceSection from "@/components/dashboard/WeatherIntelligenceSection.js";
 import { FERTILIZER_GUIDANCE_SOURCE, getFarmFertilizerGuidance } from "@/lib/fertilizerGuidance.js";
+import { FarmInputRequirements } from "@/components/farm/FarmInputRequirements.js";
 
 function FarmDetailsContent() {
   const router = useRouter();
@@ -667,6 +668,7 @@ function FarmDetailsContent() {
 
       </section>
       <section id="field-panel-fertilizer" role="tabpanel" aria-labelledby="field-tab-fertilizer" hidden={activeFarmTab !== "fertilizer"} className="space-y-5">
+        <FarmInputRequirements farm={farm} lang={lang} />
         <div className="overflow-hidden rounded-3xl border border-emerald-200 bg-surface shadow-km-sm dark:border-emerald-900">
           <div className="flex flex-col gap-4 border-b border-line bg-gradient-to-r from-emerald-50/80 via-surface to-lime-50/50 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6 dark:from-emerald-950/30 dark:to-lime-950/20">
             <div className="flex items-start gap-3">

@@ -20,6 +20,7 @@ export function createApp() {
   app.use("/api/v1/assistant/transcribe", express.json({ limit: "4mb" }));
   app.use("/api/v1/assistant/speech", express.json({ limit: "20kb" }));
   app.use("/api/v1/market/admin/import/commit", express.json({ limit: "2mb" }));
+  app.use("/api/v1/marketplace/products", express.json({ limit: "150kb" }));
   app.use(express.json({ limit: "100kb" }));
   app.use(cookieParser());
 

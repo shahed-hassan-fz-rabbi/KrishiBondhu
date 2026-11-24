@@ -7,11 +7,27 @@
 import { errorResponse, successResponse } from "../utils/response.js";
 import { Farm } from "../models/farm.model.js";
 import { ownedFarmFilter } from "../security/farm-ownership.js";
+import { calculateFarmInputRequirements } from "../services/farminputrequirements.service.js";
 import {
   evaluateCropEligibility,
   getPlanningSatelliteContext,
   generatePlanningExplanation,
 } from "../services/cropplanning.service.js";
+
+/** POST /api/v1/crop-planning/input-requirements — source-backed quantities for an owned farm. */
+export async function getFarmInputRequirements(req, res, next) {
+  try {
+    const ownerFilter = ownedFarmFilter(req.body?.farmId, req.user?._id);
+    if (!ownerFilter) return errorResponse(res, 404, "Farm not found", "FARM_NOT_FOUND");
+    const farm = await Farm.findOne(ownerFilter).lean();
+    if (!farm) return errorResponse(res, 404, "Farm not found", "FARM_NOT_FOUND");
+    const result = calculateFarmInputRequirements(farm);
+    if (!result.success) return errorResponse(res, 400, "Farm area or unit is invalid.", result.code);
+    return successResponse(res, 200, result, { status: result.status, sourceCheckedOn: result.sourceCheckedOn });
+  } catch (error) {
+    next(error);
+  }
+}
 
 /**
  * POST /api/v1/crop-planning/recommendations

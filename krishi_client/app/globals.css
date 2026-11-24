@@ -1865,6 +1865,34 @@ html.kb-marketplace-sell-page-visible .kb-mini-guide {
   pointer-events: none !important;
 }
 
+/* Keep the seller page's field photo behind its readable form panels. */
+html.kb-marketplace-sell-page-mounted .min-h-screen.bg-bg {
+  background-color: #f8f7f2;
+  background-image:
+    linear-gradient(rgba(248, 247, 242, 0.22), rgba(248, 247, 242, 0.22)),
+    url("/images/marketplace-harvest-background.jpg");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+.dark.kb-marketplace-sell-page-mounted .min-h-screen.bg-bg {
+  background-color: #071b14;
+  background-image:
+    linear-gradient(rgba(7, 27, 20, 0.55), rgba(7, 27, 20, 0.55)),
+    url("/images/marketplace-harvest-background.jpg");
+}
+@media (max-width: 780px) {
+  html.kb-marketplace-sell-page-mounted .min-h-screen.bg-bg {
+    background-attachment: scroll;
+  }
+}
+@media print {
+  html.kb-marketplace-sell-page-mounted .min-h-screen.bg-bg {
+    background: #fff !important;
+  }
+}
+
 /* Keep the public landing page touch-friendly and app-like on phones. */
 @media (max-width: 780px) {
   .kb-hero2 { min-height: auto; border-radius: 0 0 22px 22px; }
@@ -1930,6 +1958,22 @@ html.kb-mobile-preview-frame nextjs-portal { display: none !important; }
   }
   .kb-hero2-card span, .kb-hero2-cta-tour span { white-space: normal; overflow-wrap: anywhere; }
   .kb-hero2-card-stage { min-height: 120px; }
+}
+
+/* Market hero: a quiet market-day photograph on the right, faded into the
+   cream surface so the headline stays readable on the left. */
+.kb-market-hero-bg {
+  background-image: url("/img/photos/vegetable-market-vendor.jpg");
+  background-repeat: no-repeat;
+  background-position: center right;
+  background-size: cover;
+  opacity: 0.42;
+}
+.kb-market-hero-bg::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(90deg, #eee7d8 0%, rgba(238, 231, 216, 0.94) 36%, rgba(238, 231, 216, 0.25) 78%, rgba(238, 231, 216, 0.12) 100%);
 }
 
 /* Featured cards: breathing room under the cover image for a cleaner, more

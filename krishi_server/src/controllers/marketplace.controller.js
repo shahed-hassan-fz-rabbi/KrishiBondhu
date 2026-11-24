@@ -3,9 +3,12 @@ import { MarketplaceProduct } from "../models/marketplaceproduct.model.js";
 import { MARKETPLACE_DEMO_PRODUCTS } from "../data/marketplaceDemoProducts.js";
 import { errorResponse, successResponse } from "../utils/response.js";
 
-const PUBLIC_PRODUCT_FIELDS = "productName description quantity unit askingPricePerUnit district upazila status createdAt updatedAt";
-const FARMER_PRODUCT_FIELDS = "_id productName description quantity unit askingPricePerUnit district upazila status createdAt updatedAt";
+const PUBLIC_PRODUCT_FIELDS = "productName productImageDataUrl description quantity unit askingPricePerUnit district upazila status createdAt updatedAt";
+const FARMER_PRODUCT_FIELDS = "_id productName productImageDataUrl description quantity unit askingPricePerUnit district upazila status createdAt updatedAt";
 const ALLOWED_UNITS = new Set(["kg", "quintal", "ton"]);
+const KG_PER_UNIT = { kg: 1, quintal: 100, ton: 1000 };
+const MINIMUM_LISTING_KG = 25;
+const MAX_PRODUCT_IMAGE_DATA_URL_LENGTH = 140_000;
 const MAX_PAGE_SIZE = 100;
 const MAX_RESULT_OFFSET = 1_000_000;
 const MAX_SEARCH_LENGTH = 100;
@@ -37,6 +40,21 @@ function parseOptionalTextQuery(value, field, maximumLength) {
 
 function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function validateProductImageDataUrl(value) {
+  if (value === undefined || value === "") return { value: "" };
+  if (typeof value !== "string" || value.length > MAX_PRODUCT_IMAGE_DATA_URL_LENGTH) return { error: "Product image must be 100 KB or smaller after optimization." };
+  const match = value.match(/^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/);
+  if (!match) return { error: "Product image must be a JPEG, PNG, or WebP image." };
+  const bytes = Buffer.from(match[2], "base64");
+  if (bytes.length > 100_000 || bytes.toString("base64") !== match[2]) return { error: "Product image data is invalid or too large." };
+  const signatureValid = match[1] === "jpeg"
+    ? bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff
+    : match[1] === "png"
+      ? bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+      : bytes.subarray(0, 4).toString("ascii") === "RIFF" && bytes.subarray(8, 12).toString("ascii") === "WEBP";
+  return signatureValid ? { value } : { error: "Product image contents do not match its image type." };
 }
 
 function decimalParts(value) {
@@ -112,14 +130,20 @@ function validateListingInput(body, { partial = false, rejectUnknown = false } =
   const district = typeof body?.district === "string" ? body.district.trim() : "";
   const upazila = typeof body?.upazila === "string" ? body.upazila.trim() : "";
   const hasStatus = partial && Object.hasOwn(body, "status");
+  const productImage = supplied("productImageDataUrl") ? validateProductImageDataUrl(body?.productImageDataUrl) : null;
 
   if (supplied("productName") && (productName.length < 2 || productName.length > 100)) errors.push({ field: "productName", message: "Product name must be 2–100 characters." });
   if (supplied("description") && (typeof description !== "string" || description.length > 2000)) errors.push({ field: "description", message: "Description must be a string of at most 2000 characters." });
   if (supplied("quantity") && (!Number.isFinite(body?.quantity) || body.quantity < 0.01 || body.quantity > Number.MAX_SAFE_INTEGER)) errors.push({ field: "quantity", message: "Quantity must be at least 0.01 and safely representable." });
   if (supplied("unit") && !ALLOWED_UNITS.has(body?.unit)) errors.push({ field: "unit", message: "Unit must be kg, quintal, or ton." });
+  const effectiveUnit = body?.unit || (partial ? null : "kg");
+  if (supplied("quantity") && effectiveUnit && ALLOWED_UNITS.has(effectiveUnit) && Number.isFinite(body?.quantity) && body.quantity * KG_PER_UNIT[effectiveUnit] < MINIMUM_LISTING_KG) {
+    errors.push({ field: "quantity", message: `A product listing must contain at least ${MINIMUM_LISTING_KG} kg.` });
+  }
   if (supplied("askingPricePerUnit") && (!Number.isFinite(body?.askingPricePerUnit) || body.askingPricePerUnit < 0.01 || body.askingPricePerUnit > Number.MAX_SAFE_INTEGER)) errors.push({ field: "askingPricePerUnit", message: "Asking price per unit must be at least 0.01 BDT and safely representable." });
   if (supplied("district") && (district.length < 2 || district.length > 80)) errors.push({ field: "district", message: "District must be 2–80 characters." });
   if (supplied("upazila") && (upazila.length < 2 || upazila.length > 80)) errors.push({ field: "upazila", message: "Upazila must be 2–80 characters." });
+  if (productImage?.error) errors.push({ field: "productImageDataUrl", message: productImage.error });
   if (hasStatus && !["active", "sold_out"].includes(body?.status)) errors.push({ field: "status", message: "Status must be active or sold_out." });
 
   if (errors.length) return { errors };
@@ -131,6 +155,7 @@ function validateListingInput(body, { partial = false, rejectUnknown = false } =
   if (supplied("askingPricePerUnit")) normalized.askingPricePerUnit = body.askingPricePerUnit;
   if (supplied("district")) normalized.district = district;
   if (supplied("upazila")) normalized.upazila = upazila;
+  if (productImage) normalized.productImageDataUrl = productImage.value;
   if (hasStatus) normalized.status = body.status;
   if (partial) return { value: normalized };
   return {
@@ -236,6 +261,12 @@ export async function updateMarketplaceProduct(req, res, next) {
     const validation = validateListingInput(req.body, { partial: true, rejectUnknown: true });
     if (validation.errors) return errorResponse(res, 400, "Validation failed.", "VALIDATION_ERROR", validation.errors);
 
+    const existing = await MarketplaceProduct.findOne({ _id: req.params.id, ownerId: req.user._id, status: { $ne: "archived" } }).select("quantity unit").lean();
+    if (!existing) return errorResponse(res, 404, "Product listing not found.", "NOT_FOUND");
+    const effectiveUnit = validation.value.unit || existing.unit;
+    if (Object.hasOwn(validation.value, "quantity") && validation.value.quantity * KG_PER_UNIT[effectiveUnit] < MINIMUM_LISTING_KG) {
+      return errorResponse(res, 400, "A product listing must contain at least 25 kg.", "VALIDATION_ERROR", [{ field: "quantity", message: "Quantity must equal at least 25 kg in the selected unit." }]);
+    }
     const product = await MarketplaceProduct.findOneAndUpdate(
       { _id: req.params.id, ownerId: req.user._id, status: { $ne: "archived" } },
       { $set: validation.value },
