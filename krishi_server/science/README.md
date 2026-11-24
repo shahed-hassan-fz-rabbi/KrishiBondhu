@@ -6,6 +6,10 @@
 **Data Source:** NASA POWER Daily Agroclimatology Point Dataset (`nasa:power:daily:point`)  
 **Time Standard:** Local Solar Time (`LST`) — solar-day boundary, not Bangladesh Standard Time (BST, UTC+6).
 
+### Scope and model-training status
+
+This Python package computes descriptive NASA climate evidence and evaluates market-reference forecasts; it is not an agronomy language model. Crop guidance is kept as source-linked records in `data/crops/crop_knowledge.json` and retrieved by the Node API for the assistant (retrieval-augmented answers, not fine-tuning). There is no crop-specific model or fertilizer model to train in this project. The required normalized market input `science/data/processed/bangladesh_crop_prices.csv` is not present in the current workspace, so `train_reference_models.py` cannot be run on this checkout. The local World Bank reference history is a separate monthly market estimate and is not suitable for training crop-management advice. No additional API is required for the curated crop-record lookup; assistant-generated explanations depend on the existing configured language-model provider.
+
 ---
 
 ## 1. Scientific Philosophy & Principles
@@ -231,6 +235,37 @@ The converter accepts both range columns and a mid-price `date,price` CSV;
 mid-price-only files become retail observations.
 For division-level grower comparisons, import reviewed DAM Growers/Wholesale
 records through the same normalized schema.
+
+## Bangladesh crop management knowledge
+
+`data/crops/crop_management.json` is the shared source-linked agronomy reference
+used by both the Python `crop-guide` command and the Node crop-calendar API / AI
+assistant. It stores crop-specific sowing timing, water guidance, fertilizer,
+compost and lifecycle fields separately, with an explicit verification status
+and source link for each field. Fields without reviewed official evidence remain
+`not_verified`; the Python lookup does not estimate missing values, scale rates
+to farm area, or train a predictive model.
+
+```sh
+python science/run.py crop-guide --input -
+```
+
+Input example: `{"cropId":"maize"}`. Public API:
+`GET /api/v1/crop-calendar/management/maize`. The AI tool retrieves the same
+reference before answering crop questions. Fertilizer records are broad source
+rates, not soil-test prescriptions. The [BARC Fertilizer Recommendation Guide
+2024](https://apps.barc.gov.bd/fertilizer_recommendation/FRG%20English%2030.10.2024.pdf)
+requires applying local soil/AEZ context; confirm with DAE before field use.
+No new API key is needed. This is retrieval-augmented grounding over the local
+reference, not model fine-tuning. The current record has checked management
+fields for Boro rice, wheat, maize, carrot, onion, cabbage, tomato, cauliflower,
+potato, garlic, ginger, papaya, sunflower, radish, bottle gourd and sweet pumpkin.
+Official district calendars additionally supply
+crop-cycle duration, dates and stage water context for Aman, Boro, Aus and
+mustard in Cumilla and Chattogram. Every catalog crop receives a field-by-field
+status; incomplete topics remain `not_verified`. Turnip has no verified local
+package in the reviewed sources, and “pulses” remains unresolved until the
+farmer chooses a species.
 
 ## Multi-source market data and monthly reference forecasts
 

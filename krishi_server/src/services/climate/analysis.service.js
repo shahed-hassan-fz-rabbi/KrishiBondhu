@@ -131,6 +131,35 @@ export async function executePythonFarmReport({ payload }) {
   });
 }
 
+/** Retrieves the shared crop reference through Python's deterministic CLI. */
+export async function executePythonCropGuide({ cropId }) {
+  return new Promise((resolve, reject) => {
+    const pyProcess = spawn("python", [PYTHON_RUN_SCRIPT, "crop-guide", "--input", "-"], {
+      stdio: ["pipe", "pipe", "pipe"],
+      env: { ...process.env, PYTHONIOENCODING: "utf-8" },
+    });
+    let stdoutData = "";
+    let stderrData = "";
+    pyProcess.stdout.on("data", (chunk) => { stdoutData += chunk.toString("utf8"); });
+    pyProcess.stderr.on("data", (chunk) => { stderrData += chunk.toString("utf8"); });
+    pyProcess.on("close", (code) => {
+      let result;
+      try {
+        result = JSON.parse(stdoutData);
+      } catch (error) {
+        return reject(new Error(`Failed to parse Python crop guide output: ${error.message}; ${stderrData}`));
+      }
+      if (code !== 0 || !result.success) {
+        return reject(new Error(result.status === "UNKNOWN_CROP" ? "UNKNOWN_CROP" : (stderrData || "Python crop guide failed.")));
+      }
+      resolve(result);
+    });
+    pyProcess.on("error", (error) => reject(new Error(`Failed to start Python crop guide: ${error.message}`)));
+    pyProcess.stdin.on("error", () => {});
+    pyProcess.stdin.end(JSON.stringify({ cropId }));
+  });
+}
+
 /**
  * High-level analysis pipeline for a district.
  */

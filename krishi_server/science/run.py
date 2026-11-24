@@ -14,16 +14,109 @@ from pathlib import Path
 # Add current dir to sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from contract import build_output_envelope, validate_input_snapshot
-from stats import (
-    summarize_parameter,
-    summarize_rainfall,
-    summarize_temperature,
-    summarize_handoff,
-    sowing_window_rainfall_coverage,
-)
-from farm_report import build_farm_environment_report
-from market_forecast import forecast_market_prices
+def get_crop_management_guide(payload):
+    """Return source-linked crop guidance from the shared backend reference file.
+
+    This is deterministic retrieval, not a learned model or a recommendation
+    calculator. Missing or soil-test-dependent values remain unavailable.
+    """
+    data_path = Path(__file__).resolve().parent.parent / "data" / "crops" / "crop_management.json"
+    with data_path.open("r", encoding="utf-8") as source_file:
+        reference = json.load(source_file)
+    catalog_path = data_path.parent / "crop_catalog.json"
+    with catalog_path.open("r", encoding="utf-8") as source_file:
+        catalog = json.load(source_file)
+    knowledge_path = data_path.parent / "crop_knowledge.json"
+    with knowledge_path.open("r", encoding="utf-8") as source_file:
+        knowledge = json.load(source_file)
+    calendar_path = data_path.parent / "official_crop_calendars.json"
+    with calendar_path.open("r", encoding="utf-8") as source_file:
+        calendar_data = json.load(source_file)
+
+    crop_id = str(payload.get("cropId") or payload.get("crop") or "").strip().lower()
+    crop = next((item for item in catalog.get("crops", []) if crop_id in {
+        str(item.get("code", "")).strip().lower(),
+        str(item.get("nameEn", "")).strip().lower(),
+        str(item.get("nameBn", "")).strip().lower(),
+        *[str(alias).strip().lower() for alias in item.get("aliasesEn", [])],
+        *[str(alias).strip().lower() for alias in item.get("aliasesBn", [])],
+    }), None)
+    if crop is None:
+        return {"success": False, "status": "UNKNOWN_CROP", "cropId": crop_id or None}
+    crop_id = crop["code"]
+    record = reference.get("crops", {}).get(crop_id, {})
+    knowledge_record = next((item for item in knowledge.get("crops", []) if item.get("cropId") == crop_id), {})
+    calendar_record = next((item for item in calendar_data.get("crops", []) if item.get("cropId") == crop_id), None)
+
+    fields = record.get("fields", {})
+    expected_fields = ("lifecycle", "timing", "water", "fertilizer", "compost")
+    normalized_fields = {
+        name: fields.get(name, {"status": "not_verified", "value": None, "sourceIds": []})
+        for name in expected_fields
+    }
+    district_calendars = {}
+    if calendar_record:
+        for district_id, district_data in calendar_record.get("districts", {}).items():
+            district_calendars[district_id] = {
+                "districtName": district_data.get("districtName"),
+                "totalDurationDays": district_data.get("totalDurationDays"),
+                "sowingPeriod": district_data.get("sowingPeriod"),
+                "transplantingPeriod": district_data.get("transplantingPeriod"),
+                "harvestingPeriod": district_data.get("harvestingPeriod"),
+                "waterRequirementMmTotal": district_data.get("waterRequirementMmTotal"),
+                "stages": district_data.get("stages", []),
+                "sourcePublisher": district_data.get("sourcePublisher"),
+                "sourceDocumentTitle": district_data.get("sourceDocumentTitle"),
+                "sourceDocumentUrl": district_data.get("sourceDocumentUrl"),
+            }
+        calendar_sources = [
+            {
+                "organization": district_data.get("sourcePublisher"),
+                "title": district_data.get("sourceDocumentTitle"),
+                "url": district_data.get("sourceDocumentUrl"),
+            }
+            for district_data in calendar_record.get("districts", {}).values()
+        ]
+    else:
+        calendar_sources = []
+    district_names = ", ".join(item.get("districtName", key) for key, item in district_calendars.items())
+    if district_calendars:
+        normalized_fields["lifecycle"] = {
+            "status": "verified_limited",
+            "value": f"Official crop calendars list crop duration by district: {district_names}. See districtCalendars for dates and stage details.",
+            "unit": "days; selected districts only",
+            "sourceIds": ["official_crop_calendar"],
+        }
+        normalized_fields["timing"] = {
+            "status": "verified_limited",
+            "value": f"Official dates exist only for these districts: {district_names}; use the matching district calendar below.",
+            "sourceIds": ["official_crop_calendar"],
+        }
+        normalized_fields["water"] = {
+            "status": "verified_limited",
+            "value": f"Seasonal, stage-based water requirement is available only for these district calendars: {district_names}; see districtCalendars. This is not a field irrigation prescription.",
+            "unit": "mm per crop cycle; selected district calendar",
+            "sourceIds": ["official_crop_calendar"],
+        }
+    verified = [name for name, item in normalized_fields.items() if item.get("status", "").startswith("verified")]
+    pending = [name for name, item in normalized_fields.items() if not item.get("status", "").startswith("verified")]
+    has_verified_data = bool(verified)
+    return {
+        "success": True,
+        "status": "PARTIALLY_VERIFIED" if has_verified_data else "NOT_VERIFIED",
+        "cropId": crop_id,
+        "nameEn": crop.get("nameEn"),
+        "nameBn": crop.get("nameBn"),
+        "fields": normalized_fields,
+        "districtCalendars": district_calendars,
+        "generalGuide": knowledge_record.get("generalGuide"),
+        "identityNote": record.get("identityNote") or knowledge_record.get("verificationNote"),
+        "sources": (record.get("sources") or knowledge_record.get("sources", [])) + calendar_sources,
+        "metadata": reference.get("metadata", {}),
+        "verifiedFields": verified,
+        "pendingFields": pending,
+        "disclosure": "Source-linked reference only. Do not infer missing quantities, convert area units, or treat general rates as personalized advice. Check soil test, AEZ, variety, season and local DAE guidance.",
+    }
 
 
 def main():
@@ -50,6 +143,10 @@ def main():
     market_parser.add_argument("--input", required=True, help="Path to JSON input (or - for stdin)")
     market_parser.add_argument("--output", default=None, help="Path to output JSON file (default stdout)")
 
+    crop_guide_parser = subparsers.add_parser("crop-guide", help="Retrieve source-linked Bangladesh crop management data")
+    crop_guide_parser.add_argument("--input", required=True, help="Path to JSON input (or - for stdin)")
+    crop_guide_parser.add_argument("--output", default=None, help="Path to output JSON file (default stdout)")
+
     args = parser.parse_args()
 
     # Read input
@@ -66,6 +163,8 @@ def main():
         sys.exit(1)
 
     if args.command == "farm-report":
+        from farm_report import build_farm_environment_report
+
         report = build_farm_environment_report(payload)
         output_json = json.dumps(report, ensure_ascii=False, indent=2)
         if args.output:
@@ -78,6 +177,8 @@ def main():
         return
 
     if args.command == "market-forecast":
+        from market_forecast import forecast_market_prices
+
         result = forecast_market_prices(payload)
         output_json = json.dumps(result, ensure_ascii=False, indent=2)
         if args.output:
@@ -88,6 +189,27 @@ def main():
         if not result.get("success"):
             sys.exit(2)
         return
+
+    if args.command == "crop-guide":
+        result = get_crop_management_guide(payload)
+        output_json = json.dumps(result, ensure_ascii=False, indent=2)
+        if args.output:
+            with open(args.output, "w", encoding="utf-8") as f:
+                f.write(output_json)
+        else:
+            print(output_json)
+        if not result.get("success"):
+            sys.exit(2)
+        return
+
+    from contract import build_output_envelope, validate_input_snapshot
+    from stats import (
+        summarize_parameter,
+        summarize_rainfall,
+        summarize_temperature,
+        summarize_handoff,
+        sowing_window_rainfall_coverage,
+    )
 
     errors = validate_input_snapshot(payload)
     if errors:

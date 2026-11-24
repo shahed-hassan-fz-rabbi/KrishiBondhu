@@ -64,8 +64,9 @@ KrishiBondhu combines agricultural planning, available market information, farm 
 - **Environmental intelligence** — quality-filtered NASA SMAP surface soil moisture, MODIS NDVI/EVI vegetation indices, and GPM IMERG precipitation, each with explicit quality and limitation disclosures.
 - **Interactive GIS map** — official BBS 2020 Admin-2 district boundaries with NASA observation context layers.
 - **Crop calendar** — BAMIS/DAE/BRRI/BARI-sourced phenology calendars for Aman, Boro, Aus, and mustard across the two supported districts, aligned against satellite observations.
+- **Crop catalog** — a backend-served bilingual registry for the requested field crops. Field records accept all listed crops; source-linked BAMIS notes are retrieved by the assistant, while localized schedules and recommendations stay limited to district-verified calendars.
 - **My Farm** — an authenticated farmer records farms, crop/planting details, lifecycle stage estimates, and field activities, with notifications and environment context joined to available NASA data.
-- **AI agricultural assistant** — a Gemini function-calling chat that can only call **declared backend data tools** (climate, precipitation, crop-calendar, farm tools), cites those sources, and falls back to a deterministic grounded template when the model service is unavailable. It never invents observations.
+- **AI agricultural assistant** — a Gemini function-calling chat that can only call **declared backend data tools** (climate, precipitation, crop knowledge, crop-calendar, farm tools), cites those sources, and falls back to source-linked crop notes or a coverage notice when the model service is unavailable. It never invents observations.
 - **Bilingual UI** (English/Bangla with Bengali numerals), light/dark themes, guest access for public analytical pages, and owner-scoped private farm/chat data.
 
 ## How KrishiBondhu works
@@ -139,10 +140,11 @@ Status classifications: **Implemented** (works against the current code and docu
 | GPM IMERG precipitation | `/precipitation` (service + client sections) | Experimental | GPM_3IMERGHH V07B; daily totals require 48 valid half-hour intervals (UTC+6); incomplete days are not zero. |
 | Interactive GIS map | `/map` | Implemented | Leaflet + react-leaflet; BBS 2020 Admin-2 polygons for Cumilla & Chattogram served from `/api/v1/gis/boundaries`. |
 | Crop calendar | `/crop-calendar` | Implemented | BAMIS/DAE/BRRI/BARI-sourced calendars (checked-in JSON with source-document URLs) plus satellite alignment view. |
+| Crop catalog | `/api/v1/crop-calendar/catalog` | Implemented | Backend catalog for 22 crops with bilingual names, aliases, source-note status, and explicit calendar coverage; unverified crops can be recorded in My Farm but are not used to generate localized agronomic recommendations. |
 | NASA data catalog | `/data-sources` | Implemented | Dataset registry, point-in-time counts, provenance, units, LST disclosure. |
 | Crop rotation preview | `/crop-rotation`, `/rotation-planner` | Implemented | Public preview endpoint (no auth); authenticated compare/explain/save. |
 | Market report and farmer selling tools | `/market`, `/api/v1/market/alerts` | Partial | DAM daily report, official directory/classified links, break-even calculator, persisted personal target alerts; quote entry is farmer-supplied because DAM does not publish a documented public API. |
-| Saved farmer advisories | `/saved-advisories`, `/api/v1/saved-advisories` | Implemented | Farmer-owned, database-backed crop planning notes, rotation explanations and AI assistant replies with field/source context; supports saving and removal from the collection. |
+| Saved farmer advisories | `/saved-advisories`, `/api/v1/saved-advisories` | Retired from UI | The page redirects to the dashboard and save controls are hidden. Existing database records and API support are retained. |
 | Farmer authentication (email/phone + password) | `/login`, `/register` | Implemented | bcrypt + JWT session via HTTP-only cookies; rate-limited login; SMS phone verification before SMS opt-in. |
 | Google OAuth | `/login`, `/register`, `/auth/google*` | Partial | Frontend and backend flow is active when Google client credentials and a matching callback URL are configured. |
 | My Farm (farms, lifecycle, activities, notifications) | `/my-farm` | Implemented | Owner-scoped authenticated APIs; activity generation from lifecycle templates; notification readiness. |
@@ -406,6 +408,7 @@ All endpoints are mounted under `/api/v1` (authoritative definitions: `server/sr
 | `/precipitation/latest|daily|history` | GET | Public | GPM IMERG with 48-interval completeness semantics |
 | `/gis/districts|boundaries|layers` | GET | Public | Supported districts, BBS Admin-2 GeoJSON, map layers |
 | `/crop-calendar`, `/crop-calendar/crops`, `/crop-calendar/alignment` | GET | Public | Official BAMIS/DAE/BRRI/BARI calendars + satellite alignment |
+| `/crop-calendar/catalog` | GET | Public | Crop catalog with general-source and district-calendar coverage |
 | `/divisions`, `/divisions/intelligence` | GET | Public | Division-level representative context |
 | `/weather/forecast|outlook|alerts|crop-planning` | GET | Optional auth | Open-Meteo-backed weather intelligence |
 | `/weather/admin/warnings…` | POST/PATCH/GET | Admin role | Official-warning review/verification workflow |

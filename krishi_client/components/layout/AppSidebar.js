@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   CalendarDays,
-  Bookmark,
   ClipboardList,
   ChartNoAxesCombined,
   ChevronRight,
@@ -61,9 +60,9 @@ const icons = {
   "/map": MapIcon,
   "/crop-calendar": CalendarDays,
   "/data-sources": Database,
-  "/saved-advisories": Bookmark,
   "/settings": Settings,
   "/officer/reviews": ClipboardList,
+  "/my-farm/reviews": ClipboardList,
 };
 
 function NavList({ onNavigate, isCollapsed = false }) {

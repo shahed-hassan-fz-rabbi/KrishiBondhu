@@ -8,6 +8,7 @@ import crypto from "crypto";
 import { geminiAssistantClient } from "./gemini.client.js";
 import { toolExecutors } from "./tools.executor.js";
 import { DISTRICTS } from "../../config/climate.config.js";
+import { getCropByCode, loadCropCatalog } from "../cropcatalog.service.js";
 
 const VALID_DISTRICT_CODES = new Set(DISTRICTS.map((d) => d.code));
 
@@ -68,6 +69,63 @@ function isBanglaMessage(message) {
   if (typeof message !== "string" || message.length === 0) return false;
   if (/[\u0980-\u09FF]/.test(message)) return true;
   return isBanglishMessage(message);
+}
+
+function findCatalogOnlyCropMention(message) {
+  const normalizedMessage = String(message || "").toLocaleLowerCase();
+  return loadCropCatalog().crops
+    .filter((item) => !item.planningAvailable)
+    .find((item) => [item.nameBn, item.nameEn, ...(item.aliasesBn || []), ...(item.aliasesEn || [])]
+      .filter(Boolean)
+      .some((label) => {
+        const normalizedLabel = label.toLocaleLowerCase();
+        if (/^[a-z0-9 _-]+$/.test(normalizedLabel)) {
+          const escapedLabel = normalizedLabel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          return new RegExp(`(^|[^a-z0-9])${escapedLabel}([^a-z0-9]|$)`, "i").test(normalizedMessage);
+        }
+        return normalizedMessage.includes(normalizedLabel);
+      }));
+}
+
+function isMarketQuestion(message) {
+  return /\b(price|market)\b|দাম|দর|বাজার/i.test(String(message || ""));
+}
+
+function buildCropCoverageNotice(crop, message, district) {
+  const isBangla = isBanglaMessage(message);
+  const verifiedNames = loadCropCatalog().crops.filter((item) => item.planningAvailable)
+    .map((item) => isBangla ? item.nameBn : item.nameEn).join(isBangla ? "، " : ", ");
+  const districtLabel = district ? (isBangla ? `${district} জেলার ` : ` in ${district} district`) : "";
+  const answer = isBangla
+    ? `${crop.nameBn} ফসলের ${districtLabel}যাচাইকৃত কৃষি পরিকল্পনার তথ্য নেই। ফসলটি ক্যাটালগে আছে, কিন্তু স্থানভিত্তিক সরকারি চাষের ক্যালেন্ডার ও সুপারিশ যাচাই করা হয়নি।\n\nযাচাইকৃত পঞ্জিকা আছে: ${verifiedNames}। যাচাই শেষ না হওয়া পর্যন্ত চাষের সময়, পানির চাহিদা বা সারের মাত্রা অনুমান করে দেওয়া হবে না।`
+    : `There is no verified agronomic planning data for ${crop.nameEn}${districtLabel}. The crop is listed in our catalog, but its location-specific official calendar and recommendations have not been verified.\n\nVerified crop calendars are available for: ${verifiedNames}. Planting dates, water needs, and fertilizer rates will not be guessed while verification is pending.`;
+  return {
+    answer,
+    language: isBangla ? "bn" : "en",
+    sources: ["KrishiBondhu Crop Catalog", "BAMIS Crop Weather Calendar"],
+    dataDate: loadCropCatalog().metadata.catalogReviewedOn,
+    dataQuality: "crop_catalog_only",
+    provenance: ["Crop catalog entry; no verified crop calendar for this crop"],
+    limitations: ["Crop planning uses only official crop calendars verified for the selected district."],
+  };
+}
+
+function buildCropKnowledgeFallback(knowledge, message, conversationId) {
+  const isBangla = isBanglaMessage(message);
+  const sourceLinks = (knowledge.sources || []).map((source) => `${source.organization}: ${source.url}`).join("\n");
+  const answer = `${knowledge.generalGuide[isBangla ? "bn" : "en"]}\n\n${isBangla ? "সূত্র" : "Source"}: ${sourceLinks}\n${isBangla ? "বামিসের উৎসপাতা প্রকল্পে দেখা হয়েছে" : "BAMIS source page checked for this project"}: ${knowledge.sourceCheckedOn}\n${isBangla ? "নির্দিষ্ট জমির চাষের সময়, সেচ বা সারের মাত্রা এখানে যাচাই করা নেই; অনুমান করে দেওয়া হবে না।" : "Field-specific planting dates, irrigation schedules, and fertilizer rates are not verified here and will not be guessed."}`;
+  return {
+    answer,
+    language: isBangla ? "bn" : "en",
+    sources: (knowledge.sources || []).map((source) => source.organization),
+    dataDate: null,
+    sourceCheckedOn: knowledge.sourceCheckedOn,
+    dataQuality: "source_linked_general_guidance",
+    provenance: (knowledge.sources || []).map((source) => source.url),
+    limitations: ["General BAMIS crop-page information only; not a district-specific calendar or field prescription."],
+    conversationId,
+    meta: { model: "crop-knowledge-retrieval", toolsCalled: ["getCropKnowledge"] },
+  };
 }
 
 function isGeneralHelpOrGreeting(message) {
@@ -705,22 +763,29 @@ async function generateDeterministicFallback({ message, district, crop = null, f
   const UNSUPPORTED_CROPS_BN = ["গম", "ভুট্টা", "আলু", "পাট", "তুলা", "ডাল", "পেঁয়াজ"];
 
   const foundUnsupportedDistrict = UNSUPPORTED_DISTRICTS_BN.find((d) => normMessage.includes(d));
-  const foundUnsupportedCrop = UNSUPPORTED_CROPS_BN.find((c) => normMessage.includes(c));
+  const cropCatalog = loadCropCatalog();
+  const pendingCrop = findCatalogOnlyCropMention(message);
+  const legacyUnsupportedCrop = UNSUPPORTED_CROPS_BN.find((c) => normMessage.includes(c));
+  const foundUnsupportedCrop = pendingCrop?.nameBn || legacyUnsupportedCrop;
+  const asksForMarketData = isMarketQuestion(message);
 
-  if (foundUnsupportedDistrict || (foundUnsupportedCrop && !normMessage.includes("সরিষা") && !normMessage.includes("আমন") && !normMessage.includes("বোরো") && !normMessage.includes("আউশ"))) {
-    const unsuppParts = [];
-    if (foundUnsupportedDistrict) unsuppParts.push(`${foundUnsupportedDistrict} জেলা`);
-    if (foundUnsupportedCrop) unsuppParts.push(`${foundUnsupportedCrop} ফসল`);
-    const unsuppName = unsuppParts.join(" ও ");
+  if (foundUnsupportedDistrict || (foundUnsupportedCrop && !asksForMarketData && !normMessage.includes("সরিষা") && !normMessage.includes("আমন") && !normMessage.includes("বোরো") && !normMessage.includes("আউশ"))) {
+    const isBangla = isBanglaMessage(message);
+    const verifiedNames = cropCatalog.crops.filter((item) => item.planningAvailable)
+      .map((item) => isBangla ? item.nameBn : item.nameEn).join(isBangla ? "، " : ", ");
+    answer = isBangla
+      ? pendingCrop
+        ? `${foundUnsupportedDistrict ? `${foundUnsupportedDistrict} জেলার তথ্য এবং ` : ""}${pendingCrop.nameBn} ফসলের জন্য যাচাইকৃত কৃষি পরিকল্পনার তথ্য নেই। ফসলটি ক্যাটালগে আছে, কিন্তু স্থানভিত্তিক সরকারি চাষের ক্যালেন্ডার ও সুপারিশ যাচাই করা হয়নি।\n\nযাচাইকৃত পঞ্জিকা আছে: ${verifiedNames}। যাচাই শেষ না হওয়া পর্যন্ত চাষের সময়, পানির চাহিদা বা সারের মাত্রা অনুমান করে দেওয়া হবে না।`
+        : `${foundUnsupportedDistrict ? `${foundUnsupportedDistrict} জেলার` : foundUnsupportedCrop ? `${foundUnsupportedCrop} ফসলের` : "এই এলাকার"} জন্য এই মুহূর্তে যাচাইকৃত কৃষি পরিকল্পনার তথ্য নেই। যাচাইকৃত পঞ্জিকা আছে: ${verifiedNames}। চাষের সময়, পানির চাহিদা বা সারের মাত্রা অনুমান করে দেওয়া হবে না।`
+      : pendingCrop
+        ? `${foundUnsupportedDistrict ? `Verified data for ${foundUnsupportedDistrict} district and ` : ""}${pendingCrop.nameEn} is not currently available for agronomic planning. This crop is in the catalog, but its location-specific official calendar and recommendations have not been verified.\n\nVerified crop calendars are available for: ${verifiedNames}. Planting dates, water needs, and fertilizer rates will not be guessed while verification is pending.`
+        : `${foundUnsupportedDistrict ? `Verified data for ${foundUnsupportedDistrict} district` : `${foundUnsupportedCrop || "This area"} crop data`} is not currently available for agronomic planning. Verified crop calendars are available for: ${verifiedNames}. Planting dates, water needs, and fertilizer rates will not be guessed.`;
 
-    answer = `বর্তমানে কৃষিবন্ধু সিস্টেমে কেবল 'কুমিল্লা' এবং 'চট্টগ্রাম' জেলার উপাত্ত এবং রোপা আমন, বোরো ধান, আউশ ধান ও সরিষা ফসলের সরকারি শস্যপঞ্জিকা যাচাইকৃত রয়েছে।\n\n` +
-      `${unsuppName}-এর উপাত্ত বর্তমানে আমাদের গবেষণায় অন্তর্ভুক্ত নয়। কোনো কাল্পনিক বা অনুমাননির্ভর উপাত্ত তৈরি না করে, আমরা কেবল যাচাইকৃত উপাত্ত প্রদানে দায়বদ্ধ। অনুগ্রহ করে কুমিল্লা বা চট্টগ্রাম জেলার অনুমোদিত ফসল সম্পর্কে প্রশ্ন করুন।`;
-
-    sources.push("BBS / KrishiBondhu Supported District Registry");
+    sources.push(pendingCrop ? "KrishiBondhu Crop Catalog / BAMIS Crop Calendar Registry" : "BBS / KrishiBondhu Supported District Registry");
     dataDate = "Active Registry";
-    dataQuality = "district_unsupported";
-    provenance.push("Administrative boundary & crop scope filter");
-    limitations.push("Only Cumilla (BD2019) and Chattogram (BD2015) are actively validated.");
+    dataQuality = foundUnsupportedDistrict ? "district_unsupported" : "crop_catalog_only";
+    provenance.push(foundUnsupportedDistrict ? "Administrative boundary & crop scope filter" : "Crop calendar coverage status");
+    limitations.push(foundUnsupportedDistrict ? "Only Cumilla (BD2019) and Chattogram (BD2015) are actively validated." : "Crop planning uses only crop calendars verified for the selected supported district.");
 
     return {
       answer,
@@ -1235,6 +1300,20 @@ export class AssistantChatService {
       };
     }
 
+    const catalogCrop = findCatalogOnlyCropMention(trimmedMessage)
+      || (getCropByCode(crop)?.planningAvailable === false ? getCropByCode(crop) : null);
+    const cropKnowledge = catalogCrop ? getCropKnowledge(catalogCrop.code) : null;
+    if (catalogCrop && !isMarketQuestion(trimmedMessage) && !cropKnowledge?.generalGuide) {
+      const coverageNotice = buildCropCoverageNotice(catalogCrop, trimmedMessage, lowerDistrict);
+      const responsePayload = {
+        ...coverageNotice,
+        conversationId: effectiveConversationId,
+        meta: { model: "crop-catalog-coverage-guard", toolsCalled: [] },
+      };
+      updateConversationHistory(effectiveConversationId, trimmedMessage, responsePayload.answer);
+      return responsePayload;
+    }
+
     let responsePayload = null;
 
     // Try Gemini Function Calling if configured
@@ -1299,6 +1378,12 @@ export class AssistantChatService {
           } else if (call.toolName === "getCropCalendarAdvisory") {
             sources.add("BAMIS (DAE) & BRRI/BARI Research Bulletins");
             if (res.provenance) provenance.push(res.provenance);
+          } else if (call.toolName === "getCropKnowledge") {
+            for (const source of res.sources || []) sources.add(source.organization);
+            if (res.sourceCheckedOn) provenance.push(`Source page checked for this project on ${res.sourceCheckedOn}; original publication date may be earlier or unstated.`);
+            dataQuality = res.generalGuide ? "source_linked_general_guidance" : "crop_catalog_only";
+            for (const source of res.sources || []) if (source.url) provenance.push(source.url);
+            if (!res.districtCalendarAvailable) limitations.push("No verified district-specific crop calendar is available for this crop.");
           } else if (call.toolName === "getHandoffPlan") {
             sources.add("KrishiBondhu Handoff Window Planner");
             if (res.scientificDisclaimer) limitations.push(res.scientificDisclaimer);
@@ -1368,20 +1453,27 @@ export class AssistantChatService {
           }
         }
 
-        responsePayload = {
-          answer: geminiResult.answer,
-          language: isBanglaMessage(trimmedMessage) ? "bn" : "en",
-          sources: Array.from(sources),
-          dataDate: dataDate || null,
-          dataQuality,
-          provenance: provenance.length > 0 ? Array.from(new Set(provenance)) : ["KrishiBondhu Unified Intelligence Service"],
-          limitations: limitations.length > 0 ? Array.from(new Set(limitations)) : ["Agricultural satellite and historical data subject to regional microclimates."],
-          conversationId: effectiveConversationId,
-          meta: {
-            model: geminiResult.modelUsed,
-            toolsCalled: geminiResult.executedTools.map((t) => t.toolName),
-          },
-        };
+        const cropKnowledgeWasRetrieved = geminiResult.executedTools.some((tool) => tool.toolName === "getCropKnowledge");
+        const asksForSpecificCropPlan = /\b(when|plant|sow|sowing|fertili[sz]er|irrigat|water schedule|yield|dose|schedule)\b|কখন|বপন|রোপণ|সার|সেচ|ফলন|মাত্রা|সময়সূচি|চাষের সময়/i.test(trimmedMessage);
+        if (catalogCrop && !isMarketQuestion(trimmedMessage)
+          && (!cropKnowledgeWasRetrieved || (asksForSpecificCropPlan && !catalogCrop.planningAvailable))) {
+          responsePayload = buildCropKnowledgeFallback(cropKnowledge, trimmedMessage, effectiveConversationId);
+        } else {
+          responsePayload = {
+            answer: geminiResult.answer,
+            language: isBanglaMessage(trimmedMessage) ? "bn" : "en",
+            sources: Array.from(sources),
+            dataDate: dataDate || null,
+            dataQuality,
+            provenance: provenance.length > 0 ? Array.from(new Set(provenance)) : ["KrishiBondhu Unified Intelligence Service"],
+            limitations: limitations.length > 0 ? Array.from(new Set(limitations)) : ["Agricultural satellite and historical data subject to regional microclimates."],
+            conversationId: effectiveConversationId,
+            meta: {
+              model: geminiResult.modelUsed,
+              toolsCalled: geminiResult.executedTools.map((t) => t.toolName),
+            },
+          };
+        }
       } catch (err) {
         // Fallback gracefully on Gemini error (rate limit, timeout, network failure)
         console.warn(`[chat.service] Gemini invocation failed, falling back to deterministic engine: ${err.message}`);
@@ -1391,28 +1483,32 @@ export class AssistantChatService {
 
     // If Gemini was not configured or threw an error, use the deterministic grounded engine
     if (!responsePayload) {
-      const fallbackResult = await generateDeterministicFallback({
-        message: trimmedMessage,
-        district: lowerDistrict,
-        crop,
-        farmId,
-        userId,
-      });
+      if (catalogCrop && !isMarketQuestion(trimmedMessage) && cropKnowledge?.generalGuide) {
+        responsePayload = buildCropKnowledgeFallback(cropKnowledge, trimmedMessage, effectiveConversationId);
+      } else {
+        const fallbackResult = await generateDeterministicFallback({
+          message: trimmedMessage,
+          district: lowerDistrict,
+          crop,
+          farmId,
+          userId,
+        });
 
-      responsePayload = {
-        answer: fallbackResult.answer,
-        language: fallbackResult.language || "bn",
-        sources: fallbackResult.sources,
-        dataDate: fallbackResult.dataDate ?? null,
-        dataQuality: fallbackResult.dataQuality,
-        provenance: fallbackResult.provenance,
-        limitations: fallbackResult.limitations,
-        conversationId: effectiveConversationId,
-        meta: {
-          model: fallbackResult.modelUsed,
-          toolsCalled: fallbackResult.executedTools.map((t) => t.toolName),
-        },
-      };
+        responsePayload = {
+          answer: fallbackResult.answer,
+          language: fallbackResult.language || "bn",
+          sources: fallbackResult.sources,
+          dataDate: fallbackResult.dataDate ?? null,
+          dataQuality: fallbackResult.dataQuality,
+          provenance: fallbackResult.provenance,
+          limitations: fallbackResult.limitations,
+          conversationId: effectiveConversationId,
+          meta: {
+            model: fallbackResult.modelUsed,
+            toolsCalled: fallbackResult.executedTools.map((t) => t.toolName),
+          },
+        };
+      }
     }
 
     // Update conversation session

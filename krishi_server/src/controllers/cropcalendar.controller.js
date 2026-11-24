@@ -18,12 +18,44 @@ import { MODIS } from "../config/modis.config.js";
 import { findLatestGoodModisObservation, findLatestMarginalModisObservation } from "../services/nasa/modis.quality.js";
 import { findLatestRecommendedSmapObservation } from "../services/nasa/smap.quality.js";
 import { errorResponse, successResponse } from "../utils/response.js";
+import { loadCropCatalog } from "../services/cropcatalog.service.js";
+import { executePythonCropGuide } from "../services/climate/analysis.service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const calendarsPath = path.resolve(__dirname, "../../data/crops/official_crop_calendars.json");
 
 let cachedCalendars = null;
+
+/** GET /api/v1/crop-calendar/catalog — canonical crop list with guidance coverage. */
+export async function getCropCatalog(req, res, next) {
+  try {
+    const catalog = loadCropCatalog();
+    return successResponse(res, 200, catalog.crops, {
+      ...catalog.metadata,
+      totalCrops: catalog.crops.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/** GET /api/v1/crop-calendar/management/:crop — field-by-field sourced guide via Python. */
+export async function getCropManagementGuide(req, res, next) {
+  try {
+    const crop = loadCropCatalog().crops.find((item) => [item.code, item.nameEn, item.nameBn, ...(item.aliasesEn || []), ...(item.aliasesBn || [])]
+      .some((value) => String(value || "").trim().toLocaleLowerCase("en") === String(req.params.crop || "").trim().toLocaleLowerCase("en")));
+    if (!crop) return errorResponse(res, 404, "Crop was not found in the catalog.", "UNKNOWN_CROP");
+    const guide = await executePythonCropGuide({ cropId: crop.code });
+    return successResponse(res, 200, guide, {
+      authority: guide.metadata?.authority,
+      sourceCheckedOn: guide.metadata?.sourceCheckedOn,
+      status: guide.status,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
 
 function loadCropCalendars() {
   if (cachedCalendars) return cachedCalendars;

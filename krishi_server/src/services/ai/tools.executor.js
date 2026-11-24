@@ -16,7 +16,7 @@ import { ModisObservation } from "../../models/modisobservation.model.js";
 import { NasaObservation } from "../../models/nasaobservation.model.js";
 import { GpmObservation } from "../../models/gpmobservation.model.js";
 import { GPM } from "../../config/gpm.config.js";
-import { analyzeDistrictClimate, analyzeHandoff, executePythonFarmReport } from "../climate/analysis.service.js";
+import { analyzeDistrictClimate, analyzeHandoff, executePythonCropGuide, executePythonFarmReport } from "../climate/analysis.service.js";
 import { snapshotService } from "../snapshot.service.js";
 import mongoose from "mongoose";
 import { gpmFinalDistrictFilter, summarizeGpmLocalDay } from "../nasa/gpm.validation.js";
@@ -42,6 +42,7 @@ import { getPlatformKnowledge as buildPlatformKnowledge } from "./platform.knowl
 import { getMarketReferenceCatalog, getMarketReferenceSeries } from "../market/reference.service.js";
 import { MarketPriceObservation } from "../../models/marketpriceobservation.model.js";
 import { executePythonMarketForecast } from "../market/forecast.service.js";
+import { getCropKnowledge, loadCropCatalog } from "../cropcatalog.service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -50,6 +51,12 @@ const PRICE_CROP_ALIASES = new Map([
   ["potato", "potato"], ["potatoes", "potato"], ["alu", "potato"], ["আলু", "potato"], ["tomato", "tomato"], ["tomatoes", "tomato"], ["টমেটো", "tomato"],
   ["brinjal", "brinjal"], ["eggplant", "brinjal"], ["বেগুন", "brinjal"],
   ["cucumber", "cucumber"], ["shosha", "cucumber"], ["শসা", "cucumber"], ["green chilli", "green chilli"], ["green chili", "green chilli"], ["কাঁচা মরিচ", "green chilli"], ["মরিচ", "green chilli"],
+  ["chili pepper", "green chilli"], ["chilli pepper", "green chilli"], ["pepper", "green chilli"],
+  ["radish", "radish"], ["mulo", "radish"], ["মুলা", "radish"], ["মূলা", "radish"],
+  ["wheat", "wheat"], ["গম", "wheat"], ["sunflower", "sunflower"], ["সূর্যমুখী", "sunflower"],
+  ["papaya", "papaya"], ["পেঁপে", "papaya"], ["ginger", "ginger"], ["আদা", "ginger"],
+  ["turnip", "turnip"], ["শালগম", "turnip"], ["carrot", "carrot"], ["গাজর", "carrot"],
+  ["cauliflower", "cauliflower"], ["ফুলকপি", "cauliflower"], ["cabbage", "cabbage"], ["বাঁধাকপি", "cabbage"],
   ["pumpkin", "pumpkin"], ["sweet pumpkin", "sweet pumpkin"], ["মিষ্টি কুমড়া", "sweet pumpkin"], ["onion", "onion"], ["পেঁয়াজ", "onion"], ["পেঁয়াজ", "onion"],
   ["garlic", "garlic"], ["roshun", "garlic"], ["রসুন", "garlic"], ["okra", "okra"], ["ঢেঁড়স", "okra"], ["bottle gourd", "bottle gourd"], ["লাউ", "bottle gourd"],
   ["bitter gourd", "bitter gourd"], ["করলা", "bitter gourd"], ["cauliflower", "cauliflower"], ["ফুলকপি", "cauliflower"],
@@ -149,6 +156,41 @@ function requireWeatherDistrict(code) {
 }
 
 export const toolExecutors = {
+  /** Source-linked, curated Bangladesh crop facts; not a fine-tuned-model response. */
+  async getCropKnowledge({ crop }) {
+    const normalized = String(crop || "").trim().toLocaleLowerCase("en");
+    const match = loadCropCatalog().crops.find((item) => [item.code, item.nameEn, item.nameBn, ...(item.aliasesEn || []), ...(item.aliasesBn || [])]
+      .some((value) => String(value || "").trim().toLocaleLowerCase("en") === normalized));
+    if (!match) return { status: "UNKNOWN_CROP", message: "Crop is not in the KrishiBondhu catalog." };
+    const knowledge = getCropKnowledge(match.code);
+    const calendar = getCropCalendarsData().crops.find((item) => item.cropId === match.code);
+    let managementGuide;
+    try {
+      managementGuide = await executePythonCropGuide({ cropId: match.code });
+    } catch (error) {
+      managementGuide = {
+        status: "NOT_VERIFIED",
+        fields: Object.fromEntries(["lifecycle", "timing", "water", "fertilizer", "compost"].map((field) => [field, { status: "not_verified", value: null, sourceIds: [] }])),
+        fallbackNote: "Python guide lookup was unavailable; do not infer any management quantities.",
+      };
+    }
+    return {
+      cropId: match.code,
+      nameEn: match.nameEn,
+      nameBn: match.nameBn,
+      catalogStatus: match.dataStatus,
+      generalGuide: knowledge?.generalGuide || null,
+      managementGuide,
+      topics: knowledge?.topics || [],
+      verificationNote: knowledge?.verificationNote || null,
+      sources: knowledge?.sources || [],
+      sourceCheckedOn: loadCropCatalog().metadata.generalKnowledgeCheckedOn,
+      districtCalendarAvailable: Boolean(calendar),
+      districtCalendarDistricts: calendar ? Object.keys(calendar.districts || {}) : [],
+      scope: "Use only field values explicitly marked verified/verified_limited and cite their source. Values are not individualized soil-test prescriptions. For fields marked not_verified, explicitly say reliable crop-specific information has not been verified; never fill gaps from model memory. Use getCropCalendarAdvisory only where its district calendar exists.",
+    };
+  },
+
   /** Actual quotes and forecasts come only from fresh, admin-verified imports; WB remains a separate monthly reference. */
   async getMarketPriceReference({ commodity, division = "National", district = "", upazila = "", market = "", priceType = "wholesale", forecastDays = 0 }) {
     try {

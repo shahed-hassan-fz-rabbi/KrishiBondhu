@@ -11,20 +11,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
   BarChart3,
-  Bookmark,
   Bot,
   Calendar,
-  ChartNoAxesCombined,
   Check,
   ChevronDown,
   ChevronRight,
   Copy,
   Droplets,
-  Edit2,
   FileText,
   Info,
-  Layers,
-  LayoutGrid,
   ListTodo,
   MapPin,
   MessageCircle,
@@ -43,7 +38,6 @@ import {
   Trash2,
   User,
   Volume2,
-  Wheat,
   X,
 } from "lucide-react";
 
@@ -56,14 +50,11 @@ import { useLang } from "@/lib/i18n/LanguageContext.js";
 import {
   sendAssistantMessage,
   fetchAssistantConversation,
-  renameAssistantConversation,
   deleteAssistantConversation,
   fetchFarms,
-  createSavedAdvisory,
 } from "@/services/api.js";
 
 const CROPS = [
-  { id: "all", nameEn: "All Crops", nameBn: "সকল ফসল" },
   { id: "monsoon_aman", nameEn: "T. Aman Rice", nameBn: "রোপা আমন ধান" },
   { id: "boro_rice", nameEn: "Boro Rice", nameBn: "বোরো ধান" },
   { id: "aus_rice", nameEn: "Aus Rice", nameBn: "আউশ ধান" },
@@ -85,7 +76,7 @@ function AssistantContent() {
   const isBn = locale === "bn";
   const isDark = theme === "dark";
 
-  const [selectedCrop, setSelectedCrop] = useState("all");
+  const [selectedCrop, setSelectedCrop] = useState(CROPS[0].id);
   const [farmLoadResult, setFarmLoadResult] = useState(null);
   const [farmReloadCount, setFarmReloadCount] = useState(0);
   const farmRequestKey = `${userKey || "guest"}:${farmReloadCount}`;
@@ -100,12 +91,9 @@ function AssistantContent() {
   const [error, setError] = useState(null);
   const [conversationId, setConversationId] = useState(null);
   const [conversationTitle, setConversationTitle] = useState("");
-  const [isRenaming, setIsRenaming] = useState(false);
-  const [newTitleValue, setNewTitleValue] = useState("");
   const [isGuestSession, setIsGuestSession] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
   const [failedPrompt, setFailedPrompt] = useState("");
-  const [advisorySaveState, setAdvisorySaveState] = useState({});
 
   const handleCopyMessage = (msgId, text) => {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
@@ -113,28 +101,6 @@ function AssistantContent() {
       setCopiedId(msgId);
       setTimeout(() => setCopiedId(null), 2000);
     }
-  };
-
-  const handleSaveAssistantReply = async (msg) => {
-    if (!isAuthenticated) {
-      router.push("/login?redirect=%2Fassistant");
-      return;
-    }
-    if (advisorySaveState[msg.id] === "saving" || advisorySaveState[msg.id] === "saved") return;
-    setAdvisorySaveState((current) => ({ ...current, [msg.id]: "saving" }));
-    const body = String(msg.text || "").trim().slice(0, 5000);
-    try {
-      const result = await createSavedAdvisory({
-        title: `${isBn ? "সহকারীর পরামর্শ" : "Assistant advice"} · ${selectedCrop !== "all" ? (CROPS.find((crop) => crop.id === selectedCrop)?.[isBn ? "nameBn" : "nameEn"] || "") : "KrishiBondhu"}`.slice(0, 180),
-        body,
-        category: "assistant",
-        cropCode: selectedCrop === "all" ? "" : selectedCrop,
-        cropName: selectedCrop === "all" ? "" : (CROPS.find((crop) => crop.id === selectedCrop)?.nameEn || ""),
-        districtCode: ["cumilla", "chattogram"].includes(selectedDistrict) ? selectedDistrict : "",
-        sourceHref: "/assistant",
-      });
-      setAdvisorySaveState((current) => ({ ...current, [msg.id]: result.success ? "saved" : "error" }));
-    } catch { setAdvisorySaveState((current) => ({ ...current, [msg.id]: "error" })); }
   };
 
   const handleFarmSelection = (farmId) => {
@@ -202,6 +168,7 @@ function AssistantContent() {
   const chatScrollContainerRef = useRef(null);
   const loadedConvIdRef = useRef(null);
   const textareaRef = useRef(null);
+  const voiceBaseInputRef = useRef("");
   const sendInFlightRef = useRef(false);
   const conversationStateRef = useRef({ conversationId, isGuestSession });
   useEffect(() => {
@@ -221,6 +188,12 @@ function AssistantContent() {
     }, 50);
   }, [setInputValue]);
 
+  const handleLiveTranscript = useCallback((transcript) => {
+    if (!transcript) return;
+    const base = voiceBaseInputRef.current.trim();
+    setInputValue([base, transcript.trim()].filter(Boolean).join(" "));
+  }, [setInputValue]);
+
   const {
     isSupported: isVoiceSupported,
     isListening,
@@ -230,10 +203,10 @@ function AssistantContent() {
     errorDetails: voiceErrorDetails,
     startListening,
     stopListening,
-    toggleListening,
     clearError: clearVoiceError,
   } = useVoiceInput({
     onFinalTranscript: handleFinalTranscript,
+    onInterimTranscript: handleLiveTranscript,
     uiLanguage: isBn ? "bn" : "en",
   });
 
@@ -499,7 +472,7 @@ function AssistantContent() {
         const res = await sendAssistantMessage({
           message: userText,
           district: selectedDistrict,
-          crop: selectedCrop === "all" ? null : selectedCrop,
+          crop: selectedCrop,
           farmId: selectedFarmId || null,
           conversationId,
         });
@@ -592,190 +565,38 @@ function AssistantContent() {
     }
   };
 
-  // Inline rename conversation
-  const handleRenameSubmit = async (e) => {
-    e.preventDefault();
-    if (!newTitleValue.trim() || !conversationId) {
-      setIsRenaming(false);
-      return;
-    }
-    try {
-      const res = await renameAssistantConversation(conversationId, newTitleValue.trim());
-      if (res.success) {
-        setConversationTitle(newTitleValue.trim());
-        window.dispatchEvent(new CustomEvent("krishi:chat-updated"));
-      }
-    } catch (err) {
-      console.error("Rename failed:", err);
-    } finally {
-      setIsRenaming(false);
-    }
-  };
-
   // District display label
   const districtLabel = selectedDistrict === "chattogram" ? "Chattogram" : "Cumilla";
   const districtLabelBn = selectedDistrict === "chattogram" ? "চট্টগ্রাম" : "কুমিল্লা";
 
-  // Farmer-first prompts use the existing assistant tools, including the Python price model when eligible.
-  const QUICK_QUESTIONS = [
-    {
-      id: "market-price",
-      title: isBn ? "আজকের বাজারদর" : "Market price",
-      subtitle: isBn ? `${districtLabelBn} জেলায় টমেটোর যাচাইকৃত দর জানতে চান` : `Ask for a verified tomato price in ${districtLabel}`,
-      query: `আজকে ${districtLabelBn} জেলায় টমেটোর যাচাইকৃত বাজারদর কত? আজকের তথ্য না থাকলে সর্বশেষ পর্যবেক্ষণের তারিখসহ জানাও।`,
-      icon: Layers,
-      iconColor: "text-teal-700 dark:text-teal-400",
-      bgColor: "bg-teal-50 dark:bg-teal-950/60 border border-teal-100 dark:border-teal-900/40",
-    },
-    {
-      id: "price-outlook",
-      title: isBn ? "৭ দিনের দরের পূর্বাভাস" : "7-day price outlook",
-      subtitle: isBn ? "যাচাইকৃত ইতিহাস থাকলে Python দরের মডেল ব্যবহার হবে" : "Uses the Python price model when verified history is eligible",
-      query: `আগামী সাত দিনে ${districtLabelBn} জেলায় টমেটোর বাজারদর বাড়ার পূর্বাভাস আছে কি? যাচাইকৃত সাম্প্রতিক ইতিহাস যথেষ্ট না হলে স্পষ্ট করে বলো।`,
-      icon: ChartNoAxesCombined,
-      iconColor: "text-sky-600 dark:text-sky-400",
-      bgColor: "bg-sky-50 dark:bg-sky-950/60 border border-sky-100 dark:border-sky-900/40",
-    },
-    {
-      id: "crop-choice",
-      title: isBn ? "পরের ফসল বাছাই" : "Choose your next crop",
-      subtitle: isBn ? "আমন কাটার পর এলাকার মৌসুম ও ফসলের বিকল্প দেখুন" : "Compare options after Aman harvest for your area",
-      query: `${districtLabelBn} জেলার জমিতে আমন ধান কাটার পর কোন ফসলের বিকল্প বিবেচনা করা যায়? উপলভ্য ক্যালেন্ডার ও সীমাবদ্ধতা বুঝিয়ে বলো।`,
-      icon: Sprout,
-      iconColor: "text-emerald-700 dark:text-emerald-400",
-      bgColor: "bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-100 dark:border-emerald-900/40",
-    },
-    {
-      id: "planting-window",
-      title: isBn ? "বপনের সময়" : "Planting time",
-      subtitle: isBn
-        ? "আমন ধানের পর সরিষা কখন লাগানো ভালো?"
-        : "Check the crop calendar after Aman harvest",
-      query: `${districtLabelBn} জেলায় আমন ধান কাটার পর সরিষা বপনের ক্যালেন্ডারে কোন সময় দেওয়া আছে? উৎস ও সীমাবদ্ধতা বলো।`,
-      icon: Wheat,
-      iconColor: "text-amber-700 dark:text-amber-400",
-      bgColor: "bg-amber-50 dark:bg-amber-950/60 border border-amber-100 dark:border-amber-900/40",
-    },
-    {
-      id: "rainfall",
-      title: isBn ? "আগামী দিনের বৃষ্টি" : "Rain forecast",
-      subtitle: isBn
-        ? `${districtLabelBn} জেলায় মাঠের কাজের জন্য বৃষ্টির পূর্বাভাস জেনে নিন`
-        : `Check the local rain forecast before planning field work in ${districtLabel}`,
-      query: `আগামী ৭ দিনে ${districtLabelBn} জেলায় বৃষ্টির পূর্বাভাস কী? তারিখসহ বলো এবং এলাকার পূর্বাভাস যে জমির সরাসরি মাপ নয় তা উল্লেখ করো।`,
-      icon: Calendar,
-      iconColor: "text-rose-600 dark:text-rose-400",
-      bgColor: "bg-rose-50 dark:bg-rose-950/60 border border-rose-100 dark:border-rose-900/40",
-    },
-    {
-      id: "soil-water",
-      title: isBn ? "মাটি ও পানির প্রেক্ষাপট" : "Soil and water context",
-      subtitle: isBn
-        ? "উপলভ্য এলাকার তথ্যকে মাঠের সরাসরি মাপ থেকে আলাদা করে দেখুন"
-        : "Review regional observations separately from field measurements",
-      query: `${districtLabelBn} জেলার জন্য মাটি বা পানির কী যাচাইকৃত তথ্য পাওয়া যায়? পর্যবেক্ষণের তারিখ এবং এলাকার তথ্যের সীমাবদ্ধতা বলো।`,
-      icon: Droplets,
-      iconColor: "text-emerald-600 dark:text-emerald-400",
-      bgColor: "bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-100 dark:border-emerald-900/40",
-    },
-    {
-      id: "field-tasks",
-      title: isBn ? "আমার মাঠের কাজ" : "My field tasks",
-      subtitle: isBn
-        ? "ফসল পরিচর্যা ও পরের কাজের তালিকা বুঝতে সাহায্য নিন"
-        : "Get help understanding crop care and upcoming tasks",
-      query: `আমার ${districtLabelBn} জেলার মাঠের ফসল পরিচর্যার পরের গুরুত্বপূর্ণ কাজগুলো কীভাবে সাজাব? আমার মাঠের তথ্য না থাকলে কী তথ্য দরকার তা জিজ্ঞাসা করো।`,
-      icon: Calendar,
-      iconColor: "text-teal-700 dark:text-teal-400",
-      bgColor: "bg-teal-50 dark:bg-teal-950/60 border border-teal-100 dark:border-teal-900/40",
-    },
-  ];
-
   return (
     <div className="mx-auto flex h-[calc(100dvh-13.5rem)] min-h-[28rem] w-full max-w-[1320px] flex-col overflow-hidden lg:h-[calc(100dvh-7.75rem)] lg:min-h-0">
-      {/* Sleek, Compact Top Toolbar: Ultra-Compact Single-Row Toolbar */}
-      {conversationTitle && (
-      <div className="shrink-0 mb-3 w-full flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-surface to-lime-50 px-4 py-4 shadow-sm sm:px-6 dark:border-emerald-900 dark:from-emerald-950/30 dark:to-lime-950/20">
-        {/* Left: Sparkle Icon + Title + Grounded Badge + Conversation Title */}
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-            {conversationTitle ? (
-              isRenaming ? (
-                <form onSubmit={handleRenameSubmit} className="inline-flex items-center gap-1.5 ml-1">
-                  <input
-                    type="text"
-                    value={newTitleValue}
-                    onChange={(e) => setNewTitleValue(e.target.value)}
-                    autoFocus
-                    className="rounded-md border border-emerald bg-surface px-2 py-0.5 text-xs text-content focus:outline-none"
-                  />
-                  <button
-                    type="submit"
-                    className="px-2 py-0.5 rounded bg-emerald text-white text-[11px] font-medium cursor-pointer"
-                  >
-                    {t("assistant.save")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsRenaming(false)}
-                    className="p-0.5 rounded text-muted hover:text-content text-[11px] cursor-pointer"
-                  >
-                    {t("assistant.cancel")}
-                  </button>
-                </form>
-              ) : (
-                <span className="inline-flex items-center gap-1 ml-0.5 px-2 py-0.5 rounded-full bg-surface-2 border border-line text-[11px] font-medium text-content max-w-[100px] sm:max-w-[140px] truncate">
-                  <span className="truncate">{conversationTitle}</span>
-                  {isAuthenticated && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setNewTitleValue(conversationTitle);
-                        setIsRenaming(true);
-                      }}
-                      title={t("assistant.renameChat")}
-                      aria-label={t("assistant.renameChat")}
-                      className="text-muted hover:text-emerald transition-colors cursor-pointer shrink-0"
-                    >
-                      <Edit2 className="h-3 w-3" />
-                    </button>
-                  )}
-                </span>
-              )
-            ) : null}
-          </div>
-        </div>
-
-
-      </div>
-      )}
-
-
-
       {/* Main Grid: Left Chat Area & Right Sidebar */}
       <div className="flex-1 min-h-0 flex flex-col w-full overflow-hidden">
         {/* Left Column: Full-Height Chat Area with Contained Scroll */}
         <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-3xl border border-line bg-gradient-to-br from-surface via-surface to-sky-50/40 shadow-sm transition-colors duration-200 dark:to-sky-950/10">
-          <header className="flex shrink-0 flex-col gap-3 border-b border-line bg-gradient-to-r from-emerald-50/80 via-surface to-lime-50/60 px-4 py-4 dark:from-emerald-950/30 dark:via-surface dark:to-lime-950/20 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-            <div className="flex min-w-0 items-start gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-200">
-                <MessageCircle className="h-5 w-5" aria-hidden="true" />
+          <header className="flex shrink-0 flex-col gap-1.5 border-b border-line bg-gradient-to-r from-emerald-50/80 via-surface to-lime-50/60 px-4 py-1.5 dark:from-emerald-950/30 dark:via-surface dark:to-lime-950/20 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-1.5">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-200">
+                <MessageCircle className="h-4 w-4" aria-hidden="true" />
               </span>
               <div className="min-w-0 flex-1">
-                <h1 data-tour-target="assistant.overview" className="text-lg font-semibold tracking-tight text-content sm:text-xl">{t("assistant.title")}</h1>
-                <p className="mt-1 max-w-2xl text-xs leading-5 text-muted sm:text-sm">{t("assistant.headerDescription")}</p>
-                <div className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-line bg-surface/80 px-2.5 py-1 text-xs text-content-muted">
-                  <MapPin className="h-3.5 w-3.5 shrink-0 text-emerald" aria-hidden="true" />
-                  <span>{t("assistant.contextLabel")}</span>
-                  <span className="font-semibold text-content">{isBn ? districtLabelBn : districtLabel}</span>
-                  {activeFarm ? <span className="hidden max-w-48 truncate border-l border-line pl-1.5 sm:inline">{activeFarm.farmName}</span> : null}
+                <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+                  <h1 data-tour-target="assistant.overview" className="text-base font-semibold tracking-tight text-content sm:text-lg">{t("assistant.title")}</h1>
+                  <div className="inline-flex max-w-full items-center gap-1 rounded-full border border-line bg-surface/80 px-2 py-0.5 text-[11px] leading-4 text-content-muted">
+                    <MapPin className="h-3 w-3 shrink-0 text-emerald" aria-hidden="true" />
+                    <span>{t("assistant.contextLabel")}</span>
+                    <span className="font-semibold text-content">{isBn ? districtLabelBn : districtLabel}</span>
+                    {activeFarm ? <span className="hidden max-w-48 truncate border-l border-line pl-1.5 sm:inline">{activeFarm.farmName}</span> : null}
+                  </div>
                 </div>
+                <p className="mt-0 max-w-2xl truncate text-xs leading-4 text-muted">{t("assistant.headerDescription")}</p>
               </div>
             </div>
             <button
               type="button"
               onClick={() => handleNewConversation(selectedFarmId)}
-              className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-forest px-4 text-sm font-semibold text-white shadow-xs transition-colors hover:bg-forest/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald focus-visible:ring-offset-2 sm:w-auto"
+              className="inline-flex min-h-8 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-forest px-3 text-sm font-semibold text-white shadow-xs transition-colors hover:bg-forest/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald focus-visible:ring-offset-2 sm:w-auto"
               aria-label={t("assistant.newChat")}
             >
               <Plus className="h-4 w-4" />
@@ -819,7 +640,7 @@ function AssistantContent() {
           {/* Scrollable Chat / Empty State Container */}
           <div
             ref={chatScrollContainerRef}
-            className="flex-1 min-h-0 overflow-y-auto overscroll-contain km-smooth-scroll scroll-smooth p-4 sm:p-5 lg:p-6 space-y-4"
+            className="flex-1 min-h-0 overflow-y-auto overscroll-contain km-smooth-scroll scroll-smooth p-3 sm:p-4 lg:p-4 space-y-3"
             aria-live="polite"
             aria-relevant="additions text"
           >
@@ -914,47 +735,10 @@ function AssistantContent() {
                   </div>
                 ) : null}
 
-                {/* "Try asking about" Section */}
-                <div>
-                  <div className="flex items-center gap-2 text-xs font-bold text-muted uppercase tracking-wider mb-3 px-1">
-                    <LayoutGrid className="h-3.5 w-3.5 text-emerald" />
-                    <span>{isBn ? "প্রশ্ন করার কিছু উদাহরণ" : "Try asking about"}</span>
-                  </div>
-
-                  {/* 6 Cards in 3 Columns Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {QUICK_QUESTIONS.map((q) => {
-                      const IconComponent = q.icon;
-                      return (
-                        <button
-                          key={q.id}
-                          type="button"
-                          onClick={() => handleSendMessage(q.query)}
-                          className="flex items-center justify-between gap-3 p-3.5 rounded-2xl border border-sky-200 bg-sky-50/70 dark:border-sky-900 dark:bg-sky-950/20 hover:border-emerald/40 hover:bg-surface-2/50 hover:shadow-xs hover:-translate-y-0.5 transition-all duration-200 ease-out text-left group cursor-pointer"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${q.bgColor} ${q.iconColor} transition-transform duration-200 group-hover:scale-105 shadow-2xs`}>
-                              <IconComponent className="h-4.5 w-4.5" />
-                            </div>
-                            <div className="min-w-0">
-                              <div className="text-xs font-bold text-content group-hover:text-emerald transition-colors duration-150">
-                                {q.title}
-                              </div>
-                              <div className="text-xs text-muted truncate mt-0.5 max-w-[180px] sm:max-w-[200px]">
-                                {q.subtitle}
-                              </div>
-                            </div>
-                          </div>
-                          <ChevronRight className="h-4 w-4 text-muted group-hover:text-emerald group-hover:translate-x-0.5 transition-all duration-150 shrink-0" />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
               </div>
             ) : (
               /* ACTIVE CHAT: Message Bubbles */
-              <div className="space-y-6">
+              <div className="space-y-3">
                 {messages.map((msg) => {
                   const isUser = msg.sender === "user";
 
@@ -1086,13 +870,6 @@ function AssistantContent() {
 
                         {/* Message Text */}
                         <div className="whitespace-pre-line text-sm leading-relaxed [overflow-wrap:anywhere]">{msg.text}</div>
-                        {!isUser && <div className="mt-3 flex justify-end">
-                          <button type="button" disabled={advisorySaveState[msg.id] === "saving" || advisorySaveState[msg.id] === "saved"} onClick={() => handleSaveAssistantReply(msg)} aria-live="polite" className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-forest-300 bg-surface px-2.5 py-1 text-xs font-semibold text-forest-800 transition hover:bg-surface-2 disabled:cursor-default disabled:opacity-70 dark:border-forest-700 dark:text-forest-200">
-                            {advisorySaveState[msg.id] === "saved" ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Bookmark className="h-3.5 w-3.5" aria-hidden="true" />}
-                            {advisorySaveState[msg.id] === "saved" ? t("assistant.advisorySaved") : advisorySaveState[msg.id] === "error" ? t("assistant.advisorySaveFailed") : !isAuthenticated ? t("assistant.signInToSave") : t("assistant.saveAdvisory")}
-                          </button>
-                        </div>}
-
                         {/* Metadata Footer */}
                         {!isUser && (msg.observationDate || msg.observationLocation) && (
                           <div className="mt-3 pt-2.5 border-t border-line/60">
@@ -1244,7 +1021,7 @@ function AssistantContent() {
           )}
 
           {/* Message Composer Area */}
-          <div className="shrink-0 border-t border-line bg-gradient-to-r from-emerald-50/95 via-surface to-sky-50/95 px-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3 sm:px-6 dark:from-emerald-950/80 dark:to-sky-950/80">
+          <div className="shrink-0 bg-transparent px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-1 sm:px-5">
             {/* Active Listening / Interim Transcription Banner */}
             {(isListening || isTranscribing) && (
               <div className="mb-2 p-2.5 rounded-xl border border-emerald/30 bg-emerald/5 dark:bg-emerald-950/30 flex items-center justify-between gap-3 animate-in fade-in duration-150">
@@ -1279,8 +1056,8 @@ function AssistantContent() {
               </div>
             )}
 
-        {/* Right: Farm, District, Crop Dropdowns + Dedicated EN/BN Switcher + New Chat Button */}
-        <div className="mx-auto mb-3 flex w-full max-w-3xl flex-wrap items-center justify-end gap-3">
+        {/* Optional farm selector */}
+        <div className="mx-auto mb-1.5 flex w-full max-w-3xl flex-wrap items-center justify-end gap-3">
           {/* Farm selector (if user has registered farms) */}
           {isAuthenticated && farmsList.length > 0 ? (
             <div className="relative">
@@ -1290,7 +1067,7 @@ function AssistantContent() {
                 onChange={(e) => handleFarmSelection(e.target.value)}
                 disabled={isLoading}
                 aria-label={t("assistant.selectFarm")}
-                className="appearance-none rounded-xl border border-emerald-200 bg-surface dark:border-emerald-800 dark:bg-surface pl-8 pr-8 h-11 text-xs font-medium text-content hover:border-emerald/40 hover:bg-surface focus:outline-none focus:ring-2 focus:ring-emerald/20 focus:border-emerald transition-all duration-150 cursor-pointer shadow-2xs max-w-[180px] sm:max-w-[240px] truncate"
+                className="appearance-none rounded-xl border border-emerald-200 bg-surface dark:border-emerald-800 dark:bg-surface pl-8 pr-8 h-9 text-xs font-medium text-content hover:border-emerald/40 hover:bg-surface focus:outline-none focus:ring-2 focus:ring-emerald/20 focus:border-emerald transition-all duration-150 cursor-pointer shadow-2xs max-w-[180px] sm:max-w-[240px] truncate"
               >
                 <option value="">{t("assistant.allFarmsGeneral")}</option>
                 {farmsList.map((f) => (
@@ -1310,28 +1087,6 @@ function AssistantContent() {
               {isBn ? "মাঠ লোড হয়নি · আবার চেষ্টা" : "Fields unavailable · Retry"}
             </button>
           ) : null}
-
-
-          {/* Crop selector */}
-          <div className="relative">
-            <Sprout className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-emerald" />
-            <select
-              value={selectedCrop}
-              onChange={(e) => setSelectedCrop(e.target.value)}
-              disabled={isLoading}
-              aria-label={t("assistant.selectCrop")}
-              className="appearance-none rounded-xl border border-emerald-200 bg-surface dark:border-emerald-800 dark:bg-surface pl-8 pr-8 h-11 text-xs font-medium text-content hover:border-emerald/40 hover:bg-surface focus:outline-none focus:ring-2 focus:ring-emerald/20 focus:border-emerald transition-all duration-150 cursor-pointer shadow-2xs max-w-[160px] sm:max-w-[200px]"
-            >
-              {CROPS.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {isBn ? c.nameBn : c.nameEn}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted" />
-          </div>
-
-
         </div>
             {/* Input form */}
             <form
@@ -1340,12 +1095,18 @@ function AssistantContent() {
                 handleSendMessage();
               }}
               aria-busy={isLoading}
-              className="relative mx-auto flex w-full max-w-3xl items-end gap-2 p-2.5 rounded-3xl border border-emerald-200 bg-surface dark:border-emerald-800 dark:bg-surface focus-within:border-emerald focus-within:ring-2 focus-within:ring-emerald/15 focus-within:bg-surface transition-all duration-200 shadow-2xs hover:border-line"
+              className="relative mx-auto flex w-full max-w-2xl items-end gap-2 p-1.5 bg-transparent !border-0 !shadow-none focus-within:!border-0 focus-within:!bg-transparent focus-within:!ring-0"
             >
               {/* Mic Button */}
               <button
                 type="button"
-                onClick={isVoiceSupported ? toggleListening : undefined}
+                onClick={isVoiceSupported ? () => {
+                  if (isListening) stopListening();
+                  else if (!isTranscribing) {
+                    voiceBaseInputRef.current = inputValue;
+                    startListening();
+                  }
+                } : undefined}
                 disabled={!isVoiceSupported || isLoading || isTranscribing}
                 title={
                   !isVoiceSupported
@@ -1391,7 +1152,8 @@ function AssistantContent() {
                 placeholder={t("assistant.composerPlaceholder")}
                 aria-label={t("assistant.composerPlaceholder")}
                 rows={1}
-                className="flex-1 resize-none bg-transparent py-2 px-2 text-sm text-content focus:outline-none min-h-[44px] max-h-36 leading-relaxed placeholder:text-muted/60"
+                style={{ border: "none", outline: "none", boxShadow: "none" }}
+                className="flex-1 resize-none appearance-none !border-0 bg-transparent py-2 px-2 text-sm text-content !shadow-none !outline-none !ring-0 focus:!border-0 focus:!outline-none focus:!ring-0 min-h-[44px] max-h-36 leading-relaxed placeholder:text-muted/60"
               />
 
               {/* Round Send Button */}

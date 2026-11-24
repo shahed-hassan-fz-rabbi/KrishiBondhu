@@ -16,10 +16,8 @@ test("market preview does not claim unverified demo values are today's or live p
   // Must include explicit sample demonstration disclosures
   assert.match(page, /Sample Demonstration \(Illustrative\)/);
   assert.match(page, /সচিত্র নমুনা ফরম্যাট \(প্রদর্শনীমূলক\)/);
-  assert.match(page, /DEMO · SAMPLE DATA|Sample Demo/);
-  assert.match(page, /ডেমো · নমুনা তথ্য|প্রদর্শনী নমুনা/);
-  assert.match(page, /Sample format · Not a live quote/);
-  assert.match(page, /নমুনা ফরম্যাট · বাস্তব দর নয়/);
+  assert.match(page, /Prices vary by variety and area\./);
+  assert.match(page, /জাত ও এলাকাভেদে দাম ভিন্ন হতে পারে।/);
 
   // Supports real API responses when catalog series are available
   assert.match(page, /marketCatalog\?\.series/);
@@ -32,7 +30,7 @@ test("market preview does not claim unverified demo values are today's or live p
   assert.match(page, /observation\.observedOn/);
   assert.match(page, /observation\.source/);
   assert.match(page, /formatObservationFreshness\(observation\.observedOn/);
-  assert.match(page, /DEMO · SAMPLE DATA/);
+  assert.doesNotMatch(page, /DEMO · SAMPLE DATA|ডেমো · নমুনা তথ্য/);
   assert.match(api, /fetchMarketPriceHistory\(\{ commodity, division, priceType = "wholesale", frequency = "daily"/);
   assert.match(api, /market\/prices\/history/);
   assert.match(marketRoutes, /router\.get\("\/prices\/history", getMarketPriceHistory\)/);

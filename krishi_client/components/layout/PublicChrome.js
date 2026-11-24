@@ -5,9 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowRight,
-  Bookmark,
   ChevronDown,
-  CloudSun,
   Layers,
   Leaf,
   LogOut,
@@ -19,7 +17,6 @@ import {
   SlidersHorizontal,
   Sparkles,
   Sprout,
-  Store,
   TrendingUp,
   UserRound,
   X,
@@ -68,10 +65,8 @@ export function PublicHeader() {
 
   const [open, setOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [servicesOpen, setServicesOpen] = useState(false);
 
   const profileRef = useRef(null);
-  const servicesRef = useRef(null);
 
   const currentDistrictObj = districts?.find((d) => d.code === selectedDistrict);
   const districtName = locale === "bn"
@@ -94,7 +89,6 @@ export function PublicHeader() {
 
   const handleNavClick = (event, href) => {
     setOpen(false);
-    setServicesOpen(false);
     if (pathname === "/" && href.startsWith("/#") && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
       event.preventDefault();
       window.location.assign(href);
@@ -104,12 +98,10 @@ export function PublicHeader() {
   useEffect(() => {
     const closeOnOutside = (event) => {
       if (profileRef.current && !profileRef.current.contains(event.target)) setProfileOpen(false);
-      if (servicesRef.current && !servicesRef.current.contains(event.target)) setServicesOpen(false);
     };
     const closeOnEscape = (event) => {
       if (event.key === "Escape") {
         setProfileOpen(false);
-        setServicesOpen(false);
         setOpen(false);
       }
     };
@@ -135,47 +127,8 @@ export function PublicHeader() {
     { href: "/settings", label: t("publicHeader.myProfile"), Icon: UserRound },
     { href: "/my-farm", label: t("nav.myFarm"), Icon: Sprout },
     { href: "/assistant", label: t("publicHeader.chatHistory"), Icon: MessageSquareText },
-    { href: "/saved-advisories", disabled: true, label: t("publicHeader.savedAdvisories"), Icon: Bookmark },
     { href: "/settings", label: t("publicHeader.alertPreferences"), Icon: SlidersHorizontal },
     { href: "/settings", label: t("publicHeader.accountSettings"), Icon: Settings2 },
-  ];
-
-  const servicesMenu = [
-    {
-      href: "/market",
-      title: locale === "bn" ? "বাজারদর ও দামের পূর্বাভাস" : "Market Prices & Forecasts",
-      desc: locale === "bn" ? "বাজার প্রতিবেদন ও পাইকারি-খুচরা ব্যবধান" : "Market price reports & wholesale margins",
-      icon: Store,
-      badge: locale === "bn" ? "দাম" : "Prices",
-    },
-    {
-      href: "/crop-rotation",
-      title: locale === "bn" ? "ফসল চক্র ও ৭ডি বিশ্লেষণ" : "Crop Rotation & 7D Analysis",
-      desc: locale === "bn" ? "পানি ও খরচের সাশ্রয়ী মৌসুমি শস্যবিন্যাস" : "Water and cost-saving seasonal crop sequences",
-      icon: Sprout,
-      badge: locale === "bn" ? "পরিকল্পনা" : "Plan",
-    },
-    {
-      href: "/climate",
-      title: locale === "bn" ? "আবহাওয়া ও মাটির আর্দ্রতা" : "Weather & Soil Moisture",
-      desc: locale === "bn" ? "৭ দিনের পূর্বাভাস ও উপগ্রহ মাটির রস" : "7-day forecast & satellite moisture",
-      icon: CloudSun,
-      badge: locale === "bn" ? "আবহাওয়া" : "Weather",
-    },
-    {
-      href: "/map",
-      title: locale === "bn" ? "দেশের কৃষি মানচিত্র" : "National Agricultural Map",
-      desc: locale === "bn" ? "জেলা ও উপজেলা ভিত্তিক স্তরভিত্তিক জিআইএস" : "District and upazila GIS mapping",
-      icon: MapPin,
-      badge: locale === "bn" ? "মানচিত্র" : "GIS",
-    },
-    {
-      href: "/assistant",
-      title: locale === "bn" ? "এআই কৃষি সহকারী" : "AI Field Assistant",
-      desc: locale === "bn" ? "বাংলায় সরাসরি মুখে বা লিখে পরামর্শ নিন" : "Natural voice & chat guidance in Bangla",
-      icon: MessageSquare,
-      badge: locale === "bn" ? "এআই" : "AI",
-    },
   ];
 
   const dashboardLabel = isAuthenticated
@@ -216,19 +169,12 @@ export function PublicHeader() {
   return (
     <header className="sticky top-2 z-50 mx-auto w-full min-w-0 max-w-7xl rounded-2xl border border-line/90 bg-surface/95 px-3 py-2 text-content shadow-km-sm backdrop-blur-md transition-colors duration-200">
       <div className="flex h-14 w-full min-w-0 items-center justify-between gap-1 px-2 sm:gap-3 sm:px-4">
-        {/* Left: Brand + Geographic context pill */}
+        {/* Left: Brand */}
         <div className="flex items-center gap-3">
           <BrandMark tone="light" showSubtitle={false} />
-
-          {/* Regional Context Chip (inspired by reference location breadcrumb) */}
-          <div className="hidden items-center gap-1.5 rounded-full border border-line bg-surface-2/80 px-2.5 py-1 text-xs text-muted xl:inline-flex">
-            <MapPin className="h-3.5 w-3.5 text-[#247A4B] dark:text-[#56B870]" />
-            <span className="font-semibold text-content">{districtName}</span>
-            <span className="text-[10px] text-muted">• {locale === "bn" ? "সক্রিয় জেলা" : "Active District"}</span>
-          </div>
         </div>
 
-        {/* Center: Desktop Navigation with Services Dropdown */}
+        {/* Center: Desktop Navigation */}
         <nav className="hidden items-center gap-1 xl:flex" aria-label="Primary">
           <Link
             href="/"
@@ -238,61 +184,6 @@ export function PublicHeader() {
           >
             {t("common.home")}
           </Link>
-
-          {/* Services Dropdown */}
-          <div className="relative" ref={servicesRef}>
-            <button
-              type="button"
-              aria-expanded={servicesOpen}
-              aria-haspopup="true"
-              onClick={() => setServicesOpen((v) => !v)}
-              className={`kb-nav-link inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs xl:text-sm font-medium transition-all duration-200 cursor-pointer ${
-                servicesOpen || ["/crop-rotation", "/market", "/climate", "/map", "/assistant"].includes(pathname)
-                  ? "bg-[#247A4B]/15 text-[#123D2A] font-bold dark:bg-emerald-950/60 dark:text-emerald-300"
-                  : "text-muted hover:text-content hover:bg-surface-2"
-              }`}
-            >
-              <span>{locale === "bn" ? "সেবাসমূহ" : "Services"}</span>
-              <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${servicesOpen ? "rotate-180" : ""}`} />
-            </button>
-
-            {servicesOpen && (
-              <div
-                role="menu"
-                className="absolute left-0 top-full z-50 mt-2.5 w-80 rounded-2xl border border-line bg-surface p-2 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150"
-              >
-                <div className="px-3 py-2 border-b border-line mb-1">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#247A4B] dark:text-[#56B870]">
-                    {locale === "bn" ? "কৃষিবন্ধুর মূল সেবাসমূহ" : "KrishiBondhu Services"}
-                  </p>
-                </div>
-                {servicesMenu.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    role="menuitem"
-                    onClick={() => setServicesOpen(false)}
-                    className="flex items-start gap-3 rounded-xl p-2.5 transition-colors hover:bg-surface-2 group"
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald/10 text-[#247A4B] group-hover:bg-[#247A4B] group-hover:text-white transition-colors dark:bg-emerald-950/60 dark:text-emerald-300">
-                      <item.icon className="h-5 w-5" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-1">
-                        <p className="text-xs font-bold text-content group-hover:text-[#247A4B] dark:group-hover:text-emerald-300 transition-colors">
-                          {item.title}
-                        </p>
-                        <span className="rounded-full bg-surface-2 px-1.5 py-0.2 text-[9px] font-semibold text-muted">
-                          {item.badge}
-                        </span>
-                      </div>
-                      <p className="mt-0.5 text-[11px] text-muted line-clamp-1">{item.desc}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
 
           <Link
             href="/crop-rotation"
@@ -353,7 +244,7 @@ export function PublicHeader() {
           <div className="flex items-center gap-1.5 sm:gap-2">
             {isAuthenticated && user ? (
               <>
-                <Button href="/dashboard" size="sm" variant="primary" className="h-9 rounded-full px-4 text-xs font-bold shadow-xs">
+                <Button href="/dashboard" size="sm" variant="primary" className="kb-public-dashboard-link h-9 rounded-full px-4 text-xs font-bold shadow-xs">
                   {dashboardLabel}
                 </Button>
 
@@ -370,8 +261,8 @@ export function PublicHeader() {
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#123D2A] text-[11px] font-bold text-white shadow-xs">
                       {avatarInitial}
                     </span>
-                    <span className="max-w-20 sm:max-w-24 truncate font-semibold">{displayName}</span>
-                    <ChevronDown className={`h-3 w-3 shrink-0 text-muted transition-transform duration-200 ${profileOpen ? "rotate-180" : ""}`} aria-hidden="true" />
+                    <span className="kb-mobile-profile-name max-w-20 truncate font-semibold sm:max-w-24">{displayName}</span>
+                    <ChevronDown className={`kb-mobile-profile-chevron h-3 w-3 shrink-0 text-muted transition-transform duration-200 ${profileOpen ? "rotate-180" : ""}`} aria-hidden="true" />
                   </button>
 
                   {profileOpen && (

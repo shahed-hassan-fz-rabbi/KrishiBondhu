@@ -23,12 +23,11 @@ import {
   Check,
   X,
   LoaderCircle,
-  Bookmark,
 } from "lucide-react";
 
 import { useLang } from "@/lib/i18n/LanguageContext.js";
 import { useAuth } from "@/contexts/AuthContext.js";
-import { fetchCropPlanningRecommendations, createFarm, fetchFarms, createOfficerReviewRequest, createSavedAdvisory } from "@/services/api.js";
+import { fetchCropCatalog, fetchCropPlanningRecommendations, createFarm, fetchFarms, createOfficerReviewRequest } from "@/services/api.js";
 import { getBangladeshDateKey } from "@/lib/bangladeshDate.js";
 import { localizeCropPlanningMessage, localizeSowingPeriod } from "@/lib/cropPlanningLocale.js";
 import WeatherIntelligenceSection from "@/components/dashboard/WeatherIntelligenceSection.js";
@@ -121,14 +120,12 @@ function CropPlanningPageContent() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewSaving, setReviewSaving] = useState(false);
   const [reviewNotice, setReviewNotice] = useState("");
-  const [savingAdvisoryId, setSavingAdvisoryId] = useState("");
-  const [savedAdvisoryIds, setSavedAdvisoryIds] = useState([]);
-  const [advisoryNotice, setAdvisoryNotice] = useState("");
   const [farms, setFarms] = useState([]);
   const [farmsOwnerId, setFarmsOwnerId] = useState(null);
   const [farmsLoadingState, setFarmsLoadingState] = useState(false);
   const [farmsLoadError, setFarmsLoadError] = useState(false);
   const [selectedFarmId, setSelectedFarmId] = useState("");
+  const [planningCropOptions, setPlanningCropOptions] = useState(SUPPORTED_CROPS);
 
   // Selection Modal State
   const [setupModalOpen, setSetupModalOpen] = useState(false);
@@ -185,6 +182,16 @@ function CropPlanningPageContent() {
     Promise.resolve().then(() => active && loadSavedFarms(ownerId, () => active));
     return () => { active = false; };
   }, [authLoading, user, currentUserId, loadSavedFarms]);
+
+  useEffect(() => {
+    let active = true;
+    fetchCropCatalog().then((response) => {
+      if (active && response.success && Array.isArray(response.data)) {
+        setPlanningCropOptions(response.data.filter((crop) => crop.planningAvailable));
+      }
+    }).catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   const selectFarm = (farmId) => {
     setSelectedFarmId(farmId);
@@ -265,40 +272,6 @@ function CropPlanningPageContent() {
       evaluationInFlight.current = false;
       setLoading(false);
     }
-  };
-
-  const handleSaveAdvisory = async (crop) => {
-    if (savingAdvisoryId) return;
-    setSavingAdvisoryId(crop.cropCode);
-    setAdvisoryNotice("");
-    const cropName = lang === "bn" ? crop.cropNameBn : crop.cropNameEn;
-    const context = results?.query || {};
-    const body = [
-      `${lang === "bn" ? "বপনের সময়" : "Planting window"}: ${localizeSowingPeriod(crop.sowingPeriod, lang)}`,
-      `${lang === "bn" ? "মোট মেয়াদ" : "Duration"}: ${crop.totalDurationDays} ${lang === "bn" ? "দিন" : "days"}`,
-      `${lang === "bn" ? "পানির চাহিদা" : "Water requirement"}: ~${crop.waterRequirementMmTotal} ${lang === "bn" ? "মিমি" : "mm"}`,
-      crop.reasons?.length ? `${lang === "bn" ? "উপযোগিতার কারণ" : "Reasons"}:\n${crop.reasons.map((reason) => `• ${localizeCropPlanningMessage(reason, crop, lang)}`).join("\n")}` : "",
-      crop.constraints?.length ? `${lang === "bn" ? "মাঠপর্যায়ের সতর্কতা" : "Field considerations"}:\n${crop.constraints.map((item) => `• ${localizeCropPlanningMessage(item, crop, lang)}`).join("\n")}` : "",
-      crop.sourceReferences?.publisher ? `${lang === "bn" ? "তথ্যসূত্র" : "Source"}: ${crop.sourceReferences.publisher}${crop.sourceReferences.title ? ` — ${crop.sourceReferences.title}` : ""}` : "",
-      crop.sourceReferences?.url || "",
-    ].filter(Boolean).join("\n\n");
-    try {
-      const response = await createSavedAdvisory({
-        title: `${cropName} · ${context.upazila || "KrishiBondhu"}`,
-        body,
-        category: "crop_planning",
-        cropCode: crop.cropCode,
-        cropName: crop.cropNameEn,
-        districtCode: context.districtCode || "",
-        upazila: context.upazila || "",
-        sourceHref: "/my-farm/plan",
-      });
-      if (response.success) {
-        setSavedAdvisoryIds((ids) => [...ids, crop.cropCode]);
-        setAdvisoryNotice(t("myFarm.planning.advisorySaved"));
-      } else setAdvisoryNotice(t("myFarm.planning.advisorySaveError"));
-    } catch { setAdvisoryNotice(t("myFarm.planning.advisorySaveError")); }
-    finally { setSavingAdvisoryId(""); }
   };
 
   const requestOfficerReview = async (event) => {
@@ -668,7 +641,7 @@ function CropPlanningPageContent() {
                   className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 focus:border-forest-500 focus:outline-none focus:ring-1 focus:ring-forest-500 dark:border-line dark:bg-surface-2 dark:text-content"
                 >
                   <option value="">{lang === "bn" ? "যেকোনো ফসল" : "Any crop"}</option>
-                  {SUPPORTED_CROPS.map((crop) => <option key={crop.code} value={crop.code}>{lang === "bn" ? crop.nameBn : crop.nameEn}</option>)}
+                  {planningCropOptions.map((crop) => <option key={crop.code} value={crop.code}>{lang === "bn" ? crop.nameBn : crop.nameEn}</option>)}
                 </select>
               </div>
 
@@ -984,21 +957,11 @@ function CropPlanningPageContent() {
                       <Tractor className="h-4 w-4" />
                       {t("myFarm.planning.selectCrop")}
                     </button>
-                    <button
-                      type="button"
-                      disabled={savingAdvisoryId === crop.cropCode || savedAdvisoryIds.includes(crop.cropCode)}
-                      onClick={() => handleSaveAdvisory(crop)}
-                      className="mt-2 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-forest-300 bg-surface px-4 py-2 text-sm font-semibold text-forest-800 transition hover:bg-surface-2 disabled:cursor-default disabled:opacity-65 dark:border-forest-700 dark:text-forest-200"
-                    >
-                      {savedAdvisoryIds.includes(crop.cropCode) ? <Check className="h-4 w-4" aria-hidden="true" /> : <Bookmark className="h-4 w-4" aria-hidden="true" />}
-                      {savedAdvisoryIds.includes(crop.cropCode) ? t("myFarm.planning.advisorySaved") : savingAdvisoryId === crop.cropCode ? t("common.saving") : t("myFarm.planning.saveAdvisory")}
-                    </button>
                   </div>
                 </div>
               );
             })}
           </div>
-          {advisoryNotice && <p role="status" className="mt-4 rounded-xl border border-line bg-surface p-3 text-sm text-content">{advisoryNotice}</p>}
         </div>
       )}
 

@@ -5,6 +5,15 @@
 
 export const assistantTools = [
   {
+    name: "getCropKnowledge",
+    description: "Retrieve source-linked Bangladesh crop information and the deterministic Python crop-management reference for the KrishiBondhu catalog. Use this before answering crop-specific questions. Returns source links and field-by-field status for lifecycle, timing, water, fertilizer and compost. Only report verified/verified_limited values and their applicability/unit; disclose fields marked not_verified. This is retrieval, not model training or personalized soil-test advice. Never extrapolate quantities or convert units. For district-specific seasonal planning, also use getCropCalendarAdvisory and disclose when no district calendar is available.",
+    parameters: {
+      type: "OBJECT",
+      properties: { crop: { type: "STRING", description: "Crop name or catalog code in Bangla or English." } },
+      required: ["crop"],
+    },
+  },
+  {
     name: "getMarketPriceReference",
     description: "Use before answering any crop price question in Bangla or English. Returns fresh admin-verified DAM report observations by crop, division/district/market and retail/wholesale/producer type when available; can run the selected daily statistical forecast for exactly 7 days when requested and supported. It separately includes World Bank monthly modeled reference estimates only for their four covered products. Clearly label source, observation date, location, price type, and whether the value is an actual report observation, old modeled reference, or forecast. Never call a monthly reference today's price. If unavailable, say so and link the official DAM daily report; never invent.",
     parameters: {

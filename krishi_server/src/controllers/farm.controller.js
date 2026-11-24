@@ -24,6 +24,7 @@ import { ownedFarmFilter } from "../security/farm-ownership.js";
 import { FarmNotificationService } from "../services/farmnotification.service.js";
 import { findLatestRecommendedSmapObservation, latestRecommendedSmapSnapshot, isRecommendedSmapObservation } from "../services/nasa/smap.quality.js";
 import { findLatestGoodModisObservation, latestGoodModisSnapshot, isGoodModisObservation } from "../services/nasa/modis.quality.js";
+import { getCropByCode } from "../services/cropcatalog.service.js";
 
 export function buildFarmEnvironmentalContext(districtCode, smapObservation, modisObservation) {
   const smap = isRecommendedSmapObservation(smapObservation, districtCode) ? smapObservation : null;
@@ -83,7 +84,16 @@ function resolveCropInfo(cropCode) {
       typicalVarieties: found.typicalVarieties,
     };
   }
-  return null;
+  const catalogCrop = getCropByCode(cropCode);
+  return catalogCrop ? {
+    cropCode: catalogCrop.code,
+    cropNameEn: catalogCrop.nameEn,
+    cropNameBn: catalogCrop.nameBn,
+    season: catalogCrop.season || "",
+    seasonBn: catalogCrop.seasonBn || "",
+    typicalVarieties: "",
+    calendarAvailable: catalogCrop.calendarAvailable,
+  } : null;
 }
 
 /**

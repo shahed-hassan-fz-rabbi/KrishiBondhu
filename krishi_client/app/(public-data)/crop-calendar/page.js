@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 
 import { hazardTextKeys } from "@/lib/farmSourceText.js";
+import CropPlanningCalendar from "@/components/cropcalendar/CropPlanningCalendar.js";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card.js";
 import { Table, TBody, TD, THead, TR } from "@/components/ui/Table.js";
 import { useLocation } from "@/contexts/LocationContext.js";
@@ -40,7 +41,7 @@ import { useLang } from "@/lib/i18n/LanguageContext.js";
 import {
   fetchCropCalendarAlignment,
   fetchCropCalendars,
-  fetchCropList,
+  fetchCropCatalog,
 } from "@/services/api.js";
 
 // Helper to render official Lucide SVG icons for crops
@@ -83,7 +84,7 @@ function CropCalendarPage() {
     setAlignmentData(null);
     try {
       const [cropsRes, calRes, alignRes] = await Promise.all([
-        fetchCropList(),
+        fetchCropCatalog(),
         fetchCropCalendars(districtCode, cropId),
         fetchCropCalendarAlignment(districtCode, cropId),
       ]);
@@ -183,7 +184,7 @@ function CropCalendarPage() {
         </div>
       </div>
 
-      {/* 2. Interactive Crop Selector Cards (৪টি মূল ফসল নির্বাচন কার্ড) */}
+      {/* Crop catalog lists all tracked crops; only source-verified calendars can be opened. */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
@@ -205,12 +206,14 @@ function CropCalendarPage() {
               ]
           ).map((crop) => {
             const isSelected = selectedCrop === crop.cropId;
+            const calendarAvailable = crop.calendarAvailable !== false;
             return (
               <button
                 key={crop.cropId}
                 type="button"
+                disabled={!calendarAvailable}
                 onClick={() => setSelectedCrop(crop.cropId)}
-                className={`flex min-h-32 flex-col text-left p-4 rounded-2xl border transition-colors cursor-pointer ${
+                className={`flex min-h-32 flex-col text-left p-4 rounded-2xl border transition-colors ${calendarAvailable ? "cursor-pointer" : "cursor-not-allowed opacity-65"} ${
                   isSelected
                     ? "border-forest-600 bg-forest-50/80 shadow-sm ring-2 ring-forest-500/20 dark:border-forest-500 dark:bg-forest-950/30 dark:ring-forest-500/30"
                     : "border-lime-200 bg-gradient-to-br from-lime-50 to-surface hover:border-emerald-400 dark:border-lime-900 dark:from-lime-950/25 dark:hover:border-emerald-700"
@@ -231,7 +234,9 @@ function CropCalendarPage() {
                     {isBn ? crop.nameBn : crop.nameEn}
                   </h3>
                   <p className="text-[11px] text-ink-muted truncate">
-                    
+                    {calendarAvailable
+                      ? (isBn ? "যাচাইকৃত ফসল পঞ্জিকা" : "Verified crop calendar")
+                      : (isBn ? "চাষের তথ্য যাচাইাধীন" : "Guidance under verification")}
                   </p>
                 </div>
               </button>
@@ -239,6 +244,17 @@ function CropCalendarPage() {
           })}
         </div>
       </div>
+
+      {/* Interactive planning calendar derived from official SMW stage windows. */}
+      {distCal && selectedDistrict && (
+        <CropPlanningCalendar
+          districtCal={distCal}
+          cropInfo={calendarData}
+          alignment={alignmentData}
+          districtCode={selectedDistrict}
+          districtName={districtName}
+        />
+      )}
 
       {/* 3. Hero Active Field Advisory Banner (আজকের মাঠ পর্যায় ও জরুরি সতর্কতা) */}
       <div className="overflow-hidden rounded-2xl border border-forest-200 bg-gradient-to-br from-forest-50/90 via-emerald-50/40 to-white p-5 shadow-xs dark:border-forest-900/40 dark:from-forest-950/30 dark:via-surface dark:to-surface">
