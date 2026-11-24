@@ -164,7 +164,7 @@ export function SmsAlertsSettings() {
           <button type="button" onClick={load} className="inline-flex min-h-10 items-center rounded-lg border border-line bg-surface px-3 font-semibold text-content">{t("smsAlerts.retry")}</button>
         </div>
       ) : (
-        <div className="mt-5 space-y-3">
+        <div className="mt-5 space-y-3" data-bondhu-no-fly>
           {CATEGORIES.map(({ key, labelKey, descKey }) => {
             const isOn = Boolean(preferences?.categories?.[key]?.enabled);
             const disabled = busy || !phoneVerified || Boolean(pendingCategory);
@@ -190,7 +190,7 @@ export function SmsAlertsSettings() {
           })}
 
           {pendingCategory && (
-            <div className="rounded-xl border border-forest/30 bg-sage/60 p-4" role="group" aria-labelledby="consent-title">
+            <div className="rounded-xl border border-forest/30 bg-sage/60 p-4" role="group" aria-labelledby="consent-title" data-bondhu-no-fly>
               <p id="consent-title" className="font-semibold text-forest-900 dark:text-emerald-100">{t("smsAlerts.consentTitle")}</p>
               <p className="mt-1 text-sm leading-6 text-muted">{t("smsAlerts.consentBody")}</p>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -206,7 +206,7 @@ export function SmsAlertsSettings() {
           <div className="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs leading-5 text-muted">{t("smsAlerts.allOffNote")}</p>
             {confirmUnsubscribe ? (
-              <div className="flex flex-col gap-2 rounded-xl border border-danger/30 bg-danger/5 p-3 sm:flex-row" role="group" aria-label={t("smsAlerts.unsubscribeConfirmTitle")}>
+              <div className="flex flex-col gap-2 rounded-xl border border-danger/30 bg-danger/5 p-3 sm:flex-row" role="group" aria-label={t("smsAlerts.unsubscribeConfirmTitle")} data-bondhu-no-fly>
                 <p className="text-sm font-semibold text-danger-strong">{t("smsAlerts.unsubscribeConfirmBody")}</p>
                 <div className="flex gap-2">
                   <button type="button" onClick={doUnsubscribeAll} disabled={busy} className="inline-flex min-h-11 items-center rounded-xl bg-danger-strong px-3 text-sm font-semibold text-white disabled:opacity-55">{t("smsAlerts.confirmUnsubscribe")}</button>

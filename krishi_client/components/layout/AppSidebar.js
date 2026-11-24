@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
+  Bell,
   CalendarDays,
   ClipboardList,
   ChartNoAxesCombined,
@@ -61,6 +62,7 @@ const icons = {
   "/crop-calendar": CalendarDays,
   "/data-sources": Database,
   "/settings": Settings,
+  "/settings#sms-alerts-heading": Bell,
   "/officer/reviews": ClipboardList,
   "/my-farm/reviews": ClipboardList,
 };
@@ -87,7 +89,8 @@ function NavList({ onNavigate, isCollapsed = false }) {
           <ul className="space-y-1">
       {group.items.map(({ href, key }) => {
         const Icon = icons[href] || ScanLine;
-        const matchesPath = pathname === href || pathname.startsWith(`${href}/`);
+        const baseHref = href.split("#")[0];
+        const matchesPath = pathname === baseHref || pathname.startsWith(`${baseHref}/`);
         const active = matchesPath && !navigation.some((item) => item.href !== href && item.href.startsWith(`${href}/`) && (pathname === item.href || pathname.startsWith(`${item.href}/`)));
         const label = t(key);
         const destination = !user && isPrivatePath(href)

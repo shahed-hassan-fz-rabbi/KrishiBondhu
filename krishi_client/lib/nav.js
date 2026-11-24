@@ -4,6 +4,7 @@ export const appNav = [
   { href: "/my-farm", key: "nav.myFarm" },
   { href: "/market", key: "publicHeader.market" },
   { href: "/marketplace/my-listings", key: "nav.marketplaceListings", roles: ["farmer"] },
+  { href: "/settings#sms-alerts-heading", key: "nav.smsAlerts", roles: ["farmer"] },
   { href: "/rotation-planner", key: "publicHeader.cropRotation" },
   { href: "/assistant", key: "nav.assistant" },
   { href: "/handoff", key: "nav.handoff" },
@@ -17,7 +18,7 @@ export const appNav = [
 
 /** Sidebar groups keep the existing route list and role rules as the source of truth. */
 export const appNavGroups = [
-  { key: "Work", keyBn: "কাজ", hrefs: ["/dashboard", "/my-farm", "/assistant", "/market", "/marketplace/my-listings", "/my-farm/reviews", "/officer/reviews"] },
+  { key: "Work", keyBn: "কাজ", hrefs: ["/dashboard", "/my-farm", "/assistant", "/market", "/marketplace/my-listings", "/settings#sms-alerts-heading", "/my-farm/reviews", "/officer/reviews"] },
   { key: "Plan", keyBn: "পরিকল্পনা", hrefs: ["/crop-calendar", "/rotation-planner", "/handoff"] },
   { key: "Field", keyBn: "মাঠ", hrefs: ["/climate", "/map"] },
   { key: "Data & evidence", keyBn: "তথ্য ও প্রমাণ", hrefs: ["/data-sources"] },
