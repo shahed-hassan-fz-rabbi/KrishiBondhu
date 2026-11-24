@@ -10,6 +10,7 @@ import {
   Circle,
   CircleMarker,
   useMap,
+  useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -40,13 +41,20 @@ function isValidLatLng(value) {
     && Number.isFinite(value[0]) && Number.isFinite(value[1]);
 }
 
-function MapController({ center, zoom, bounds }) {
+function MapController({ center, zoom, bounds, focusFeature }) {
   const map = useMap();
   useEffect(() => {
     let cancelled = false;
     const targetZoom = Number.isFinite(zoom) ? zoom : 10;
-    const hasBounds = Array.isArray(bounds) && bounds.length === 2
-      && isValidLatLng(bounds[0]) && isValidLatLng(bounds[1]);
+    let targetBounds = bounds;
+    if (focusFeature?.geometry) {
+      try {
+        const focusedBounds = L.geoJSON(focusFeature).getBounds();
+        if (focusedBounds.isValid()) targetBounds = [[focusedBounds.getSouth(), focusedBounds.getWest()], [focusedBounds.getNorth(), focusedBounds.getEast()]];
+      } catch { /* fall back to the selected district */ }
+    }
+    const hasBounds = Array.isArray(targetBounds) && targetBounds.length === 2
+      && isValidLatLng(targetBounds[0]) && isValidLatLng(targetBounds[1]);
     const hasCenter = isValidLatLng(center);
 
     const apply = () => {
@@ -55,7 +63,7 @@ function MapController({ center, zoom, bounds }) {
       try { map.invalidateSize({ animate: false }); } catch { /* map not ready */ }
       try {
         if (hasBounds) {
-          map.fitBounds([bounds[0], bounds[1]], { padding: [30, 30], maxZoom: 11 });
+          map.fitBounds([targetBounds[0], targetBounds[1]], { padding: [30, 30], maxZoom: focusFeature ? 12 : 11 });
         } else if (hasCenter) {
           map.flyTo(center, targetZoom, { duration: 1.2 });
         }
@@ -77,7 +85,18 @@ function MapController({ center, zoom, bounds }) {
       cancelled = true;
       if (frame) window.cancelAnimationFrame(frame);
     };
-  }, [center, zoom, bounds, map]);
+  }, [center, zoom, bounds, focusFeature, map]);
+  return null;
+}
+
+function MapClickHandler({ onLocationSelect }) {
+  useMapEvents({
+    click(event) {
+      if (typeof onLocationSelect === "function") {
+        onLocationSelect({ latitude: event.latlng.lat, longitude: event.latlng.lng });
+      }
+    },
+  });
   return null;
 }
 
@@ -106,6 +125,12 @@ function createSensorIcon(type, quality = "good") {
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
         <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+      </svg>`;
+  } else if (type === "selected") {
+    bgColor = "#1686c5";
+    iconSvg = `
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>
       </svg>`;
   }
 
@@ -137,9 +162,14 @@ function createSensorIcon(type, quality = "good") {
 
 export default function DistrictGisMap({
   boundaryData,
+  upazilaData,
+  selectedUpazila,
+  selectedLocation,
   layersData,
+  onLocationSelect,
   activeLayers = {
     boundary: true,
+    upazilas: true,
     gpm: true,
     smap: true,
     modis: true,
@@ -233,7 +263,8 @@ export default function DistrictGisMap({
           backgroundSize: isOfflineBasemap ? "20px 20px" : "auto",
         }}
       >
-        <MapController center={center} zoom={zoom} bounds={mapBounds} />
+        <MapController center={center} zoom={zoom} bounds={mapBounds} focusFeature={selectedUpazila} />
+        <MapClickHandler onLocationSelect={onLocationSelect} />
 
         {/* OpenStreetMap standard raster tiles; interactive viewport requests only. */}
         <TileLayer
@@ -267,6 +298,37 @@ export default function DistrictGisMap({
               );
             }}
           />
+        )}
+
+        {activeLayers.upazilas && upazilaData?.features?.length > 0 && (
+          <GeoJSON
+            key={`upazilas-${districtMeta?.code || "district"}`}
+            data={upazilaData}
+            style={(feature) => {
+              const selected = feature?.properties?.shapeID && feature.properties.shapeID === selectedUpazila?.properties?.shapeID;
+              return {
+                color: selected ? "#0b78b5" : "#25865a",
+                weight: selected ? 3 : 1.1,
+                opacity: selected ? 1 : 0.72,
+                fillColor: selected ? "#38bdf8" : "#34d399",
+                fillOpacity: selected ? 0.22 : 0.035,
+              };
+            }}
+            onEachFeature={(feature, layer) => {
+              const name = feature.properties?.shapeName || (isBn ? "উপজেলা" : "Upazila");
+              layer.bindTooltip(`${name}<br/><span style="font-size:11px;color:#5c6b62">BBS / OCHA ADM-3 · 2020</span>`, { sticky: true });
+            }}
+          />
+        )}
+
+        {activeLayers.weatherForecast && selectedLocation && Number.isFinite(selectedLocation.latitude) && Number.isFinite(selectedLocation.longitude) && (
+          <Marker position={[selectedLocation.latitude, selectedLocation.longitude]} icon={createSensorIcon("selected")}>
+            <Popup className="km-gis-popup"><div className="space-y-1 p-1 text-xs">
+              <strong>{selectedLocation.name || (isBn ? "নির্বাচিত স্থান" : "Selected location")}</strong>
+              <div>{selectedLocation.latitude.toFixed(4)}, {selectedLocation.longitude.toFixed(4)}</div>
+              {selectedLocation.representative && <div className="text-ink-muted">{isBn ? "এলাকার প্রতিনিধি স্থানাঙ্ক" : "Representative point for the area"}</div>}
+            </div></Popup>
+          </Marker>
         )}
 
         {/* Spatial Footprints (Circles showing physical pixel resolution and antenna footprints) */}
@@ -426,36 +488,6 @@ export default function DistrictGisMap({
         )}
       </MapContainer>
 
-      {/* Floating Legend */}
-      <div className="pointer-events-auto absolute bottom-4 left-4 z-[1000] max-w-[280px] rounded-xl border border-line/80 bg-surface/95 p-3 text-xs shadow-md backdrop-blur-xs">
-        <span className="font-bold text-ink block mb-1.5">{isBn ? "মানচিত্র নির্দেশিকা (Legend)" : "Map Legend & Provenance"}</span>
-        <div className="space-y-1.5 text-[11px] text-ink-muted">
-          <div className="flex items-center gap-2">
-            <span className="inline-block h-2.5 w-5 rounded border border-emerald-900 border-dashed bg-emerald-500/20"></span>
-            <span>BBS 2020 Admin-2 Boundary</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="inline-block h-3 w-3 rounded-full bg-[#0f6c49] border border-white"></span>
-            <span>SMAP Soil Moisture (9 km cell)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="inline-block h-3 w-3 rounded-full bg-[#16865a] border border-white"></span>
-            <span>MODIS Vegetation (250m pixel)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="inline-block h-3 w-3 rounded-full bg-[#2878c8] border border-white"></span>
-            <span>NASA POWER Climate Reference</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="inline-block h-3 w-3 rounded-full bg-[#2f8fd3] border border-white"></span>
-            <span>GPM IMERG precipitation grid</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="inline-block h-2 w-5 rounded border border-amber-500 border-dashed bg-amber-400/10"></span>
-            <span>~36 km Radiometer Footprint</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
