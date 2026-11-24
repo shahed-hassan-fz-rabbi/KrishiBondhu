@@ -373,10 +373,18 @@ export function verifyGoogleIdTokenDirect(idToken) {
  * PATCH /api/v1/auth/profile
  * Update user preferences such as name or preferredDistrict.
  */
-export async function updateUserProfile({ name, preferredDistrict, phone, smsAlertsEnabled }) {
+export async function updateUserProfile({ name, preferredDistrict, phone, smsAlertsEnabled, avatarUrl }) {
   return request("/auth/profile", {
     method: "PATCH",
-    body: JSON.stringify({ name, preferredDistrict, phone, smsAlertsEnabled }),
+    body: JSON.stringify({ name, preferredDistrict, phone, smsAlertsEnabled, avatarUrl }),
+  });
+}
+
+/** PATCH /api/v1/auth/password — change the signed-in user's local password. */
+export async function changeUserPassword(currentPassword, newPassword) {
+  return request("/auth/password", {
+    method: "PATCH",
+    body: JSON.stringify({ currentPassword, newPassword }),
   });
 }
 

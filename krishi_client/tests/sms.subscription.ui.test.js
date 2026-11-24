@@ -52,6 +52,18 @@ test("SMS settings UI handles API error states and delayed state updates", () =>
   assert.match(ui, /if \(result\.success\)[\s\S]{0,160}setPreferences\(result\.data\.preferences\)/);
 });
 
+test("SMS settings highlights the dry-run alert pipeline for reviewers", () => {
+  const ui = read(["components", "settings", "SmsAlertsSettings.js"]);
+  assert.match(ui, /pipelineTitle/);
+  assert.match(ui, /dryRunBadge/);
+  assert.match(ui, /pipelineStep1/);
+  assert.match(ui, /pipelineStep4/);
+  const translations = read(["lib", "i18n", "translations.js"]);
+  assert.match(translations, /no real SMS/i);
+  assert.match(translations, /pipelineTitle:/);
+  assert.match(translations, /dryRunBadge:/);
+});
+
 test("SMS settings UI is bilingual and accessible", () => {
   const ui = read(["components", "settings", "SmsAlertsSettings.js"]);
   assert.match(ui, /useLang\(\)/);

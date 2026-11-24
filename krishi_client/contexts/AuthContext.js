@@ -10,6 +10,7 @@ import {
   updateUserProfile,
   requestPhoneVerificationCode,
   confirmPhoneVerificationCode,
+  changeUserPassword,
 } from "../services/api.js";
 
 const AuthContext = createContext({
@@ -22,6 +23,7 @@ const AuthContext = createContext({
   updateProfile: async () => ({ success: false }),
   requestPhoneVerification: async () => ({ success: false }),
   confirmPhoneVerification: async () => ({ success: false }),
+  changePassword: async () => ({ success: false }),
 });
 
 export function AuthProvider({ children }) {
@@ -121,9 +123,9 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const updateProfile = useCallback(async ({ name, preferredDistrict, phone, smsAlertsEnabled }) => {
+  const updateProfile = useCallback(async ({ name, preferredDistrict, phone, smsAlertsEnabled, avatarUrl }) => {
     try {
-      const res = await updateUserProfile({ name, preferredDistrict, phone, smsAlertsEnabled });
+      const res = await updateUserProfile({ name, preferredDistrict, phone, smsAlertsEnabled, avatarUrl });
       if (res.success && res.data?.user) {
         setUser(res.data.user);
         return { success: true, user: res.data.user };
@@ -155,6 +157,17 @@ export function AuthProvider({ children }) {
     } catch (err) { return { success: false, error: err.message || "Network error occurred" }; }
   }, []);
 
+  const changePassword = useCallback(async (currentPassword, newPassword) => {
+    try {
+      const res = await changeUserPassword(currentPassword, newPassword);
+      return res.success
+        ? { success: true }
+        : { success: false, error: res.error?.message || "Could not change password" };
+    } catch (err) {
+      return { success: false, error: err.message || "Network error occurred" };
+    }
+  }, []);
+
   const value = {
     user,
     isLoading,
@@ -165,6 +178,7 @@ export function AuthProvider({ children }) {
     updateProfile,
     requestPhoneVerification,
     confirmPhoneVerification,
+    changePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

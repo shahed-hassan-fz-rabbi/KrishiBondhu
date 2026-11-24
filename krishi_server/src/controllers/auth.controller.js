@@ -4,6 +4,7 @@ import {
   validateRegisterInput,
   validateLoginInput,
   validateProfileUpdateInput,
+  validatePasswordChangeInput,
 } from "../validators/auth.validator.js";
 import {
   signToken,
@@ -167,6 +168,9 @@ export async function updateProfile(req, res) {
     }
     req.user.phone = sanitized.phone;
   }
+  if (sanitized.avatarUrl !== undefined) {
+    req.user.avatarUrl = sanitized.avatarUrl;
+  }
   if (sanitized.smsAlertsEnabled !== undefined) {
     if (sanitized.smsAlertsEnabled && !req.user.phoneVerifiedAt) {
       return errorResponse(res, 400, "Verify your phone number before enabling SMS alerts", "PHONE_NOT_VERIFIED");
@@ -182,6 +186,24 @@ export async function updateProfile(req, res) {
     { user: req.user },
     { message: "Profile updated successfully" }
   );
+}
+
+export async function changePassword(req, res, next) {
+  try {
+    const { isValid, errors, sanitized } = validatePasswordChangeInput(req.body);
+    if (!isValid) return errorResponse(res, 400, "Validation failed", "VALIDATION_ERROR", errors);
+    const user = await User.findById(req.user._id).select("+passwordHash");
+    if (!user) return errorResponse(res, 404, "Account not found", "NOT_FOUND");
+    // Google-only accounts have no local password to compare.
+    if (user.authProvider === "google" && !user.passwordHash) {
+      return errorResponse(res, 400, "This account uses Google sign-in and has no local password", "NO_LOCAL_PASSWORD");
+    }
+    const valid = await user.comparePassword(sanitized.currentPassword);
+    if (!valid) return errorResponse(res, 400, "Current password is incorrect", "INVALID_CURRENT_PASSWORD");
+    user.passwordHash = await User.hashPassword(sanitized.newPassword);
+    await user.save();
+    return successResponse(res, 200, { changed: true }, { message: "Password changed successfully" });
+  } catch (error) { next(error); }
 }
 
 export async function requestPhoneVerification(req, res, next) {

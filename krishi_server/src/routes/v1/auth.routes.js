@@ -13,6 +13,7 @@ import {
   verifyGoogleTokenDirect,
   requestPhoneVerification,
   confirmPhoneVerification,
+  changePassword,
 } from "../../controllers/auth.controller.js";
 import { authenticate } from "../../middleware/auth.middleware.js";
 import { env } from "../../config/env.config.js";
@@ -40,6 +41,7 @@ router.post("/login", authRateLimiter, login);
 router.get("/me", authenticate, getMe);
 router.post("/logout", logout);
 router.patch("/profile", authenticate, updateProfile);
+router.patch("/password", authenticate, authRateLimiter, changePassword);
 const phoneOtpRequestLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 3, standardHeaders: true, legacyHeaders: false, skip: () => env.nodeEnv === "test" });
 const phoneOtpConfirmLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false, skip: () => env.nodeEnv === "test" });
 router.post("/phone/verification", authenticate, phoneOtpRequestLimiter, requestPhoneVerification);
