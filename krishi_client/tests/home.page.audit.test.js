@@ -87,8 +87,8 @@ test("homepage uses the proposal's seed-to-market message and keeps environment 
   assert.match(translations.en.landing.heroHeadlineLine2 || translations.en.landing.heroTitle, /From seed to market\./);
   assert.match(translations.bn.landing.heroHeadlineLine2 || translations.bn.landing.heroTitle, /বীজ থেকে বাজারে/);
   assert.doesNotMatch(page, /NASA International Space Apps|Field Shift|NASA Hackathon/);
-  assert.match(translations.en.landing.dataOverview.intro, /Crop planning, market information and farm records are at the heart/);
-  assert.match(translations.bn.landing.dataOverview.intro, /ফসল পরিকল্পনা, বাজারের তথ্য ও খামারের হিসাবই কৃষিবন্ধুর মূল সেবা/);
+  assert.match(translations.en.landing.dataOverview.intro, /Crop planning, market information and field records are at the heart/);
+  assert.match(translations.bn.landing.dataOverview.intro, /ফসল পরিকল্পনা, বাজারের তথ্য ও মাঠের হিসাবই কৃষিবন্ধুর মূল সেবা/);
 });
 
 test("retired Mati Kohon reference route opens KrishiBondhu instead of a separate branded iframe", () => {
@@ -97,16 +97,18 @@ test("retired Mati Kohon reference route opens KrishiBondhu instead of a separat
   assert.doesNotMatch(route, /iframe|Mati Kohon|NASA/);
 });
 
-test("homepage keeps one linked three-step workflow and a single service discovery grid", () => {
+test("homepage keeps one linked farmer workflow and a single service discovery grid", () => {
   const page = read("../app/page.js");
   assert.match(page, /t\(`landing\.\$\{objKey\}\.title`\)/);
   assert.match(page, /t\(`landing\.\$\{objKey\}\.desc`\)/);
   assert.equal((page.match(/id="features"/g) || []).length, 1);
   assert.equal((page.match(/id="how-it-works"/g) || []).length, 1);
   assert.match(page, /id="how-it-works" aria-labelledby="how-it-works-title"/);
-  assert.match(page, /href="\/data-sources" className="kb-flow-link"/);
-  assert.match(page, /href="\/crop-rotation" className="kb-flow-link"/);
-  assert.match(page, /href="\/assistant" className="kb-flow-link"/);
+  const workflow = page.slice(page.indexOf("const workflowCards"), page.indexOf("export default function LandingPage"));
+  assert.match(workflow, /href: "\/data-sources"/);
+  assert.match(workflow, /href: "\/crop-rotation"/);
+  assert.match(workflow, /href: "\/assistant"/);
+  assert.match(page, /<Link href=\{href\} className="kb-flow-link/);
   assert.doesNotMatch(page, /Rabi 2026|রবি ২০২৬|0\.31 m³\/m³|<5 mm \(Safe\)|25-Season Replay/);
 });
 
@@ -150,7 +152,7 @@ test("NASA is attributed as a data source, not used as the product identity", ()
 test("assistant entry points focus on farming and route price outlooks through the existing Python model", () => {
   const assistant = read("../app/(app)/assistant/page.js");
   const prompts = assistant.slice(assistant.indexOf("const QUICK_QUESTIONS"), assistant.indexOf("return (", assistant.indexOf("const QUICK_QUESTIONS")));
-  for (const id of ["market-price", "price-outlook", "crop-choice", "planting-window", "rainfall", "soil-water", "farm-tasks"]) {
+  for (const id of ["market-price", "price-outlook", "crop-choice", "planting-window", "rainfall", "soil-water", "field-tasks"]) {
     assert.match(prompts, new RegExp(`id: "${id}"`));
   }
   assert.doesNotMatch(prompts, /NASA|নাসা|NDVI|SMAP|MODIS/);

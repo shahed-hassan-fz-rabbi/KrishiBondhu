@@ -108,7 +108,7 @@ test("Bondhu stays character-first at rest and opens a compact speech bubble onl
   assert.match(guide, /setOpen\(true\);[\s\S]*?localStorage\.setItem\(key, "1"\)/, "first visit opens only a temporary contextual bubble");
   assert.match(guide, /14_000/, "the initial greeting is temporary");
   assert.match(guide, /if \(!open \|\| !greeting \|\| tourMode\)/, "user-requested contextual help stays open until dismissed");
-  assert.match(guide, /#home \.kb-hero2-card-stage/, "homepage companion uses the reserved hero illustration area");
+  assert.match(guide, /#home \[data-bondhu-anchor="home-hero"\]/, "homepage companion uses the reserved hero illustration area");
   assert.match(guide, /chooseCompanionPosition/, "other pages avoid visible copy and controls when placing the companion");
   assert.match(guide, /if \(tourMode \|\| hidden \|\| isDragging\)/, "collision-aware positioning runs on every route unless the user is dragging or touring");
   assert.match(guide, /measureCompanionObstacles/, "full card and content boundaries are measured rather than headings alone");

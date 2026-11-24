@@ -42,7 +42,9 @@ test("Profile settings only expose current persisted preferences and existing ac
   assert.doesNotMatch(settings, /updateProfile\(\{ smsAlertsEnabled: next \}\)/);
   assert.match(settings, /await logout\(\)/);
   assert.match(settings, /aria-label=\{bn \? "লগআউট নিশ্চিত করুন" : "Confirm sign out"\}/);
-  assert.doesNotMatch(settings, /changePassword|deleteAccount|resetPassword/);
+  assert.match(settings, /changePassword\(currentPassword, newPassword\)/);
+  assert.match(settings, /updateProfile\(\{ avatarUrl: dataUrl \}\)/);
+  assert.doesNotMatch(settings, /deleteAccount|resetPassword/);
 });
 
 test("Assistant retains the real chat and voice services with a mobile-safe composer", () => {

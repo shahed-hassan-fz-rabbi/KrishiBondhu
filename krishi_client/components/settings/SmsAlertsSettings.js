@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Bell, Check, LoaderCircle, ShieldCheck } from "lucide-react";
+import { Bell, Check, Database, LoaderCircle, Send, ShieldCheck, Workflow } from "lucide-react";
 
 import { fetchSmsSubscriptions, unsubscribeAllSms, updateSmsSubscription } from "@/services/api.js";
 import { useLang } from "@/lib/i18n/LanguageContext.js";
@@ -120,6 +120,30 @@ export function SmsAlertsSettings() {
           {phoneVerified ? t("smsAlerts.verified") : t("smsAlerts.notVerified")}
           {last4 ? ` · ••••${last4}` : ""}
         </span>
+      </div>
+
+      <div className="mt-5 rounded-2xl border border-emerald-200/70 bg-gradient-to-r from-emerald-50/80 via-surface to-amber-50/60 p-4 dark:border-emerald-900/40 dark:from-emerald-950/20 dark:via-surface dark:to-amber-950/10">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-bold text-content">{t("smsAlerts.pipelineTitle")}</p>
+          <span className="inline-flex min-h-7 items-center rounded-full bg-amber/15 px-3 text-[11px] font-bold uppercase tracking-wide text-amber-strong">{t("smsAlerts.dryRunBadge")}</span>
+        </div>
+        <ol className="mt-4 grid gap-3 sm:grid-cols-4">
+          {[
+            { icon: ShieldCheck, key: "pipelineStep1" },
+            { icon: Workflow, key: "pipelineStep2" },
+            { icon: Database, key: "pipelineStep3" },
+            { icon: Send, key: "pipelineStep4" },
+          ].map(({ icon: Icon, key }, index) => (
+            <li key={key} className="flex gap-2 rounded-xl border border-line bg-surface/80 p-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald/10 text-emerald"><Icon size={16} aria-hidden="true" /></span>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-emerald">{index + 1}</p>
+                <p className="mt-0.5 text-xs font-semibold leading-5 text-content">{t(`smsAlerts.${key}`)}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+        <p className="mt-3 text-xs leading-5 text-muted">{t("smsAlerts.pipelineNote")}</p>
       </div>
 
       {showPhoneGate && (

@@ -16,8 +16,12 @@ test("weather panel rejects out-of-order farm and district responses and identif
   assert.match(weatherPanel, /activeRequest = useRef\(0\)/);
   assert.match(weatherPanel, /requestId !== activeRequest\.current/);
   assert.match(weatherPanel, /activeRequest\.current \+= 1/);
-  assert.match(weatherPanel, /provenance\?\.isForecastStale \|\| provenance\?\.isSeasonalStale/);
-  assert.match(weatherPanel, /previously cached result/);
+  assert.match(weatherPanel, /provenance\.isForecastStale \|\| provenance\.forecastDataStatus === "STALE"/);
+  assert.match(weatherPanel, /provenance\.isSeasonalStale \|\| provenance\.seasonalDataStatus === "STALE"/);
+  assert.match(weatherPanel, /provenance\.forecastDataStatus !== "AVAILABLE"/);
+  assert.match(weatherPanel, /provenance\.seasonalDataStatus !== "AVAILABLE"/);
+  assert.match(weatherPanel, /Cached forecast data is stale/);
+  assert.match(weatherPanel, /Cached seasonal outlook data is stale/);
   assert.doesNotMatch(weatherPanel, /Forecast fetched:|Seasonal fetched:|Warning check:|Seasonal outlook spatial scale:|Asia\/Dhaka Standard Time/);
 });
 

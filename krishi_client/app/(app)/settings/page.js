@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ChevronRight, CircleUserRound, LogOut, MapPin, Moon, Phone, Settings, Sun } from "lucide-react";
+import { Camera, Check, ChevronRight, CircleUserRound, KeyRound, LogOut, MapPin, Moon, Phone, Settings, Sun } from "lucide-react";
 import { PrivateAccess } from "@/components/auth/PrivateAccess.js";
 import { SmsAlertsSettings } from "@/components/settings/SmsAlertsSettings.js";
 import { useAuth } from "@/contexts/AuthContext.js";
@@ -12,7 +12,7 @@ import { useLang } from "@/lib/i18n/LanguageContext.js";
 
 function SettingsPage() {
   const router = useRouter();
-  const { user, updateProfile, requestPhoneVerification, confirmPhoneVerification, logout } = useAuth();
+  const { user, updateProfile, requestPhoneVerification, confirmPhoneVerification, changePassword, logout } = useAuth();
   const { locale, setLocale } = useLang();
   const { theme, setTheme } = useTheme();
   const { selectedDistrict, setSelectedDistrict, districts } = useLocation();
@@ -25,6 +25,9 @@ function SettingsPage() {
   const [verificationCode, setVerificationCode] = useState("");
   const [codeSent, setCodeSent] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
 
   const showMessage = (text, isError = false) => {
     setMessage(text);
@@ -98,6 +101,51 @@ function SettingsPage() {
     }
   };
 
+  const saveAvatar = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || saving) return;
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 1_000_000) {
+      showMessage(bn ? "PNG, JPEG বা WEBP ছবি (সর্বোচ্চ ১ MB) বেছে নিন।" : "Choose a PNG, JPEG or WEBP image up to 1 MB.", true);
+      return;
+    }
+    setSaving(true);
+    showMessage("");
+    try {
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error("read failed"));
+        reader.readAsDataURL(file);
+      });
+      const result = await updateProfile({ avatarUrl: dataUrl });
+      showMessage(result.success
+        ? (bn ? "প্রোফাইল ছবি সংরক্ষণ হয়েছে।" : "Profile picture saved.")
+        : (bn ? "ছবি সংরক্ষণ করা যায়নি।" : "Could not save the picture."), !result.success);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const savePassword = async (event) => {
+    event.preventDefault();
+    if (savingPassword || newPassword.length < 8) return;
+    setSavingPassword(true);
+    showMessage("");
+    try {
+      const result = await changePassword(currentPassword, newPassword);
+      if (result.success) {
+        setCurrentPassword("");
+        setNewPassword("");
+        showMessage(bn ? "পাসওয়ার্ড পরিবর্তন হয়েছে।" : "Password changed.");
+      } else {
+        showMessage(result.error || (bn ? "পাসওয়ার্ড পরিবর্তন করা যায়নি।" : "Could not change password."), true);
+      }
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
   const handleLogout = async () => {
     await logout();
     router.replace("/");
@@ -125,7 +173,20 @@ function SettingsPage() {
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(19rem,.9fr)]">
         <div className="space-y-5">
           <section aria-labelledby="profile-heading" className="rounded-2xl border border-line bg-surface p-5 shadow-km-sm sm:p-6">
-            <div className="mb-5 flex items-start gap-3"><span className="rounded-xl bg-emerald/10 p-2.5 text-emerald"><CircleUserRound size={20} aria-hidden="true" /></span><div><h2 id="profile-heading" className="font-bold text-content">{bn ? "ব্যক্তিগত তথ্য" : "Personal information"}</h2><p className="mt-1 text-sm text-muted">{bn ? "আপনার অ্যাকাউন্টে দেখানো নাম হালনাগাদ করুন।" : "Update the name shown on your account."}</p></div></div>
+            <div className="mb-5 flex items-start gap-3"><span className="rounded-xl bg-emerald/10 p-2.5 text-emerald"><CircleUserRound size={20} aria-hidden="true" /></span><div><h2 id="profile-heading" className="font-bold text-content">{bn ? "ব্যক্তিগত তথ্য" : "Personal information"}</h2><p className="mt-1 text-sm text-muted">{bn ? "নাম ও প্রোফাইল ছবি হালনাগাদ করুন।" : "Update your name and profile picture."}</p></div></div>
+            <div className="mb-5 flex flex-wrap items-center gap-4 rounded-xl border border-line bg-surface-2/50 p-4">
+              <div aria-hidden="true" className="h-16 w-16 shrink-0 overflow-hidden rounded-full border-2 border-emerald/30 bg-emerald/10 bg-cover bg-center" style={user?.avatarUrl ? { backgroundImage: `url("${user.avatarUrl}")` } : undefined}>
+                {!user?.avatarUrl && <span className="flex h-full w-full items-center justify-center text-emerald"><CircleUserRound size={34} /></span>}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-content">{bn ? "প্রোফাইল ছবি" : "Profile picture"}</p>
+                <p className="mt-1 text-xs leading-5 text-muted">{bn ? "PNG, JPEG বা WEBP, সর্বোচ্চ ১ MB।" : "PNG, JPEG or WEBP, up to 1 MB."}</p>
+                <label className={`${buttonClass} mt-3 cursor-pointer border border-line bg-surface text-content hover:bg-surface-2`}>
+                  <Camera size={16} aria-hidden="true" />{bn ? "ছবি পরিবর্তন" : "Change picture"}
+                  <input type="file" accept="image/png,image/jpeg,image/webp" onChange={saveAvatar} className="sr-only" aria-label={bn ? "প্রোফাইল ছবি বেছে নিন" : "Choose profile picture"} />
+                </label>
+              </div>
+            </div>
             <form onSubmit={saveName} className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
               <label className="block text-sm font-medium text-content">{bn ? "পুরো নাম" : "Full name"}<input autoComplete="name" required maxLength={80} value={name} onChange={(event) => setName(event.target.value)} className={fieldClass} /></label>
               <button type="submit" disabled={saving || !name.trim() || name.trim() === user?.name} className={`${buttonClass} bg-forest text-white hover:bg-forest-700`}>{saving ? (bn ? "সংরক্ষণ…" : "Saving…") : (bn ? "নাম সংরক্ষণ" : "Save name")}<ChevronRight size={16} aria-hidden="true" /></button>
@@ -164,7 +225,14 @@ function SettingsPage() {
             <h2 id="account-heading" className="font-bold text-content">{bn ? "অ্যাকাউন্ট" : "Account"}</h2>
             <p className="mt-2 text-sm leading-6 text-muted">{bn ? "এই ডিভাইসে আপনার বর্তমান সেশন বন্ধ করুন।" : "Sign out of your current session on this device."}</p>
             {!confirmLogout ? <button type="button" onClick={() => setConfirmLogout(true)} className={`${buttonClass} mt-4 w-full border border-danger/30 text-danger-strong hover:bg-danger/5`}><LogOut size={16} aria-hidden="true" />{bn ? "লগআউট" : "Sign out"}</button> : <div className="mt-4 rounded-xl border border-danger/25 bg-danger/5 p-4" role="group" aria-label={bn ? "লগআউট নিশ্চিত করুন" : "Confirm sign out"}><p className="text-sm font-semibold text-content">{bn ? "আপনি কি লগআউট করতে চান?" : "Sign out of KrishiBondhu?"}</p><div className="mt-3 flex gap-2"><button type="button" onClick={() => setConfirmLogout(false)} className={`${buttonClass} flex-1 border border-line bg-surface text-content`}>{bn ? "থাকুন" : "Stay"}</button><button type="button" onClick={handleLogout} className={`${buttonClass} flex-1 bg-danger-strong text-white hover:opacity-90`}>{bn ? "লগআউট" : "Sign out"}</button></div></div>}
-            <p className="mt-4 text-xs leading-5 text-muted">{bn ? "পাসওয়ার্ড পরিবর্তন বা অ্যাকাউন্ট মুছে ফেলার নিয়ন্ত্রণ এখানে নেই।" : "Password changes and account deletion are not available here."}</p>
+            <div className="mt-5 border-t border-line pt-5">
+              <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-content"><KeyRound size={16} aria-hidden="true" />{bn ? "পাসওয়ার্ড পরিবর্তন" : "Change password"}</p>
+              <form onSubmit={savePassword} className="grid gap-3">
+                <label className="block text-sm font-medium text-content">{bn ? "বর্তমান পাসওয়ার্ড" : "Current password"}<input type="password" required autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} className={fieldClass} /></label>
+                <label className="block text-sm font-medium text-content">{bn ? "নতুন পাসওয়ার্ড" : "New password"}<input type="password" required minLength={8} autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} className={fieldClass} /></label>
+                <button type="submit" disabled={savingPassword || currentPassword.length === 0 || newPassword.length < 8} className={`${buttonClass} w-full bg-forest text-white hover:bg-forest-700`}>{savingPassword ? (bn ? "সংরক্ষণ…" : "Saving…") : (bn ? "পাসওয়ার্ড আপডেট" : "Update password")}</button>
+              </form>
+            </div>
           </section>
         </aside>
       </div>

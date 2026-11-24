@@ -189,7 +189,7 @@ test("My Farm Planning: Client API Contracts & Translations Suite", async (t) =>
     assert.match(source, /evaluationInFlight\.current = false/);
     assert.match(source, /fetchFarms\(\)/);
     assert.match(source, /buildCropPlanningPayload\(formData, lang, activeSelectedFarmId \|\| null\)/);
-    assert.match(source, /Editing profile fields detaches the plan from the farm/);
+    assert.match(source, /Editing profile fields detaches the plan from the field/);
     assert.match(source, /<CropPlanningPageContent key=\{identityKey\} \/>/);
   });
 

@@ -102,6 +102,20 @@ export function validateLoginInput(body) {
 /**
  * Validates profile/district update payload.
  */
+export function validatePasswordChangeInput(body) {
+  const errors = [];
+  const currentPassword = typeof body?.currentPassword === "string" ? body.currentPassword : "";
+  const newPassword = typeof body?.newPassword === "string" ? body.newPassword : "";
+  if (!currentPassword) errors.push("Current password is required");
+  if (newPassword.length < 8 || newPassword.length > 128) errors.push("New password must be between 8 and 128 characters");
+  if (currentPassword && currentPassword === newPassword) errors.push("New password must be different from the current password");
+  return {
+    isValid: errors.length === 0,
+    errors,
+    sanitized: errors.length === 0 ? { currentPassword, newPassword } : null,
+  };
+}
+
 export function validateProfileUpdateInput(body) {
   const errors = [];
   const updates = {};
@@ -136,6 +150,20 @@ export function validateProfileUpdateInput(body) {
     const phone = normalizePhone(body.phone);
     if (!phone) errors.push("A valid Bangladesh mobile number is required");
     else updates.phone = phone;
+  }
+
+  if (body.avatarUrl !== undefined) {
+    const avatar = String(body.avatarUrl || "").trim();
+    const isImageDataUrl = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(avatar) && avatar.length <= 1_500_000;
+    let isHttpsUrl = false;
+    try { isHttpsUrl = new URL(avatar).protocol === "https:" && avatar.length <= 2000; } catch { /* not a URL */ }
+    if (!isImageDataUrl && !isHttpsUrl && avatar !== "") {
+      errors.push("avatarUrl must be a small PNG/JPEG/WebP image or an HTTPS URL");
+    } else if (avatar !== "") {
+      updates.avatarUrl = avatar;
+    } else {
+      updates.avatarUrl = null;
+    }
   }
 
   if (body.smsAlertsEnabled !== undefined) {
