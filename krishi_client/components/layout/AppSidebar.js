@@ -22,6 +22,7 @@ import {
   Plus,
   ScanLine,
   Settings,
+  ShieldCheck,
   Sprout,
   Store,
   RefreshCw,
@@ -65,6 +66,7 @@ const icons = {
   "/settings#sms-alerts-heading": Bell,
   "/officer/reviews": ClipboardList,
   "/my-farm/reviews": ClipboardList,
+  "/admin/marketplace": ShieldCheck,
 };
 
 function NavList({ onNavigate, isCollapsed = false }) {

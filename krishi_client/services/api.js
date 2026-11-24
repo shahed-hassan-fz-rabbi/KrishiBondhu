@@ -58,6 +58,34 @@ export function updateMarketplaceProductStatus(productId, status) {
 export function archiveMarketplaceProduct(productId) {
   return request(`/marketplace/products/${encodeURIComponent(productId)}`, { method: "DELETE" });
 }
+
+/** GET /api/v1/marketplace/admin/products — admin moderation queue. */
+export function fetchAdminMarketplaceProducts({ decision = "pending_review", page = 1, limit = 20 } = {}) {
+  const query = new URLSearchParams({ decision, page: String(page), limit: String(limit) });
+  return request(`/marketplace/admin/products?${query.toString()}`);
+}
+
+/** PATCH /api/v1/marketplace/admin/products/:id/review — approve or reject with a reason. */
+export function reviewMarketplaceProduct(productId, decision, reason = "") {
+  if (!["approve", "reject"].includes(decision)) return Promise.resolve({ success: false, status: 400, error: { code: "VALIDATION_ERROR" } });
+  return request(`/marketplace/admin/products/${encodeURIComponent(productId)}/review`, {
+    method: "PATCH",
+    body: JSON.stringify({ decision, reason: String(reason).slice(0, 500) }),
+  });
+}
+
+/** POST /api/v1/marketplace/orders — Buy now intent (no payment). */
+export function createMarketplaceOrder(productId, quantity) {
+  return request("/marketplace/orders", {
+    method: "POST",
+    body: JSON.stringify({ productId, quantity: Number(quantity) }),
+  });
+}
+
+/** GET /api/v1/marketplace/orders/mine — the buyer's own Buy now requests. */
+export function fetchMyMarketplaceOrders() {
+  return request("/marketplace/orders/mine");
+}
 export function fetchMarketPriceForecast({ commodity, division, district, upazila, market, unit, source, priceType = "wholesale", frequency = "daily", horizonDays = 30 }) {
   const query = new URLSearchParams({ commodity, priceType, frequency, horizonDays: String(horizonDays) });
   if (division) query.set("division", division);

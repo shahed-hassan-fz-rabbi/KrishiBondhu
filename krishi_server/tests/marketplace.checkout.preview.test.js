@@ -43,6 +43,7 @@ function product(overrides = {}) {
     unit: "quintal",
     askingPricePerUnit: 3200,
     status: "active",
+    approvalStatus: "approved",
     ownerId: new mongoose.Types.ObjectId(),
     ...overrides,
   };
@@ -89,7 +90,7 @@ test("guest can preview an active listing using the stored farmer asking price o
     stockReserved: false,
   });
   assert.equal(selected.id, listing._id.toString());
-  assert.equal(selected.fields, "productName quantity unit askingPricePerUnit status");
+  assert.equal(selected.fields, "productName quantity unit askingPricePerUnit status approvalStatus");
   for (const privateField of ["ownerId", "phone", "email", "passwordHash", "googleId"]) {
     assert.equal(privateField in payload.data, false);
   }

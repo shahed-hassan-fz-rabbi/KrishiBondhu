@@ -144,13 +144,13 @@ test("GET marketplace products is public, active-only, paginated, and privacy-sa
     };
   });
   t.mock.method(MarketplaceProduct, "countDocuments", async (query) => {
-    assert.deepEqual(query, { status: "active" });
+    assert.deepEqual(query, { status: "active", approvalStatus: "approved" });
     return 5;
   });
 
   const { response, payload } = await request("GET", "/api/v1/marketplace/products?page=2&limit=2");
   assert.equal(response.status, 200);
-  assert.deepEqual(filter, { status: "active" });
+  assert.deepEqual(filter, { status: "active", approvalStatus: "approved" });
   assert.equal(skip, 2);
   assert.equal(limit, 2);
   assert.equal(payload.data.products.length, 2);
@@ -168,12 +168,12 @@ test("public product search matches English, Bengali, and case-insensitively as 
   const english = await request("GET", "/api/v1/marketplace/products?q=Potato");
   assert.equal(english.response.status, 200);
   assert.deepEqual(english.payload.data.products.map(({ productName }) => productName), ["Potato", "Sweet potato"]);
-  assert.deepEqual(filters[0], { status: "active", productName: { $regex: "Potato", $options: "i" } });
+  assert.deepEqual(filters[0], { status: "active", approvalStatus: "approved", productName: { $regex: "Potato", $options: "i" } });
 
   const bengali = await request("GET", "/api/v1/marketplace/products?q=%E0%A6%86%E0%A6%B2%E0%A7%81");
   assert.equal(bengali.response.status, 200);
   assert.deepEqual(bengali.payload.data.products.map(({ productName }) => productName), ["আলু"]);
-  assert.deepEqual(filters[2], { status: "active", productName: { $regex: "আলু", $options: "i" } });
+  assert.deepEqual(filters[2], { status: "active", approvalStatus: "approved", productName: { $regex: "আলু", $options: "i" } });
 
   const caseInsensitive = await request("GET", "/api/v1/marketplace/products?q=RICE");
   assert.equal(caseInsensitive.response.status, 200);
@@ -183,14 +183,14 @@ test("public product search matches English, Bengali, and case-insensitively as 
   const regexCharacters = await request("GET", "/api/v1/marketplace/products?q=%2E%2A");
   assert.equal(regexCharacters.response.status, 200);
   assert.deepEqual(regexCharacters.payload.data.products.map(({ productName }) => productName), ["Special .* produce"]);
-  assert.deepEqual(filters[6], { status: "active", productName: { $regex: "\\.\\*", $options: "i" } });
+  assert.deepEqual(filters[6], { status: "active", approvalStatus: "approved", productName: { $regex: "\\.\\*", $options: "i" } });
 });
 
 test("district is an exact case-insensitive filter and combines with search before pagination", async (t) => {
   const filters = installBrowseDatasetMocks(t, browseInventory());
   const district = await request("GET", "/api/v1/marketplace/products?district=%20cumilla%20");
   assert.equal(district.response.status, 200);
-  assert.deepEqual(filters[0], { status: "active", district: { $regex: "^cumilla$", $options: "i" } });
+  assert.deepEqual(filters[0], { status: "active", approvalStatus: "approved", district: { $regex: "^cumilla$", $options: "i" } });
   assert.equal(district.payload.data.pagination.total, 5);
   assert.ok(district.payload.data.products.every((product) => product.district === "Cumilla"));
 
@@ -198,6 +198,7 @@ test("district is an exact case-insensitive filter and combines with search befo
   assert.equal(combined.response.status, 200);
   assert.deepEqual(filters[2], {
     status: "active",
+    approvalStatus: "approved",
     productName: { $regex: "rice", $options: "i" },
     district: { $regex: "^CUMILLA$", $options: "i" },
   });
@@ -212,7 +213,7 @@ test("district is an exact case-insensitive filter and combines with search befo
 
   const reset = await request("GET", "/api/v1/marketplace/products");
   assert.equal(reset.response.status, 200);
-  assert.deepEqual(filters[6], { status: "active" });
+  assert.deepEqual(filters[6], { status: "active", approvalStatus: "approved" });
   assert.equal(reset.payload.data.pagination.total, 7, "clearing filters restores every active listing");
 });
 
@@ -275,7 +276,7 @@ test("GET marketplace products/mine returns only the farmer's listings across ev
   assert.deepEqual(firstPage.payload.data.products.map(({ status }) => status), ["active", "sold_out"]);
   assert.deepEqual(firstPage.payload.data.pagination, { page: 1, limit: 2, total: 3, pages: 2 });
   assert.deepEqual(filters, [{ ownerId: farmerId }, { ownerId: farmerId }]);
-  assert.match(selectedFields, /_id productName productImageDataUrl description quantity unit askingPricePerUnit district upazila status createdAt updatedAt/);
+  assert.match(selectedFields, /_id productName productImageDataUrl description quantity unit askingPricePerUnit district upazila status approvalStatus reviewNote reviewedAt createdAt updatedAt/);
   assert.doesNotMatch(selectedFields, /ownerId|email|phone|password|session|googleId/);
   const serialized = JSON.stringify(firstPage.payload.data.products);
   assert.equal(serialized.includes("Other farmer's rice"), false);
@@ -504,7 +505,16 @@ test("owner can partially update an owned listing with an atomic ownership-scope
   assert.equal(payload.data.product.productName, "Updated rice");
   assert.equal(payload.data.product.status, "sold_out");
   assert.deepEqual(queryFilter, { _id: productId.toString(), ownerId: farmerId, status: { $ne: "archived" } });
-  assert.deepEqual(update, { $set: { productName: "Updated rice", status: "sold_out" } });
+  assert.deepEqual(update, {
+    $set: {
+      productName: "Updated rice",
+      status: "sold_out",
+      approvalStatus: "pending_review",
+      reviewedBy: null,
+      reviewedAt: null,
+      reviewNote: "",
+    },
+  });
   assert.deepEqual(options, { new: true, runValidators: true });
   assert.doesNotMatch(selectedFields, /ownerId|email|phone|passwordHash/);
   assert.equal("ownerId" in payload.data.product, false);
@@ -601,16 +611,16 @@ test("archived listings are excluded from public browse and cannot be reactivate
     browseFilter = filter;
     return {
       sort() { return this; }, skip() { return this; }, limit() { return this; }, select() { return this; },
-      lean: async () => [publicProduct({ status: "active" })],
+      lean: async () => [publicProduct({ status: "active", approvalStatus: "approved" })],
     };
   });
   t.mock.method(MarketplaceProduct, "countDocuments", async (filter) => {
-    assert.deepEqual(filter, { status: "active" });
+    assert.deepEqual(filter, { status: "active", approvalStatus: "approved" });
     return 1;
   });
   const browse = await request("GET", "/api/v1/marketplace/products");
   assert.equal(browse.response.status, 200);
-  assert.deepEqual(browseFilter, { status: "active" });
+  assert.deepEqual(browseFilter, { status: "active", approvalStatus: "approved" });
   assert.ok(browse.payload.data.products.every((item) => item.status === "active"));
 
   t.mock.method(User, "findById", async (id) => String(id) === String(farmerId) ? farmer : null);

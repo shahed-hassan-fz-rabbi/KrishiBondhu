@@ -21,14 +21,14 @@ export default function MarketPage() {
   const reportUrl = `${REPORT_BASE_URL}?L=${bn ? "B" : "E"}`;
   const c = bn ? {
     title: "আজকের বাজার দেখুন। নিজের হিসাব বুঝুন।", intro: "কৃষি বিপণন অধিদপ্তরের সরকারি বাজার রিপোর্ট দেখুন, নিজের লক্ষ্যদর অনুসরণ করুন, আর ফসল থেকে কত আয় দরকার তা হিসাব করুন।",
-    report: "সরকারি দৈনিক বাজারদর", department: "কৃষি বিপণন অধিদপ্তর (DAM), বাংলাদেশ", openReport: "DAM রিপোর্ট খুলুন", reportHint: "দাম ও এলাকার তথ্য DAM-এর রিপোর্ট অনুযায়ী। এখানে না খুললে মূল সাইটে দেখুন।",
+    report: "সরকারি দৈনিক বাজারদর", department: "কৃষি বিপণন অধিদপ্তর (DAM), বাংলাদেশ", openReport: "DAM রিপোর্ট খুলুন", reportHint: "আমরা এই রিপোর্টটি হোস্ট বা পুনরপ্রকাশ করি না। কৃষিবন্ধু শুধু DAM-এর অফিশিয়াল উৎসের লিংক দেয় — সব দাম ও তারিখ সেখানেই যাচাই করুন।",
     calculator: "আপনার খরচের হিসাব", calculatorText: "নিজের খরচ ও সম্ভাব্য ফলন থেকে ন্যূনতম দর হিসাব করুন। এটি পরিকল্পনার সহায়তা, নিশ্চিত বিক্রয়মূল্য বা লাভের পূর্বাভাস নয়।", cost: "মোট চাষ ও বিক্রির খরচ (৳)", harvest: "সম্ভাব্য ফলন (কেজি)", margin: "অতিরিক্ত লাভের হার (%)", breakEven: "খরচ ওঠার দর", targetMargin: "লাভসহ লক্ষ্যদর",
     alerts: "আমার বাজারদর অ্যালার্ট", alertsText: "লক্ষ্যদর ঠিক করুন, তারপর DAM রিপোর্টের দর লিখে মিলিয়ে দেখুন। DAM-এর দাম অ্যাপ নিজে পড়ে না; আপনার দেওয়া দর লক্ষ্য ছুঁলেই, Settings-এ SMS চালু থাকলে মেসেজ যাবে।",
     login: "অ্যালার্ট সংরক্ষণ ও লক্ষ্যদরের বার্তা পেতে সাইন ইন করুন।", signIn: "সাইন ইন", crop: "ফসল / পণ্য", cropEg: "যেমন: সরিষা", market: "বাজার (ঐচ্ছিক)", marketEg: "যেমন: কুমিল্লা সদর", price: "লক্ষ্যদর (৳)", unit: "একক", perKg: "প্রতি কেজি", perMaund: "প্রতি মণ", save: "লক্ষ্য সংরক্ষণ", loading: "অ্যালার্ট লোড হচ্ছে…", noAlerts: "এখনো কোনো লক্ষ্যদর নেই। ফসল ও লক্ষ্যদর যোগ করে শুরু করুন।", at: "লক্ষ্যদর", latest: "সর্বশেষ দেওয়া দর", noQuote: "এখনো দর দেওয়া হয়নি", targetHit: "লক্ষ্য ছুঁয়েছে", quote: "সর্বশেষ DAM দর", reportDate: "রিপোর্টের তারিখ", check: "দর মিলিয়ে দেখুন", reached: "লক্ষ্য পূরণ হয়েছে", below: "দর সংরক্ষিত হয়েছে। এখনো লক্ষ্যদর ছোঁয়নি।", saved: "লক্ষ্যদর সংরক্ষিত। মিলিয়ে দেখতে নিচে DAM রিপোর্টের সর্বশেষ দর লিখুন।", remove: "অ্যালার্ট মুছুন",
     findMarket: "বাজার খুঁজুন", directoryText: "DAM-এর বাজার ডিরেক্টরি ও সাম্প্রতিক পণ্যমূল্য দেখুন। বাজারের সময়, কার্যক্রম ও যোগাযোগ সরাসরি DAM-এর কাছে যাচাই করুন।", directory: "DAM বাজার ডিরেক্টরি খুলুন", buyers: "ক্রেতা খুঁজুন বা পণ্য বিক্রির পোস্ট দিন", buyersText: "ক্রেতা ও বিক্রেতার বিজ্ঞাপনের জন্য DAM-এর classified ও free-post পেজ ব্যবহার করুন। লেনদেনের আগে বিজ্ঞাপন ও শর্ত যাচাই করুন।", browse: "বিজ্ঞাপন দেখুন", post: "পণ্য বিক্রির পোস্ট দিন", caution: "ফসল, মান, একক, বাজার, পাইকারি/খুচরা দর ও রিপোর্টের তারিখ মিলিয়ে দেখুন। পরিবহন, সংরক্ষণ ও ক্রেতার শর্তে হাতে পাওয়া দাম বদলাতে পারে। বিক্রির আগে তথ্য সরাসরি যাচাই করুন।",
   } : {
     title: "Check today’s market. Know your own numbers.", intro: "Check official Department of Agricultural Marketing reports, follow your own target prices, and plan what you need to earn from the harvest.",
-    report: "Official daily market report", department: "Department of Agricultural Marketing (DAM), Bangladesh", openReport: "Open DAM report", reportHint: "Prices and locations depend on DAM’s report. If it does not load here, open the source directly.",
+    report: "Official daily market report", department: "Department of Agricultural Marketing (DAM), Bangladesh", openReport: "Open DAM report", reportHint: "We do not host or republish this report. KrishiBondhu only links to the official DAM source — verify all prices and dates there.",
     calculator: "Your break-even price", calculatorText: "Estimate the minimum price from your own costs and expected harvest. This is a planning aid, not a guaranteed offer or profit forecast.", cost: "Total growing and selling cost (৳)", harvest: "Expected harvest (kg)", margin: "Extra margin (%)", breakEven: "Break-even", targetMargin: "Target with margin",
     alerts: "My price alerts", alertsText: "Set a price target, then enter a quote from the DAM report to check it. The app does not auto-read DAM prices; SMS fires only when your entered quote reaches the target and SMS alerts are enabled in Settings.",
     login: "Sign in to save alerts and receive target notifications.", signIn: "Sign in", crop: "Crop / product", cropEg: "e.g. mustard seed", market: "Market (optional)", marketEg: "e.g. Cumilla Sadar", price: "Target (৳)", unit: "Unit", perKg: "Per kg", perMaund: "Per maund", save: "Save target", loading: "Loading alerts…", noAlerts: "No price targets yet. Add a crop and price above to start tracking.", at: "Alert at", latest: "Latest entered quote", noQuote: "No quote entered yet", targetHit: "Target reached", quote: "Latest DAM quote", reportDate: "Report date", check: "Check price", reached: "Your target price was reached", below: "Quote saved. Your target has not been reached yet.", saved: "Price target saved. Enter the latest DAM quote below to check it.", remove: "Delete alert",
@@ -256,8 +256,15 @@ export default function MarketPage() {
     <section className="mb-8 grid gap-6 lg:grid-cols-[1.25fr_.75fr]">
       <article className="overflow-hidden rounded-2xl border border-[#dfd7c4] bg-[#fbf7ec]">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e7e0d0] p-5"><div><h2 className="text-xl font-bold text-[#173B2A]">{c.report}</h2><p className="mt-1 text-sm text-[#62736A]">{c.department}</p></div><a className="inline-flex items-center gap-2 rounded-full bg-[#247A4B] px-4 py-2.5 text-sm font-bold text-white" href={reportUrl} target="_blank" rel="noreferrer">{c.openReport} <ExternalLink size={15}/></a></div>
-        <iframe title={c.report} src={reportUrl} loading="lazy" referrerPolicy="no-referrer" className="h-[620px] w-full bg-white" />
-        <p className="px-5 py-3 text-xs text-[#62736A]">{c.reportHint}</p>
+        <div data-bondhu-no-fly className="px-5 py-8 sm:px-6">
+          <div className="flex flex-col items-start gap-4 rounded-2xl border border-dashed border-[#c9d3bd] bg-white/70 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-[#173B2A]">{bn ? "শুধু অফিশিয়াল উৎসে দেখুন" : "View it at the official source"}</p>
+              <p className="mt-1 max-w-xl text-sm leading-6 text-[#62736A]">{c.reportHint}</p>
+            </div>
+            <a className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-[#247A4B] px-5 text-sm font-bold text-white" href={reportUrl} target="_blank" rel="noreferrer">{c.openReport} <ExternalLink size={15}/></a>
+          </div>
+        </div>
       </article>
       <article className="h-fit rounded-2xl border border-[#dfd7c4] bg-[#fbf7ec] p-5 sm:p-6 shadow-sm">
         <div className="flex items-center justify-between">

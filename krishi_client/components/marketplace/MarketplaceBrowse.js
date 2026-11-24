@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -8,18 +8,23 @@ import {
   ArrowRight,
   Carrot,
   Check,
+  CheckCircle2,
   Leaf,
+  LoaderCircle,
   MapPin,
+  Phone,
   RefreshCw,
   Search,
+  ShoppingBag,
   SlidersHorizontal,
   Sprout,
   Store,
   Wheat,
   X,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext.js";
 import { useLang } from "@/lib/i18n/LanguageContext.js";
-import { fetchMarketplaceProducts } from "@/services/api.js";
+import { createMarketplaceOrder, fetchMarketplaceProducts, fetchMyMarketplaceOrders } from "@/services/api.js";
 
 const PAGE_SIZE = 12;
 const copy = {
@@ -68,6 +73,23 @@ const copy = {
     listing: "Marketplace listing",
     emptyAction: "Clear search filters",
     demoDetail: "Sample only — not a real farmer offer",
+    buyNow: "Buy now",
+    buyTitle: "Send a buy request",
+    buyIntro: "We save your request and show the farmer's contact so you can arrange the purchase directly. No payment is collected here.",
+    buyQuantity: "Quantity to buy",
+    buyConfirm: "Confirm buy request",
+    buyCancel: "Cancel",
+    buyBusy: "Saving…",
+    buySuccess: "Buy request saved",
+    buyContact: "Farmer contact",
+    buyNoPayment: "No payment is collected in the app. Confirm price and pickup directly with the farmer.",
+    buyNeedLogin: "Sign in to send a buy request",
+    buyNeedPhone: "Verify your phone number in Settings before buying.",
+    buyError: "Could not save your request. Please try again.",
+    myOrders: "My buy requests",
+    ordersTitle: "Your buy requests",
+    ordersEmpty: "You have not sent any buy requests yet.",
+    noContact: "Contact not available",
   },
   bn: {
     eyebrow: "কৃষক মার্কেটপ্লেস",
@@ -114,6 +136,23 @@ const copy = {
     listing: "মার্কেটপ্লেসের তালিকা",
     emptyAction: "সার্চ ফিল্টার মুছুন",
     demoDetail: "শুধু নমুনা — প্রকৃত কৃষকের পণ্য নয়",
+    buyNow: "এখন কিনুন",
+    buyTitle: "কেনার অনুরোধ পাঠান",
+    buyIntro: "আপনার অনুরোধ সংরক্ষণ করে কৃষকের যোগাযোগের তথ্য দেখাই, যাতে আপনি সরাসরি কেনার ব্যবস্থা করতে পারেন। এখানে কোনো টাকা নেওয়া হয় না।",
+    buyQuantity: "কত পরিমাণ কিনবেন",
+    buyConfirm: "কেনার অনুরোধ নিশ্চিত করুন",
+    buyCancel: "বাতিল",
+    buyBusy: "সংরক্ষণ হচ্ছে…",
+    buySuccess: "কেনার অনুরোধ সংরক্ষিত",
+    buyContact: "কৃষকের যোগাযোগ",
+    buyNoPayment: "অ্যাপে কোনো টাকা নেওয়া হয় না। দাম ও পণ্য নেওয়ার ব্যবস্থা সরাসরি কৃষকের সঙ্গে নিশ্চিত করুন।",
+    buyNeedLogin: "কেনার অনুরোধ পাঠাতে সাইন ইন করুন",
+    buyNeedPhone: "কেনার আগে Settings-এ ফোন নম্বর যাচাই করুন।",
+    buyError: "অনুরোধ সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।",
+    myOrders: "আমার কেনার অনুরোধ",
+    ordersTitle: "আপনার কেনার অনুরোধ",
+    ordersEmpty: "আপনি এখনো কোনো কেনার অনুরোধ পাঠাননি।",
+    noContact: "যোগাযোগের তথ্য পাওয়া যায়নি",
   },
 };
 
@@ -136,7 +175,7 @@ function artworkFor(productName = "") {
   return { Icon: Sprout, style: "from-[#e8eee1] via-[#dce8d9] to-[#c9dfd1]", ink: "text-[#398052]" };
 }
 
-function ProductCard({ product, text, locale }) {
+function ProductCard({ product, text, locale, onBuy }) {
   const demo = isDemoListing(product);
   const art = artworkFor(product.productName);
   return <article data-bondhu-no-fly className="group flex min-w-0 flex-col overflow-hidden rounded-[1.4rem] border border-[#e4e1d5] bg-white shadow-[0_5px_18px_rgba(31,59,42,.045)] transition duration-200 hover:-translate-y-1 hover:border-[#bdd2be] hover:shadow-[0_18px_36px_rgba(31,59,42,.11)]">
@@ -170,6 +209,7 @@ function ProductCard({ product, text, locale }) {
         <div className="min-w-0"><dt className="text-[11px] font-medium text-[#758179]">{text.location}</dt><dd className="mt-1 flex min-w-0 items-start gap-1.5 break-words text-sm font-bold text-[#284638]"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#49845d]" aria-hidden="true" /><span className="break-words">{[product.upazila, product.district].filter(Boolean).join(", ")}</span></dd></div>
       </dl>
       <p className="mt-3 min-h-[3.75rem] break-words text-sm leading-5 text-[#68766e] line-clamp-3">{product.description || text.noDescription}</p>
+      <button type="button" data-bondhu-no-fly disabled={demo} onClick={() => onBuy?.(product)} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#247A4B] px-4 text-sm font-extrabold text-white transition hover:bg-[#1b633d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#247A4B] disabled:cursor-not-allowed disabled:opacity-45"><ShoppingBag className="h-4 w-4" aria-hidden="true" />{text.buyNow}</button>
     </div>
   </article>;
 }
@@ -184,8 +224,18 @@ function ProductSkeleton({ label }) {
 
 export default function MarketplaceBrowse() {
   const { locale } = useLang();
+  const { user } = useAuth();
   const bn = locale === "bn";
   const text = copy[bn ? "bn" : "en"];
+  const buyDialogRef = useRef(null);
+  const [buyTarget, setBuyTarget] = useState(null);
+  const [buyQuantity, setBuyQuantity] = useState("1");
+  const [buyBusy, setBuyBusy] = useState(false);
+  const [buyResult, setBuyResult] = useState(null);
+  const [buyError, setBuyError] = useState("");
+  const [ordersOpen, setOrdersOpen] = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [draft, setDraft] = useState({ q: "", district: "" });
   const [appliedFilters, setAppliedFilters] = useState({ q: "", district: "" });
@@ -207,6 +257,69 @@ export default function MarketplaceBrowse() {
     });
     return () => { active = false; };
   }, [page, retryKey, appliedFilters]);
+
+  useEffect(() => {
+    const dialog = buyDialogRef.current;
+    if ((buyTarget || ordersOpen) && dialog && !dialog.open) dialog.showModal();
+    else if (!buyTarget && !ordersOpen && dialog?.open) dialog.close();
+  }, [buyTarget, ordersOpen]);
+
+  const openBuy = (product) => {
+    setBuyTarget(product);
+    setBuyQuantity(String(product.quantity && product.quantity < 1 ? product.quantity : 1));
+    setBuyResult(null);
+    setBuyError("");
+  };
+
+  const closeBuy = () => {
+    if (buyBusy) return;
+    setBuyTarget(null);
+    setOrdersOpen(false);
+    setBuyResult(null);
+    setBuyError("");
+  };
+
+  const confirmBuy = async (event) => {
+    event.preventDefault();
+    if (!buyTarget || buyBusy) return;
+    if (!user) { setBuyError(text.buyNeedLogin); return; }
+    const quantity = Number(buyQuantity);
+    if (!Number.isFinite(quantity) || quantity < 0.01 || quantity > Number(buyTarget.quantity)) {
+      setBuyError(text.buyError);
+      return;
+    }
+    setBuyBusy(true);
+    setBuyError("");
+    setBuyResult(null);
+    try {
+      const result = await createMarketplaceOrder(buyTarget._id, quantity);
+      if (result.success) setBuyResult(result.data);
+      else if (result.status === 401) setBuyError(text.buyNeedLogin);
+      else if (result.status === 403 && result.error?.code === "PHONE_NOT_VERIFIED") setBuyError(text.buyNeedPhone);
+      else setBuyError(result.error?.message || text.buyError);
+    } catch {
+      setBuyError(text.buyError);
+    } finally {
+      setBuyBusy(false);
+    }
+  };
+
+  const openOrders = async () => {
+    setOrdersOpen(true);
+    setBuyResult(null);
+    setBuyError(user ? "" : text.buyNeedLogin);
+    if (!user) { setOrders([]); return; }
+    setOrdersLoading(true);
+    try {
+      const result = await fetchMyMarketplaceOrders();
+      if (result.success) setOrders(result.data?.orders || []);
+      else setBuyError(result.error?.message || text.buyError);
+    } catch {
+      setBuyError(text.buyError);
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
 
   const submitFilters = (event) => {
     event.preventDefault();
@@ -244,7 +357,10 @@ export default function MarketplaceBrowse() {
     <div className="mx-auto w-full max-w-7xl">
       <div data-bondhu-no-fly className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Link href="/market" data-bondhu-no-fly className="inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-sm font-bold text-[#247a4b] transition hover:bg-[#e9f0e5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#247a4b]"><ArrowLeft className="h-4 w-4" aria-hidden="true" /><span>{text.marketLink}</span></Link>
-        <Link href="/marketplace/sell" data-bondhu-no-fly className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#247a4b] bg-[#247a4b] px-5 text-sm font-bold text-white shadow-[0_7px_16px_rgba(36,122,75,.18)] transition hover:-translate-y-0.5 hover:bg-[#1b633d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#247a4b]"><Store className="h-4 w-4" aria-hidden="true" />{text.sell}</Link>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" data-bondhu-no-fly onClick={openOrders} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#247a4b] bg-white px-5 text-sm font-bold text-[#247a4b] transition hover:bg-[#eef4ea] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#247a4b]"><ShoppingBag className="h-4 w-4" aria-hidden="true" />{text.myOrders}</button>
+          <Link href="/marketplace/sell" data-bondhu-no-fly className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#247a4b] bg-[#247a4b] px-5 text-sm font-bold text-white shadow-[0_7px_16px_rgba(36,122,75,.18)] transition hover:-translate-y-0.5 hover:bg-[#1b633d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#247a4b]"><Store className="h-4 w-4" aria-hidden="true" />{text.sell}</Link>
+        </div>
       </div>
 
       <header className="relative isolate grid min-w-0 overflow-hidden rounded-[1.75rem] border border-[#d7dfcb] bg-[linear-gradient(118deg,#eaf0e2_0%,#eff1e5_48%,#f4ebd7_100%)] shadow-[0_12px_32px_rgba(46,71,46,.055)]">
@@ -287,7 +403,7 @@ export default function MarketplaceBrowse() {
         {state.status === "error" ? <div data-bondhu-no-fly className="rounded-[1.5rem] border border-red-200 bg-white px-6 py-9 text-center shadow-sm" role="alert"><span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-red-50 text-red-700"><RefreshCw className="h-6 w-6" aria-hidden="true" /></span><p className="mt-4 text-lg font-extrabold text-[#173b2a]">{text.errorTitle}</p><p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-[#62736a]">{text.error}</p><button type="button" onClick={() => { setState((current) => ({ ...current, status: "loading" })); setRetryKey((value) => value + 1); }} className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#247a4b] px-5 text-sm font-extrabold text-white transition hover:bg-[#1b633d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174f34]"><RefreshCw className="h-4 w-4" aria-hidden="true" />{text.retry}</button></div> : null}
         {state.status === "ready" && state.products.length === 0 ? <div data-bondhu-no-fly className="rounded-[1.5rem] border border-dashed border-[#cfd9c8] bg-white px-6 py-10 text-center shadow-sm sm:py-14"><span className="mx-auto grid h-16 w-16 place-items-center rounded-[1.3rem] bg-[#edf3e8] text-[#35794b]"><Store className="h-7 w-7" aria-hidden="true" /></span><h2 className="mt-4 text-xl font-extrabold tracking-[-.025em] text-[#173b2a]">{appliedFilters.q || appliedFilters.district ? text.filteredEmptyTitle : text.emptyTitle}</h2><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#68766e]">{appliedFilters.q || appliedFilters.district ? text.filteredEmpty : text.empty}</p>{(appliedFilters.q || appliedFilters.district) ? <button type="button" onClick={clearFilters} className="mt-5 inline-flex min-h-10 items-center gap-2 rounded-full border border-[#c8d7c5] px-4 text-sm font-bold text-[#2e7146] hover:bg-[#f4f7f0] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#438558]"><X className="h-4 w-4" aria-hidden="true" />{text.emptyAction}</button> : null}</div> : null}
         {state.status === "ready" && state.products.length > 0 ? <>
-          <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-3">{state.products.map((product) => <ProductCard key={product._id} product={product} text={text} locale={locale} />)}</div>
+          <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-3">{state.products.map((product) => <ProductCard key={product._id} product={product} text={text} locale={locale} onBuy={openBuy} />)}</div>
           <nav className="mt-7 flex flex-wrap items-center justify-center gap-3 rounded-2xl border border-[#e2e4da] bg-white px-3 py-3 shadow-sm" aria-label={bn ? "পণ্যের পৃষ্ঠা" : "Product pages"}>
             <button type="button" onClick={() => changePage(page - 1)} disabled={page <= 1} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#d8dfd3] bg-white px-4 text-sm font-bold text-[#326d48] transition hover:bg-[#f4f7f0] disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#438558]"><ArrowLeft className="h-4 w-4" aria-hidden="true" />{text.previous}</button>
             <span className="px-2 text-sm font-bold text-[#52675a]">{text.page} {formatPrice(page, locale)} {text.of} {formatPrice(Math.max(state.pagination?.pages || 1, 1), locale)}</span>
@@ -297,6 +413,47 @@ export default function MarketplaceBrowse() {
       </section>
 
       <aside className="mt-7 flex min-w-0 items-start gap-3 rounded-2xl border border-[#e3e3d8] bg-[#eff2e9] px-4 py-4 text-xs leading-5 text-[#58695b] sm:items-center sm:px-5"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white text-[#3c7b4f] shadow-sm"><Leaf className="h-4 w-4" aria-hidden="true" /></span><p>{text.source}</p></aside>
+
+      <dialog ref={buyDialogRef} aria-labelledby="marketplace-buy-title" onCancel={(event) => { event.preventDefault(); closeBuy(); }} className="w-[min(94vw,32rem)] rounded-3xl border border-[#dfe6d8] bg-white p-0 text-[#173b2a] shadow-2xl backdrop:bg-[#14281f]/55">
+        <div data-bondhu-no-fly className="p-6 sm:p-7">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 id="marketplace-buy-title" className="text-xl font-extrabold">{ordersOpen ? text.ordersTitle : text.buyTitle}</h2>
+              <p className="mt-1 text-sm leading-6 text-[#62736a]">{ordersOpen ? text.buyIntro : text.buyIntro}</p>
+            </div>
+            <button type="button" onClick={closeBuy} aria-label={text.buyCancel} className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[#d8dfd3] text-[#496254] hover:bg-[#f4f7f0]"><X className="h-4 w-4" aria-hidden="true" /></button>
+          </div>
+
+          {buyTarget && !ordersOpen ? <>
+            <p className="mt-4 break-words rounded-xl bg-[#f5f4ed] p-3 text-sm font-semibold">{buyTarget.productName} · {text.bdt} {formatPrice(buyTarget.askingPricePerUnit, locale)}/{text.unit[buyTarget.unit] || buyTarget.unit}</p>
+            <form onSubmit={confirmBuy} className="mt-4 space-y-3">
+              <label htmlFor="marketplace-buy-quantity" className="block text-sm font-bold">{text.buyQuantity}</label>
+              <input id="marketplace-buy-quantity" type="number" inputMode="decimal" min="0.01" max={buyTarget.quantity} step="any" value={buyQuantity} onChange={(event) => setBuyQuantity(event.target.value)} className="min-h-12 w-full rounded-xl border border-[#cbd7c8] bg-white px-3 text-base" />
+              <button type="submit" disabled={buyBusy} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#247A4B] px-4 text-sm font-extrabold text-white disabled:opacity-70">{buyBusy ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /> : <ShoppingBag className="h-4 w-4" aria-hidden="true" />}{buyBusy ? text.buyBusy : text.buyConfirm}</button>
+            </form>
+          </> : null}
+
+          {buyResult ? <div role="status" className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+            <p className="flex items-center gap-2 font-bold text-emerald-800"><CheckCircle2 className="h-5 w-5" aria-hidden="true" />{text.buySuccess}</p>
+            <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-emerald-900/70">{text.buyContact}</p>
+            <p className="mt-1 break-words text-base font-bold text-[#173b2a]">{buyResult.farmerContact?.name || text.noContact}</p>
+            {buyResult.farmerContact?.phone ? <a href={`tel:${buyResult.farmerContact.phone}`} className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-full bg-[#247A4B] px-4 text-sm font-bold text-white"><Phone className="h-4 w-4" aria-hidden="true" />{buyResult.farmerContact.phone}</a> : <p className="mt-2 text-sm text-[#62736a]">{text.noContact}</p>}
+            <p className="mt-3 text-xs leading-5 text-[#526761]">{text.buyNoPayment}</p>
+          </div> : null}
+
+          {ordersOpen && user ? <div className="mt-4 space-y-3">
+            {ordersLoading ? <p role="status" className="text-sm text-[#62736a]">{text.load}</p> : null}
+            {!ordersLoading && orders.length === 0 ? <p className="text-sm text-[#62736a]">{text.ordersEmpty}</p> : null}
+            {!ordersLoading && orders.map((order) => <div key={order._id} className="rounded-xl border border-[#e2e4da] bg-[#fbfcf9] p-3">
+              <p className="break-words text-sm font-bold">{order.productNameSnapshot}</p>
+              <p className="mt-1 text-xs text-[#62736a]">{order.quantity} {text.unit[order.unitSnapshot] || order.unitSnapshot} · {text.bdt} {(order.subtotalPaisa / 100).toLocaleString(bn ? "bn-BD" : "en-BD", { maximumFractionDigits: 2 })}</p>
+              <p className="mt-1 text-xs font-semibold text-[#247A4B]">{text.buyContact}: {order.farmerContact?.name || text.noContact}{order.farmerContact?.phone ? ` · ${order.farmerContact.phone}` : ""}</p>
+            </div>)}
+          </div> : null}
+
+          {buyError ? <div role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-800">{buyError}{!user ? <Link href="/login?redirect=%2Fmarketplace" className="mt-2 block font-bold underline">{text.buyNeedLogin}</Link> : null}</div> : null}
+        </div>
+      </dialog>
     </div>
   </div>;
 }
