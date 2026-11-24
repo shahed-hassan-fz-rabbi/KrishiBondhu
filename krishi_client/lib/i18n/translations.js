@@ -1344,7 +1344,7 @@ export const translations = {
       // ===== PART 2 — Homepage Redesign =====
       heroEyebrow: "বাংলাদেশের কৃষকের জন্য · বাংলা ও ইংরেজিতে",
       heroHeadlineLine1: "কৃষির প্রতিটি ধাপে,",
-      heroHeadlineLine2: "স্মার্ট সমাধান আপনার হাতে।",
+      heroHeadlineLine2: "বীজ থেকে বাজারে।",
       heroDescriptionBn: "বাজারদর, আবহাওয়া ও ফসলের তথ্য জানুন সহজেই। কোন ফসল করবেন তা বাছা থেকে বপন, পরিচর্যা ও বিক্রির পরিকল্পনা—কৃষকের দরকারি তথ্য ও সরঞ্জাম এক জায়গায়, নিজের ভাষায়।",
       ctaMarketBn: "বাজারদর দেখুন",
       ctaAssistantBn: "এআই সহকারীকে জিজ্ঞাসা করুন",

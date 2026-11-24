@@ -195,10 +195,16 @@ export default function WeatherIntelligenceSection({ locationCode = "chattogram"
     );
   }
 
-  const { location, shortRangeSummary, risks, operationalGuidance, subSeasonalOutlookSummary, seasonalOutlookSummary, provenance } = data;
-  const currentCondition = shortRangeSummary?.currentCondition;
-  const alerts = risks?.alerts || [];
-  const overallRisk = risks?.overallRiskLevel || "DATA_INSUFFICIENT";
+  const { location, shortRangeSummary, risks, operationalGuidance, subSeasonalOutlookSummary, seasonalOutlookSummary } = data;
+  const provenance = data.provenance || {};
+  const forecastStale = Boolean(provenance.isForecastStale || provenance.forecastDataStatus === "STALE");
+  const seasonalStale = Boolean(provenance.isSeasonalStale || provenance.seasonalDataStatus === "STALE");
+  const forecastDataWithheld = provenance.forecastDataStatus !== "AVAILABLE" || Boolean(provenance.isForecastStale);
+  const seasonalDataWithheld = provenance.seasonalDataStatus !== "AVAILABLE" || Boolean(provenance.isSeasonalStale);
+  // Fail closed when the source marks this response unavailable or stale.
+  const currentCondition = forecastDataWithheld ? null : shortRangeSummary?.currentCondition;
+  const alerts = forecastDataWithheld ? [] : risks?.alerts || [];
+  const overallRisk = forecastDataWithheld ? "DATA_INSUFFICIENT" : risks?.overallRiskLevel || "DATA_INSUFFICIENT";
   const locName = locale === "bn" ? location?.nameBn || location?.nameEn : location?.nameEn;
 
   return (
@@ -247,6 +253,19 @@ export default function WeatherIntelligenceSection({ locationCode = "chattogram"
           </div>
         )}
       </div>
+
+      {(forecastDataWithheld || seasonalDataWithheld) && (
+        <div className="mt-5 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-xs leading-5 text-content" role="status">
+          {[
+            forecastDataWithheld && (locale === "bn"
+              ? (forecastStale ? "পূর্বাভাসের ক্যাশ করা তথ্য পুরোনো; নতুন তথ্য না পাওয়া পর্যন্ত পূর্বাভাস ও ঝুঁকি পরামর্শ দেখানো হচ্ছে না।" : "এই সময়সীমার পূর্বাভাসের তথ্য অপ্রাপ্য; ঝুঁকি মূল্যায়ন ও পরামর্শ দেখানো হচ্ছে না।")
+              : (forecastStale ? "Cached forecast data is stale; forecast and risk guidance are withheld until fresh data is available." : "Forecast data is unavailable for this range; risk assessments and guidance are withheld.")),
+            seasonalDataWithheld && (locale === "bn"
+              ? (seasonalStale ? "মৌসুমি পূর্বাভাসের ক্যাশ করা তথ্য পুরোনো; নতুন তথ্য না পাওয়া পর্যন্ত এটি দেখানো হচ্ছে না।" : "এই সময়সীমার মৌসুমি পূর্বাভাসের তথ্য অপ্রাপ্য; এটি দেখানো হচ্ছে না।")
+              : (seasonalStale ? "Cached seasonal outlook data is stale; it is withheld until fresh data is available." : "Seasonal outlook data is unavailable for this range and is withheld.")),
+          ].filter(Boolean).join(" ")}
+        </div>
+      )}
 
       {/* 1. Agricultural Weather Risk Alerts Banner */}
       {alerts.length > 0 ? (
@@ -391,7 +410,7 @@ export default function WeatherIntelligenceSection({ locationCode = "chattogram"
       {activeTab === "shortRange" && (
         <div className="mt-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-            {(data.shortRangeForecast || []).map((day, idx) => {
+            {(forecastDataWithheld ? [] : data.shortRangeForecast || []).map((day, idx) => {
               const { dayName, dayMonth } = formatForecastDate(day.date, locale);
               const isToday = idx === 0;
 
@@ -454,7 +473,7 @@ export default function WeatherIntelligenceSection({ locationCode = "chattogram"
       {activeTab === "extended" && (
         <div className="mt-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-            {(data.extendedForecast || []).slice(0, 7).map((day, idx) => {
+            {(forecastDataWithheld ? [] : data.extendedForecast || []).slice(0, 7).map((day, idx) => {
               const { dayName, dayMonth } = formatForecastDate(day.date, locale);
               const isHighlighted = idx === 0;
 
@@ -517,7 +536,7 @@ export default function WeatherIntelligenceSection({ locationCode = "chattogram"
       {activeTab === "subSeasonal" && (
         <div className="mt-4 space-y-4">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {(subSeasonalOutlookSummary || []).map((w) => (
+            {(seasonalDataWithheld ? [] : subSeasonalOutlookSummary || []).map((w) => (
               <div key={w.weekNumber} className="rounded-2xl border border-emerald/20 bg-emerald/5 p-5 flex flex-col justify-between shadow-sm transition-colors hover:border-emerald/40 dark:border-emerald/25 dark:bg-emerald/10">
                 <div>
                   <div className="flex items-center justify-between">
@@ -571,7 +590,7 @@ export default function WeatherIntelligenceSection({ locationCode = "chattogram"
       {/* Tab 4: Seasonal Months 1-3 */}
       {activeTab === "seasonal" && (
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          {(seasonalOutlookSummary || []).map((m) => (
+          {(seasonalDataWithheld ? [] : seasonalOutlookSummary || []).map((m) => (
             <article key={m.monthIndex} className="flex h-full flex-col rounded-2xl border border-emerald/25 bg-emerald/5 p-4 shadow-sm dark:bg-emerald/10">
               <div className="flex items-center gap-2">
                 <span className="rounded-lg bg-emerald/10 p-1.5 text-emerald"><Calendar className="h-4 w-4" aria-hidden="true" /></span>
@@ -603,7 +622,7 @@ export default function WeatherIntelligenceSection({ locationCode = "chattogram"
       )}
 
       {/* 3. Agronomic Operational Guidance Cards */}
-      {operationalGuidance && (
+      {!forecastDataWithheld && operationalGuidance && (
         <div className="mt-6">
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted">
             {locale === "bn" ? "মাঠ পর্যায়ের কৃষিজ সিদ্ধান্ত ও অপারেশনাল উইন্ডো" : "Agronomic Operational Decision Windows"}

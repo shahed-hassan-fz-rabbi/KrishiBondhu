@@ -58,8 +58,8 @@ test("My Farm: Client Services & Upazila Registry Suite", async (t) => {
     assert.ok(translations.en.myFarm);
     assert.ok(translations.bn.myFarm);
 
-    assert.equal(translations.en.nav.myFarm, "My Farm");
-    assert.equal(translations.bn.nav.myFarm, "আমার খামার");
+    assert.equal(translations.en.nav.myFarm, "My Field");
+    assert.equal(translations.bn.nav.myFarm, "আমার মাঠ");
 
     assert.ok(translations.en.myFarm.title);
     assert.ok(translations.bn.myFarm.title);
