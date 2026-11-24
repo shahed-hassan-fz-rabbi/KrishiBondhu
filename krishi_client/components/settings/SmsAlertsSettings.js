@@ -106,7 +106,7 @@ export function SmsAlertsSettings() {
   const switchClass = "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-50";
 
   return (
-    <section aria-labelledby="sms-alerts-heading" className="rounded-2xl border border-line bg-surface p-5 shadow-km-sm sm:p-6">
+    <section aria-labelledby="sms-alerts-heading" data-bondhu-no-fly className="rounded-2xl border border-line bg-surface p-5 shadow-km-sm sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3">
           <span className="rounded-xl bg-emerald/10 p-2.5 text-emerald"><Bell size={20} aria-hidden="true" /></span>

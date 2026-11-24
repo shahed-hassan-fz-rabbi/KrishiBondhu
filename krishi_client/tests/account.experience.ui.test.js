@@ -43,6 +43,7 @@ test("Profile settings only expose current persisted preferences and existing ac
   assert.match(settings, /await logout\(\)/);
   assert.match(settings, /aria-label=\{bn \? "লগআউট নিশ্চিত করুন" : "Confirm sign out"\}/);
   assert.match(settings, /changePassword\(currentPassword, newPassword\)/);
+  assert.match(settings, /data-bondhu-no-fly/g);
   assert.match(settings, /updateProfile\(\{ avatarUrl: dataUrl \}\)/);
   assert.doesNotMatch(settings, /deleteAccount|resetPassword/);
 });
