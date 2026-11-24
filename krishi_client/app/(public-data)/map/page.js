@@ -88,6 +88,11 @@ function MapPage() {
     setLoading(true);
     setError(null);
     setUpazilaError(null);
+    setLayersData(null);
+    setBoundaryData(null);
+    setUpazilaData(null);
+    setSelectedUpazila(null);
+    setSelectedLocation((previous) => previous?.districtCode === districtCode ? previous : null);
     try {
       const [layerRes, boundaryRes, upazilaRes] = await Promise.all([
         fetchGisLayers(districtCode),
@@ -117,31 +122,44 @@ function MapPage() {
   }, [isBn]);
 
   useEffect(() => {
-    if (selectedDistrict) loadMapData(selectedDistrict);
+    if (!selectedDistrict) return undefined;
+    const timer = window.setTimeout(() => { void loadMapData(selectedDistrict); }, 0);
+    return () => {
+      window.clearTimeout(timer);
+      mapRequestRef.current += 1;
+    };
   }, [selectedDistrict, loadMapData]);
 
   useEffect(() => () => { mapRequestRef.current += 1; forecastRequestRef.current += 1; }, []);
 
   useEffect(() => {
     if (!selectedLocation) return undefined;
-    const requestId = ++forecastRequestRef.current;
     let cancelled = false;
-    setForecastLoading(true);
-    setForecastError(null);
-    fetchWeatherForecast({ latitude: selectedLocation.latitude, longitude: selectedLocation.longitude })
-      .then(result => {
-        if (cancelled || requestId !== forecastRequestRef.current) return;
-        if (!result?.success || !result.data) throw new Error(result?.message || (isBn ? "আবহাওয়ার পূর্বাভাস পাওয়া যায়নি" : "Forecast is unavailable"));
-        setForecast(result.data);
-      })
-      .catch(err => {
-        if (!cancelled && requestId === forecastRequestRef.current) {
-          setForecast(null);
-          setForecastError(err?.message || (isBn ? "পূর্বাভাস লোড করা যায়নি" : "Could not load forecast"));
-        }
-      })
-      .finally(() => { if (!cancelled && requestId === forecastRequestRef.current) setForecastLoading(false); });
-    return () => { cancelled = true; };
+    const timer = window.setTimeout(() => {
+      if (cancelled) return;
+      const requestId = ++forecastRequestRef.current;
+      setForecast(null);
+      setForecastLoading(true);
+      setForecastError(null);
+      fetchWeatherForecast({ latitude: selectedLocation.latitude, longitude: selectedLocation.longitude })
+        .then(result => {
+          if (cancelled || requestId !== forecastRequestRef.current) return;
+          if (!result?.success || !result.data) throw new Error(result?.message || (isBn ? "আবহাওয়ার পূর্বাভাস পাওয়া যায়নি" : "Forecast is unavailable"));
+          setForecast(result.data);
+        })
+        .catch(err => {
+          if (!cancelled && requestId === forecastRequestRef.current) {
+            setForecast(null);
+            setForecastError(err?.message || (isBn ? "পূর্বাভাস লোড করা যায়নি" : "Could not load forecast"));
+          }
+        })
+        .finally(() => { if (!cancelled && requestId === forecastRequestRef.current) setForecastLoading(false); });
+    }, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      forecastRequestRef.current += 1;
+    };
   }, [selectedLocation, isBn]);
 
   const toggleLayer = key => setActiveLayers(previous => ({ ...previous, [key]: !previous[key] }));
