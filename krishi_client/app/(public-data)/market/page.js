@@ -254,17 +254,17 @@ export default function MarketPage() {
     <MarketPriceExplorer locale={locale} />
 
     <section className="mb-8 grid gap-6 lg:grid-cols-[1.25fr_.75fr]">
-      <article className="overflow-hidden rounded-2xl border border-[#dfd7c4] bg-[#fbf7ec]">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e7e0d0] p-5"><div><h2 className="text-xl font-bold text-[#173B2A]">{c.report}</h2><p className="mt-1 text-sm text-[#62736A]">{c.department}</p></div><a className="inline-flex items-center gap-2 rounded-full bg-[#247A4B] px-4 py-2.5 text-sm font-bold text-white" href={reportUrl} target="_blank" rel="noreferrer">{c.openReport} <ExternalLink size={15}/></a></div>
-        <div data-bondhu-no-fly className="px-5 py-8 sm:px-6">
-          <div className="flex flex-col items-start gap-4 rounded-2xl border border-dashed border-[#c9d3bd] bg-white/70 p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-[#173B2A]">{bn ? "শুধু অফিশিয়াল উৎসে দেখুন" : "View it at the official source"}</p>
-              <p className="mt-1 max-w-xl text-sm leading-6 text-[#62736A]">{c.reportHint}</p>
-            </div>
-            <a className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-[#247A4B] px-5 text-sm font-bold text-white" href={reportUrl} target="_blank" rel="noreferrer">{c.openReport} <ExternalLink size={15}/></a>
+      {/* No embedded DAM preview anywhere: only a single link to the official source. */}
+      <article data-bondhu-no-fly className="rounded-2xl border border-[#dfd7c4] bg-[#fbf7ec] p-5 sm:p-6">
+        <div className="flex items-start gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white text-[#247A4B] shadow-sm"><ExternalLink size={20} aria-hidden="true" /></span>
+          <div className="min-w-0">
+            <h2 className="text-xl font-bold text-[#173B2A]">{c.report}</h2>
+            <p className="mt-1 text-sm text-[#62736A]">{c.department}</p>
           </div>
         </div>
+        <p className="mt-4 max-w-xl text-sm leading-6 text-[#62736A]">{c.reportHint}</p>
+        <a className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#247A4B] px-5 text-sm font-bold text-white hover:bg-[#1b633d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#247A4B]" href={reportUrl} target="_blank" rel="noreferrer">{c.openReport} <ExternalLink size={15} aria-hidden="true" /></a>
       </article>
       <article className="h-fit rounded-2xl border border-[#dfd7c4] bg-[#fbf7ec] p-5 sm:p-6 shadow-sm">
         <div className="flex items-center justify-between">

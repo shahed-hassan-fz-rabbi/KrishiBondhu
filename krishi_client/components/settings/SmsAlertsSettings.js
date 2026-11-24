@@ -169,19 +169,21 @@ export function SmsAlertsSettings() {
           <p className="text-sm font-bold text-content">{t("smsAlerts.pipelineTitle")}</p>
           <span className="inline-flex min-h-7 items-center rounded-full bg-amber/15 px-3 text-[11px] font-bold uppercase tracking-wide text-amber-strong">{t("smsAlerts.dryRunBadge")}</span>
         </div>
-        <ol className="mt-4 grid gap-3 sm:grid-cols-4">
+        {/* Auto-fit keeps cards readable even when the settings column is narrow
+            on a wide screen; each card stacks its icon/number above the copy. */}
+        <ol className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
           {[
             { icon: ShieldCheck, key: "pipelineStep1" },
             { icon: Workflow, key: "pipelineStep2" },
             { icon: Database, key: "pipelineStep3" },
             { icon: Send, key: "pipelineStep4" },
           ].map(({ icon: Icon, key }, index) => (
-            <li key={key} className="flex gap-2 rounded-xl border border-line bg-surface/80 p-3">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald/10 text-emerald"><Icon size={16} aria-hidden="true" /></span>
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-wide text-emerald">{index + 1}</p>
-                <p className="mt-0.5 text-xs font-semibold leading-5 text-content">{t(`smsAlerts.${key}`)}</p>
+            <li key={key} className="flex min-w-0 flex-col gap-2.5 rounded-xl border border-line bg-surface/80 p-3 sm:p-4">
+              <div className="flex items-center gap-2">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald/10 text-emerald"><Icon size={17} aria-hidden="true" /></span>
+                <span className="text-[11px] font-extrabold tracking-[.14em] text-emerald/80">{String(index + 1).padStart(2, "0")}</span>
               </div>
+              <p className="text-sm font-semibold leading-5 text-content">{t(`smsAlerts.${key}`)}</p>
             </li>
           ))}
         </ol>

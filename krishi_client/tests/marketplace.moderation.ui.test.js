@@ -78,6 +78,8 @@ test("official daily report is referenced at the source, not embedded", () => {
   assert.doesNotMatch(page, /<iframe/);
   assert.match(page, /REPORT_BASE_URL/);
   assert.match(page, /target="_blank" rel="noreferrer"/);
-  assert.match(page, /official source/i);
+  assert.match(page, /official DAM source/i);
   assert.match(page, /we do not host or republish/i);
+  assert.match(page, /openReport:/);
+  assert.match(page, /max-w-xl text-sm leading-6/);
 });
