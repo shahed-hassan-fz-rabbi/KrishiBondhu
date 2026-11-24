@@ -6,10 +6,13 @@
 export const assistantTools = [
   {
     name: "getCropKnowledge",
-    description: "Retrieve source-linked Bangladesh crop information and the deterministic Python crop-management reference for the KrishiBondhu catalog. Use this before answering crop-specific questions. Returns source links and field-by-field status for lifecycle, timing, water, fertilizer and compost. Only report verified/verified_limited values and their applicability/unit; disclose fields marked not_verified. This is retrieval, not model training or personalized soil-test advice. Never extrapolate quantities or convert units. For district-specific seasonal planning, also use getCropCalendarAdvisory and disclose when no district calendar is available.",
+    description: "Retrieve source-linked Bangladesh crop information, the deterministic Python crop-management reference, and any inspected variety-specific BRRI/BARI guide for the KrishiBondhu catalog. Use this before answering crop-specific questions. If a farmId is in context, resolve the variety only from that farmer's own farm record. Returns source links and field-by-field status for lifecycle, timing, water, fertilizer and compost. Only report verified/verified_limited values and their applicability/unit; disclose fields marked not_verified. This is retrieval, not model training or personalized soil-test advice. Never extrapolate quantities or convert units. For district-specific seasonal planning, also use getCropCalendarAdvisory and disclose when no district calendar is available.",
     parameters: {
       type: "OBJECT",
-      properties: { crop: { type: "STRING", description: "Crop name or catalog code in Bangla or English." } },
+      properties: {
+        crop: { type: "STRING", description: "Crop name or catalog code in Bangla or English." },
+        variety: { type: "STRING", description: "Optional exact variety, e.g. BRRI dhan87. When omitted and a farm is selected, use the variety from that farmer's own farm record." },
+      },
       required: ["crop"],
     },
   },

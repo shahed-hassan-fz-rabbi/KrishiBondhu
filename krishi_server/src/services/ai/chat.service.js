@@ -8,7 +8,7 @@ import crypto from "crypto";
 import { geminiAssistantClient } from "./gemini.client.js";
 import { toolExecutors } from "./tools.executor.js";
 import { DISTRICTS } from "../../config/climate.config.js";
-import { getCropByCode, loadCropCatalog } from "../cropcatalog.service.js";
+import { getCropByCode, getCropKnowledge, loadCropCatalog } from "../cropcatalog.service.js";
 
 const VALID_DISTRICT_CODES = new Set(DISTRICTS.map((d) => d.code));
 
@@ -91,6 +91,165 @@ function isMarketQuestion(message) {
   return /\b(price|market)\b|দাম|দর|বাজার/i.test(String(message || ""));
 }
 
+/** Identify the farmer's current question before using farm/profile context. */
+export function detectAgriculturalIntent(message) {
+  const text = String(message || "").toLocaleLowerCase();
+  const has = (pattern) => pattern.test(text);
+  const reportedStage = has(/ফুল\s*(এসেছে|ফুটেছে|দিয়েছে|আসছে)|শীষে\s*ফুল|flowering|bloom(?:ing)?|flowers?\s+(?:have\s+)?appeared|ful\s+(?:esheche|ashche|futeche)/i)
+    ? "flowering"
+    : has(/কাইচথোড়|থোড়|booting|panicle initiation/i) ? "booting"
+      : has(/অঙ্কুর|চারা|seedling|germination/i) ? "seedling"
+        : has(/পাকার পর্যায়|ধান পেকেছে|maturity|ripening/i) ? "ripening" : null;
+
+  let category;
+  if (has(/ফুল\s*(এসেছে|ফুটেছে|দিয়েছে|আসছে)|শীষে\s*ফুল|flowering|bloom(?:ing)?|flowers?\s+(?:have\s+)?appeared|ful\s+(?:esheche|ashche|futeche)/i)) category = "flowering_stage";
+  else if (has(/দাম|দর|বাজার|price|market|মূল্য/i)) category = "market_price";
+  else if (has(/মাজরা|পোকা|কীট|রোগ|পাতা হলুদ|হলুদ হয়ে|হলুদ হয়ে|দাগ|blight|pest|insect|disease|yellow(?:ing)? leaves?|stem borer/i)) category = "pest_disease";
+  else if (has(/আগাছা|নিড়ানি|নিড়ানি|weed/i)) category = "weed_management";
+  else if (has(/সার|ইউরিয়া|ইউরিয়া|fertili[sz]er|urea|nutrient/i)) category = "fertilizer_management";
+  else if (has(/পানি|জল|সেচ|আর্দ্রতা|irrigat|water (?:level|how much|management)|moisture/i)) category = "irrigation_management";
+  else if (has(/মাটি|soil|জমির ধরন/i)) category = "soil_management";
+  else if (has(/কাটব|কাটা|কর্তন|harvest|cutting time/i)) category = "harvesting";
+  else if (has(/আবহাওয়া|আবহাওয়া|বৃষ্টি|বৃষ্টিপাত|তাপমাত্রা|weather|rain|temperature|forecast/i)) category = "weather_advice";
+  else if (reportedStage || has(/পর্যায়|পর্যায়|বৃদ্ধি|জীবনচক্র|growth stage|crop stage|lifecycle/i)) category = "crop_growth_stage";
+  else category = "general_agriculture";
+
+  return { category, farmerReportedStage: reportedStage };
+}
+
+export function isContextualFollowUp(message) {
+  const text = String(message || "").trim().toLocaleLowerCase();
+  // Clear, self-contained topic questions should not inherit stale assistant answers.
+  if (detectAgriculturalIntent(text).category !== "general_agriculture") return false;
+  return text.length < 100 && (/^(?:আর|তাহলে|এখন|এটা|ওটা|সেটা|এরপর|এক্ষেত্রে|কেন এমন|আরও|তবে)(?:\s|$)/.test(text)
+    || /^(?:what about|and then|why is that|how about|it\b|that\b|also\b)/i.test(text));
+}
+
+function findCropInMessage(message, selectedCrop) {
+  const catalog = loadCropCatalog().crops;
+  const text = String(message || "").toLocaleLowerCase();
+  const labels = catalog.flatMap((item) => [item.nameBn, item.nameEn, ...(item.aliasesBn || []), ...(item.aliasesEn || [])]
+    .filter(Boolean).map((label) => ({ item, label: String(label).toLocaleLowerCase() })));
+  labels.sort((a, b) => b.label.length - a.label.length);
+  const mentioned = labels.find(({ label }) => /^[a-z0-9 _-]+$/.test(label)
+    ? new RegExp(`(^|[^a-z0-9])${label.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}([^a-z0-9]|$)`, "i").test(text)
+    : text.includes(label))?.item || null;
+  if (mentioned) return mentioned;
+  const selected = getCropByCode(selectedCrop);
+  if (selected) return selected;
+  if (/(ধান|\brice\b|\bdhan\b)/i.test(text)) {
+    return { code: null, nameBn: "ধান", nameEn: "rice", calendarAvailable: false };
+  }
+  return null;
+}
+
+function sourceOrganizationsFor(field, knowledge) {
+  const ids = field?.sourceIds || [];
+  const sources = [...(knowledge?.sources || []), ...(knowledge?.managementGuide?.sources || [])];
+  return sources.filter((source) => ids.includes(source.id));
+}
+
+export function buildIntentCropFallback({ intent, reportedStage, crop, knowledge, calendar, estimatedStage, message, conversationId }) {
+  const bn = isBanglaMessage(message);
+  const language = bn ? "bn" : "en";
+  const fields = knowledge?.managementGuide?.fields || {};
+  const fieldKey = intent === "fertilizer_management" ? "fertilizer"
+    : intent === "irrigation_management" || intent === "flowering_stage" ? "water"
+      : intent === "harvesting" ? "timing"
+        : intent === "crop_growth_stage" ? "lifecycle" : null;
+  const field = fieldKey ? fields[fieldKey] : null;
+  const fieldVerified = String(field?.status || "").startsWith("verified") && field?.value;
+  const localizedFieldValue = bn ? field?.valueBn : field?.value;
+  const isVerified = Boolean(fieldVerified && localizedFieldValue);
+  const flowering = calendar?.criticalStages?.find((stage) => /flower|ফুল|panicle/i.test(`${stage.stageId} ${stage.nameBn} ${stage.nameEn}`));
+  const sources = [];
+  const provenance = [];
+  const limitations = [];
+  let answer;
+  if (intent === "pest_disease") {
+    const namesStemBorer = /মাজরা|stem\s*borer/i.test(message);
+    if (namesStemBorer) {
+      const stageRisk = calendar?.criticalStages?.find((stage) => /tiller|কুশি/i.test(`${stage.stageId} ${stage.nameBn} ${stage.nameEn}`))?.weatherHazards;
+      answer = bn
+        ? `আপনি মাজরা পোকার কথা বলেছেন। শুধু এই বর্ণনা থেকে আক্রমণের মাত্রা বা প্রতিকার নির্ধারণ করা যাচ্ছে না${stageRisk ? "; BAMIS পঞ্জিকায় কুশি পর্যায়ে মাজরা পোকার ঝুঁকির কথা উল্লেখ আছে" : ""}। আক্রান্ত কুশি/ডেড হার্ট কতটি, জমির কত অংশে আছে এবং গাছের বয়স—এগুলো জানান বা পরিষ্কার ছবি দিন। যাচাইকৃত প্রতিকার না থাকায় কীটনাশকের নাম বা মাত্রা বলছি না; স্থানীয় DAE কর্মকর্তাকে দেখান।`
+        : `You reported stem borer. This description is not enough to establish the infestation level or choose a treatment${stageRisk ? `; the BAMIS calendar notes stem-borer risk at tillering (${stageRisk})` : ""}. Share the crop age, the number of affected tillers/dead hearts, the affected field area, or a clear photo. No verified treatment was retrieved, so I will not guess a pesticide or dose; ask a local DAE officer to inspect it.`;
+      if (stageRisk && calendar?.officialSources?.length) {
+        sources.push("BAMIS / Department of Agricultural Extension");
+        provenance.push(...calendar.officialSources);
+      }
+    } else {
+      answer = bn
+        ? `${crop?.nameBn || "ফসল"}-এর পাতা হলুদ হওয়ার কারণ শুধু এই লক্ষণ দিয়ে নিশ্চিত করা যায় না—পুষ্টির ঘাটতি, পানি বা রোগসহ একাধিক কারণ থাকতে পারে। কোন পাতায় আগে শুরু হয়েছে, দাগ আছে কি না, জমির কত অংশে হয়েছে এবং সাম্প্রতিক সার/সেচের তথ্য দিন; আক্রান্ত পাতার দুই পাশের ছবি দিলে বোঝা সহজ হবে। নিশ্চিত শনাক্তকরণ ছাড়া সার বা কীটনাশক প্রয়োগ করবেন না; স্থানীয় DAE কর্মকর্তাকে দেখান।`
+        : `Yellow leaves on ${crop?.nameEn || "the crop"} cannot be diagnosed from this symptom alone; nutrient issues, water conditions, and disease can have overlapping signs. Tell me which leaves yellowed first, whether there are spots, how much of the field is affected, and recent fertilizer/irrigation. Photos of both leaf sides can help. Do not apply fertilizer or pesticide before confirming the cause; consult a local DAE officer.`;
+    }
+    limitations.push("No verified diagnosis or crop-specific treatment record was retrieved; no pesticide recommendation is made.");
+  } else if (intent === "weed_management") {
+    const note = knowledge?.varietyGuides?.find((guide) => guide.facts?.weedManagement)?.facts?.weedManagement;
+    if (note && knowledge?.varietyGuides?.[0]?.source?.url) {
+      const guide = knowledge.varietyGuides.find((item) => item.facts?.weedManagement);
+      answer = bn ? guide.facts.weedManagement.bn : guide.facts.weedManagement.en;
+      sources.push(guide.source.organization);
+      provenance.push(`${guide.source.title}: ${guide.source.url}`);
+      limitations.push(guide.applicabilityNote || "Variety-specific source; confirm the variety and local field conditions.");
+    } else {
+      answer = bn ? `${crop?.nameBn || "এই ফসল"}-এর জন্য যাচাইকৃত আগাছা-নিয়ন্ত্রণ পদ্ধতি এই তথ্যভান্ডারে পাওয়া যায়নি। জমির অবস্থা ও ফসলের বয়স না জেনে হার্বিসাইডের নাম বা মাত্রা বলা হবে না। ফসলের জাত ও আগাছার ছবি দিলে DAE কর্মকর্তার সঙ্গে মিলিয়ে পরামর্শ দেওয়া যাবে।`
+        : `A verified weed-control method for ${crop?.nameEn || "this crop"} was not found in the retrieved records. Herbicide names or rates should not be guessed without the crop age and field conditions. Share the variety and a weed photo, and confirm options with a DAE extension officer.`;
+      limitations.push("No verified crop-specific weed-control record was retrieved.");
+    }
+  } else if (intent === "flowering_stage") {
+    if (flowering) {
+      const risk = flowering.weatherHazards || "";
+      const riskBn = /moisture deficit.*sterility/i.test(risk)
+        ? "পানির ঘাটতিতে ফুলের পর্যায়ে দানা না বাঁধার ঝুঁকি থাকে।"
+        : risk ? "এই পর্যায়ের ঝুঁকি BAMIS পঞ্জিকায় উল্লেখ আছে; নিচের সূত্রে বিস্তারিত দেখুন।" : "";
+      answer = bn
+        ? `আপনি মাঠে ধানে ফুল আসার কথা জানিয়েছেন; তাই এই উত্তরে ক্যালেন্ডারের অনুমানের বদলে আপনার দেখা পর্যায় ধরা হয়েছে। ${riskBn || "এই পর্যায়ের কার্যকর পরিচর্যার নির্দিষ্ট নির্দেশনা উদ্ধার করা যায়নি।"}\n\n${isVerified ? `পানির তথ্য: ${localizedFieldValue}` : "ফুল আসার পর্যায়ে সেচের নির্দিষ্ট গভীরতা বা পরিমাণের নির্ভুল বাংলা নির্দেশনা নেই; তাই কোনো মাত্রা বলছি না।"} জমিতে পানি জমে আছে কি না দেখে স্থানীয় DAE কর্মকর্তার সঙ্গে প্রয়োজন মিলিয়ে নিন; উৎসে নেই এমন সার/পানির মাত্রা প্রয়োগ করবেন না.`
+        : `You reported that the rice is flowering, so this answer uses your field observation rather than a calendar estimate. ${risk ? `The BAMIS ${calendar.district} calendar for ${calendar.nameEn} notes at this stage: ${risk}` : "No stage-specific field instruction was retrieved."}\n\nWater guidance: ${isVerified ? field.value : "A verified irrigation depth or quantity for flowering was not available, so no rate is given."} Check the field before irrigating; do not add water or fertilizer at an unsupported rate.`;
+      if (estimatedStage && !/flower|ফুল|panicle_flowering/i.test(estimatedStage)) {
+        answer += bn
+          ? `\n\nআপনার দেখা ফুল আসার পর্যায়টি গ্রহণ করেছি। রোপণের তারিখভিত্তিক BAMIS ক্যালেন্ডারের অনুমান (${estimatedStage}) মাঠের পর্যায়ের সঙ্গে নাও মিলতে পারে।`
+          : `\n\nI used your observed flowering stage. The planting-date-based BAMIS calendar estimate (${estimatedStage}) may differ from the field.`;
+      }
+      sources.push("BAMIS / Department of Agricultural Extension");
+      provenance.push(...(calendar.officialSources || []));
+      sources.push("Agricultural Information Service (AIS), DAE");
+      provenance.push("AIS: Rice water-saving irrigation technology; supplementary irrigation during drought at Aman flowering: https://ais.gov.bd/pages/krishi-kotha/%E0%A6%A7%E0%A6%BE%E0%A6%A8-%E0%A6%9A%E0%A6%BE%E0%A6%B7%E0%A7%87-%E0%A6%AA%E0%A6%BE%E0%A6%A8%E0%A6%BF-%E0%A6%B8%E0%A6%BE%E0%A6%B6%E0%A7%8D%E0%A6%B0%E0%A7%9F%E0%A7%80-%E0%A6%B8%E0%A7%87%E0%A6%9A-%E0%A6%AA%E0%A7%8D%E0%A6%B0%E0%A6%AF%E0%A7%81%E0%A6%95%E0%A7%8D%E0%A6%A4%E0%A6%BF-072cec-6922d94fdbfbab28ce04b1e8");
+      if (isVerified) sources.push(...sourceOrganizationsFor(field, knowledge).map((source) => source.organization));
+      limitations.push("Calendar stage is an estimate; farmer-reported flowering stage was treated as the observed stage. Stage water amount is not an irrigation-depth prescription.");
+    } else {
+      answer = bn ? "আপনি ধানে ফুল আসার কথা বলেছেন, কিন্তু ফসল/মৌসুম বা জেলা নিশ্চিত নয়। কোন ধানের জাত ও কোন জেলা? এগুলো জানালে সংশ্লিষ্ট যাচাইকৃত নির্দেশনা মিলিয়ে বলব।" : "You reported flowering, but the rice season/variety or district is unclear. Which rice variety and district? I can then check the relevant verified guidance.";
+      limitations.push("Clarification is needed to select an applicable official crop calendar.");
+    }
+  } else if (isVerified) {
+    const fieldSources = sourceOrganizationsFor(field, knowledge);
+    sources.push(...fieldSources.map((source) => source.organization));
+    provenance.push(...fieldSources.map((source) => `${source.title}: ${source.url}`));
+    answer = bn
+      ? `${crop?.nameBn || "ফসল"}-এর ${intent === "irrigation_management" ? "পানি ব্যবস্থাপনা" : intent === "fertilizer_management" ? "সার ব্যবস্থাপনা" : intent === "harvesting" ? "কর্তনের সময়" : "বৃদ্ধির তথ্য"} সম্পর্কে যাচাইকৃত রেফারেন্সে বলা হয়েছে: ${localizedFieldValue}${field.unitBn ? ` (${field.unitBn})` : ""}।\n\nএটি উৎসে থাকা সাধারণ নির্দেশনা; আপনার জমির মাটি পরীক্ষা বা স্থানীয় অবস্থা অনুযায়ী আলাদা সুপারিশ নয়। আগে প্রয়োগ করা সার/পানি ও জমির অবস্থা মিলিয়ে নিন; প্রয়োজনে স্থানীয় DAE কর্মকর্তার পরামর্শ নিন।`
+      : `The verified reference for ${crop?.nameEn || "the crop"} ${intent === "irrigation_management" ? "water management" : intent === "fertilizer_management" ? "fertilizer management" : intent === "harvesting" ? "harvest timing" : "growth"} says: ${field.value}${field.unit ? ` (${field.unit})` : ""}.\n\nThis is general source guidance, not a field-specific prescription based on your soil test. Check what has already been applied and the field conditions; consult a local DAE officer if needed.`;
+    limitations.push("General crop reference; applicability depends on season, variety, district, soil test, and previous applications.");
+  } else {
+    if (fieldVerified && bn) {
+      const fieldSources = sourceOrganizationsFor(field, knowledge);
+      sources.push(...fieldSources.map((source) => source.organization));
+      provenance.push(...fieldSources.map((source) => `${source.title}: ${source.url}`));
+      answer = `${crop?.nameBn || "এই ফসল"}-এর বিষয়ে যাচাইকৃত উৎসের তথ্য আছে, তবে তার নির্ভুল বাংলা অনুবাদ এই সিস্টেমে সংরক্ষিত নেই। ভুলভাবে অনুবাদ করে মাত্রা বা সময় বলছি না। নিচের উৎস দেখুন অথবা স্থানীয় DAE কর্মকর্তার সঙ্গে মিলিয়ে নিন।`;
+      limitations.push("Verified English reference exists, but a reviewed Bangla translation is unavailable.");
+      return { answer, language, sources: [...new Set(sources)], dataDate: null, dataQuality: "verified_translation_unavailable", provenance: [...new Set(provenance)], limitations, conversationId, meta: { model: "intent-grounded-crop-retrieval", toolsCalled: [] } };
+    }
+    answer = bn
+      ? `${crop?.nameBn || "এই ফসল"}-এর জন্য ${intent === "fertilizer_management" ? "সারের মাত্রা" : intent === "irrigation_management" ? "সেচের নির্দিষ্ট মাত্রা" : intent === "harvesting" ? "কর্তনের উপযুক্ত সময়" : "পর্যায়ভিত্তিক পরিচর্যার"} নির্ভরযোগ্য, যাচাইকৃত তথ্য পাওয়া যায়নি। অনুমান করে মাত্রা বা সময় বলছি না। জাত, জেলা ও মাঠের বর্তমান অবস্থা জানালে প্রযোজ্য সরকারি উৎস খুঁজে মিলিয়ে দেখা যাবে।`
+      : `No reliable verified ${intent === "fertilizer_management" ? "fertilizer rate" : intent === "irrigation_management" ? "irrigation amount" : intent === "harvesting" ? "harvest timing" : "stage-specific care"} was retrieved for ${crop?.nameEn || "this crop"}. I will not guess a rate or date. Share the variety, district, and field conditions so applicable official guidance can be checked.`;
+    limitations.push("Relevant verified agronomic value unavailable; no estimate provided.");
+  }
+  return {
+    answer, language, sources: [...new Set(sources)], dataDate: null,
+    dataQuality: sources.length ? "source_linked_guidance" : "verified_information_unavailable",
+    provenance: [...new Set(provenance)], limitations,
+    conversationId, meta: { model: "intent-grounded-crop-retrieval", toolsCalled: [] },
+  };
+}
+
 function buildCropCoverageNotice(crop, message, district) {
   const isBangla = isBanglaMessage(message);
   const verifiedNames = loadCropCatalog().crops.filter((item) => item.planningAvailable)
@@ -107,24 +266,6 @@ function buildCropCoverageNotice(crop, message, district) {
     dataQuality: "crop_catalog_only",
     provenance: ["Crop catalog entry; no verified crop calendar for this crop"],
     limitations: ["Crop planning uses only official crop calendars verified for the selected district."],
-  };
-}
-
-function buildCropKnowledgeFallback(knowledge, message, conversationId) {
-  const isBangla = isBanglaMessage(message);
-  const sourceLinks = (knowledge.sources || []).map((source) => `${source.organization}: ${source.url}`).join("\n");
-  const answer = `${knowledge.generalGuide[isBangla ? "bn" : "en"]}\n\n${isBangla ? "সূত্র" : "Source"}: ${sourceLinks}\n${isBangla ? "বামিসের উৎসপাতা প্রকল্পে দেখা হয়েছে" : "BAMIS source page checked for this project"}: ${knowledge.sourceCheckedOn}\n${isBangla ? "নির্দিষ্ট জমির চাষের সময়, সেচ বা সারের মাত্রা এখানে যাচাই করা নেই; অনুমান করে দেওয়া হবে না।" : "Field-specific planting dates, irrigation schedules, and fertilizer rates are not verified here and will not be guessed."}`;
-  return {
-    answer,
-    language: isBangla ? "bn" : "en",
-    sources: (knowledge.sources || []).map((source) => source.organization),
-    dataDate: null,
-    sourceCheckedOn: knowledge.sourceCheckedOn,
-    dataQuality: "source_linked_general_guidance",
-    provenance: (knowledge.sources || []).map((source) => source.url),
-    limitations: ["General BAMIS crop-page information only; not a district-specific calendar or field prescription."],
-    conversationId,
-    meta: { model: "crop-knowledge-retrieval", toolsCalled: ["getCropKnowledge"] },
   };
 }
 
@@ -262,6 +403,62 @@ async function generateDeterministicFallback({ message, district, crop = null, f
     return { answer, executedTools, sources, dataDate, dataQuality, provenance, limitations, language, modelUsed: "python-numpy-farm-report" };
   }
 
+  const intent = detectAgriculturalIntent(message);
+  let mentionedCrop = findCropInMessage(message, crop);
+  if (intent.category === "market_price") {
+    const riceCodes = new Set(["monsoon_aman", "boro_rice", "aus_rice"]);
+    const commodity = riceCodes.has(mentionedCrop?.code || crop) ? "rice" : mentionedCrop?.code || crop || "rice";
+    const quote = await toolExecutors.getMarketPriceReference({
+      commodity,
+      district: validDistrict || "",
+      priceType: "wholesale",
+    });
+    executedTools.push({ toolName: "getMarketPriceReference", result: quote });
+    language = isBanglaMessage(message) ? "bn" : "en";
+    const commodityLabel = mentionedCrop
+      ? (language === "bn" ? mentionedCrop.nameBn : mentionedCrop.nameEn)
+      : language === "bn" ? "ধান" : "rice";
+    sources.push("Department of Agricultural Marketing (DAM)");
+    dataQuality = quote.status === "AVAILABLE" ? "verified_market_data" : "verified_market_data_unavailable";
+    provenance.push("DAM actual reports are shown only when imported and administrator-verified.");
+    const actual = Object.values(quote.actualPrices || {}).find((item) => item.status === "AVAILABLE");
+    if (actual) {
+      dataDate = actual.observedOn;
+      answer = language === "bn"
+        ? `${commodityLabel}-এর জন্য DAM-এর যাচাইকৃত পাইকারি প্রতিবেদনে ${actual.district || actual.market || "নির্বাচিত এলাকায়"} ${actual.observedOn} তারিখে ${actual.priceMin}–${actual.priceMax} ${actual.unit} পাওয়া গেছে। এটি প্রতিবেদনভিত্তিক দর, লাইভ দর নয়।\nসূত্র: ${actual.source}${actual.sourceUrl ? ` — ${actual.sourceUrl}` : ""}`
+        : `The verified DAM wholesale report lists ${actual.priceMin}–${actual.priceMax} ${actual.unit} for ${commodityLabel} in ${actual.district || actual.market || "the selected area"} on ${actual.observedOn}. This is a report observation, not a live quote.\nSource: ${actual.source}${actual.sourceUrl ? ` — ${actual.sourceUrl}` : ""}`;
+      sources.push(actual.source);
+      if (actual.sourceUrl) provenance.push(actual.sourceUrl);
+    } else {
+      answer = language === "bn"
+        ? `${commodityLabel}-এর আজকের যাচাইকৃত বাজারদর এই এলাকার জন্য পাওয়া যায়নি। সিস্টেমে DAM-এর লাইভ ফিড সংযুক্ত নেই, তাই কোনো দাম অনুমান করে বলছি না। DAM-এর দৈনিক প্রতিবেদন দেখুন: ${quote.officialDailyReportUrl || "https://market.dam.gov.bd/market_daily_price_report/?L=E"}`
+        : `No verified current ${commodityLabel} quote is available for this area. A live DAM feed is not connected, so I will not estimate a price. Check the DAM daily report: ${quote.officialDailyReportUrl || "https://market.dam.gov.bd/market_daily_price_report/?L=E"}`;
+      limitations.push(quote.message || "No fresh verified DAM quote was retrieved.");
+    }
+    return { answer, executedTools, sources, dataDate, dataQuality, provenance, limitations, language, modelUsed: "verified-market-retrieval" };
+  }
+
+  let reportedStageLifecycle = null;
+  const cropIntent = ["flowering_stage", "fertilizer_management", "irrigation_management", "pest_disease", "weed_management", "soil_management", "harvesting", "crop_growth_stage"].includes(intent.category);
+  if (farmId && cropIntent && (!mentionedCrop || !mentionedCrop.code)) {
+    reportedStageLifecycle = await toolExecutors.getMyFarmLifecycle({ farmId, userId });
+    executedTools.push({ toolName: "getMyFarmLifecycle", result: reportedStageLifecycle });
+    if ((!mentionedCrop || !mentionedCrop.code) && !reportedStageLifecycle.error) mentionedCrop = getCropByCode(reportedStageLifecycle.cropCode) || mentionedCrop;
+  }
+  if (mentionedCrop && cropIntent
+    && !(intent.category === "crop_growth_stage" && !intent.farmerReportedStage && farmId)) {
+    const knowledge = await toolExecutors.getCropKnowledge({ crop: mentionedCrop.code, farmId, userId });
+    executedTools.push({ toolName: "getCropKnowledge", result: knowledge });
+    let calendar = null;
+    if (intent.category === "flowering_stage" && VALID_DISTRICT_CODES.has(validDistrict) && mentionedCrop.calendarAvailable) {
+      calendar = await toolExecutors.getCropCalendarAdvisory({ crop: mentionedCrop.code, district: validDistrict, stage: "flowering" });
+      executedTools.push({ toolName: "getCropCalendarAdvisory", result: calendar });
+    }
+    const estimatedStage = reportedStageLifecycle?.currentStage?.stageNameBn || reportedStageLifecycle?.currentStage?.stageNameEn || null;
+    const grounded = buildIntentCropFallback({ intent: intent.category, reportedStage: intent.farmerReportedStage, crop: mentionedCrop, knowledge, calendar, estimatedStage, message, conversationId: null });
+    return { ...grounded, executedTools, modelUsed: "intent-grounded-crop-retrieval" };
+  }
+
   // Farm-aware contextual fallback if farmId is provided
   if (farmId) {
     if (
@@ -318,18 +515,7 @@ async function generateDeterministicFallback({ message, district, crop = null, f
       };
     }
 
-    if (
-      normMessage.includes("পর্যায়") ||
-      normMessage.includes("বৃদ্ধি") ||
-      normMessage.includes("growth") ||
-      normMessage.includes("স্টেজ") ||
-      normMessage.includes("stage") ||
-      normMessage.includes("দিন") ||
-      normMessage.includes("বয়স") ||
-      normMessage.includes("lifecycle")
-      || normMessage.includes("irrigat")
-      || normMessage.includes("water requirement")
-    ) {
+    if (intent.category === "crop_growth_stage" && !intent.farmerReportedStage) {
       const lifeData = await toolExecutors.getMyFarmLifecycle({ farmId, userId });
       executedTools.push({ toolName: "getMyFarmLifecycle", result: lifeData });
       language = isBanglaMessage(message) ? "bn" : "en";
@@ -340,7 +526,6 @@ async function generateDeterministicFallback({ message, district, crop = null, f
           : "The crop stage for your farm cannot currently be determined. Check the planting date and crop details.";
       } else {
         sources.push("BAMIS Agro-Meteorological Crop Calendar");
-        sources.push("BRRI / BARI Research Bulletins");
         dataQuality = "verified";
         provenance.push(lifeData.provenance?.publisher || "BAMIS & DAE Official Crop Calendar");
 
@@ -362,6 +547,45 @@ async function generateDeterministicFallback({ message, district, crop = null, f
             (cur ? `- Current stage: ${cur.stageNameEn || cur.stageNameBn}\n  - Estimated dates: ${cur.estimatedStartDate || "not specified"} to ${cur.estimatedEndDate || "not specified"}\n` : "- Current stage could not be determined.\n") +
             (nxt ? `- Next stage: ${nxt.stageNameEn || nxt.stageNameBn} (estimated ${nxt.estimatedStartDate || "date unavailable"})\n` : "") +
             "\nDates are calendar-based estimates; compare them with the crop in the field.";
+
+        const cropGuide = await toolExecutors.getCropKnowledge({
+          crop: lifeData.cropCode || crop,
+          variety: lifeData.variety,
+          farmId,
+          userId,
+        });
+        executedTools.push({ toolName: "getCropKnowledge", result: cropGuide });
+        const varietyGuide = cropGuide.selectedVarietyGuide;
+        if (varietyGuide?.facts && varietyGuide.source?.url) {
+          const facts = varietyGuide.facts;
+          const currentDays = days;
+          const split = facts.ureaSplits?.find((item) =>
+            Array.isArray(item.daysAfterTransplanting)
+              ? currentDays != null && currentDays >= Number(item.daysAfterTransplanting[0]) && currentDays <= Number(item.daysAfterTransplanting[1])
+              : false,
+          );
+          const rates = facts.fertilizerKgPerBigha;
+          const careBn = [
+            `\n\n${varietyGuide.varietyName}–এর যাচাইকৃত পরিচর্যা তথ্য (${varietyGuide.source.organization}):`,
+            split ? `- ${currentDays} দিনের সঙ্গে মেলে: রোপণের ${split.daysAfterTransplanting[0]}–${split.daysAfterTransplanting[1]} দিনের মধ্যে ইউরিয়ার ${split.split === 1 ? "প্রথম" : split.split === 2 ? "দ্বিতীয়" : "তৃতীয়"} কিস্তি দেওয়ার সময়। আগের কিস্তি দেওয়া হয়েছে কি না আগে মিলিয়ে নিন।` : "",
+            rates ? `- উৎসে দেওয়া রেফারেন্স মাত্রা প্রতি বিঘায়: ইউরিয়া ${rates.urea} কেজি, টিএসপি/ডিএপি ${rates.tspOrDap} কেজি, এমওপি ${rates.mop} কেজি ও জিপসাম ${rates.gypsum} কেজি।` : "",
+            facts.weedManagement?.bn ? `- আগাছা দমনে: ${facts.weedManagement.bn}` : "",
+            facts.irrigation?.bn ? `- পানি: ${facts.irrigation.bn}` : "",
+            `- এই মাত্রা মাটির পরীক্ষাভিত্তিক ব্যক্তিগত সুপারিশ নয়। মাটি পরীক্ষা ও স্থানীয় কৃষি কর্মকর্তার পরামর্শ মিলিয়ে নিন।\nসূত্র: ${varietyGuide.source.title} (${varietyGuide.source.checkedOn}), ${varietyGuide.source.url}`,
+          ].filter(Boolean).join("\n");
+          const careEn = [
+            `\n\nVerified care notes for ${varietyGuide.varietyName} (${varietyGuide.source.organization}):`,
+            split ? `- At ${currentDays} days, the ${split.split === 1 ? "first" : split.split === 2 ? "second" : "third"} urea split falls in the ${split.daysAfterTransplanting[0]}–${split.daysAfterTransplanting[1]} day-after-transplanting window. Confirm earlier doses before applying.` : "",
+            rates ? `- The source's reference rate per bigha is: urea ${rates.urea} kg, TSP/DAP ${rates.tspOrDap} kg, MOP ${rates.mop} kg, and gypsum ${rates.gypsum} kg.` : "",
+            facts.weedManagement?.en ? `- Weed management: ${facts.weedManagement.en}` : "",
+            facts.irrigation?.en ? `- Water: ${facts.irrigation.en}` : "",
+            `- These are not an individualized soil-test prescription. Check soil-test results and local extension advice.\nSource: ${varietyGuide.source.title} (${varietyGuide.source.checkedOn}), ${varietyGuide.source.url}`,
+          ].filter(Boolean).join("\n");
+          answer += language === "bn" ? careBn : careEn;
+          sources.push(varietyGuide.source.organization);
+          provenance.push(varietyGuide.source.url);
+          dataQuality = "verified_variety_guidance";
+        }
       }
       return {
         answer,
@@ -1267,9 +1491,12 @@ export class AssistantChatService {
 
     const trimmedMessage = message.trim();
     const effectiveConversationId = conversationId || crypto.randomUUID();
-    const history = (Array.isArray(customHistory) && customHistory.length > 0)
+    const suppliedHistory = (Array.isArray(customHistory) && customHistory.length > 0)
       ? customHistory
       : getConversationHistory(effectiveConversationId);
+    // Standalone, topic-specific questions must not inherit an earlier generic answer.
+    const history = isContextualFollowUp(trimmedMessage) ? suppliedHistory.slice(-6) : [];
+    const intentContext = detectAgriculturalIntent(trimmedMessage);
 
     // Validate district against supported list
     const lowerDistrict = typeof district === "string" ? district.trim().toLowerCase() : "";
@@ -1326,6 +1553,7 @@ export class AssistantChatService {
           farmId,
           userId,
           conversationHistory: history,
+          intent: intentContext,
         });
 
         // Extract metadata from executed tools
@@ -1378,11 +1606,22 @@ export class AssistantChatService {
           } else if (call.toolName === "getCropCalendarAdvisory") {
             sources.add("BAMIS (DAE) & BRRI/BARI Research Bulletins");
             if (res.provenance) provenance.push(res.provenance);
+            if (Array.isArray(res.officialSources)) provenance.push(...res.officialSources);
           } else if (call.toolName === "getCropKnowledge") {
             for (const source of res.sources || []) sources.add(source.organization);
+            for (const source of res.managementGuide?.sources || []) {
+              if (source.organization) sources.add(source.organization);
+              if (source.url) provenance.push(`${source.title || source.organization}: ${source.url}`);
+            }
             if (res.sourceCheckedOn) provenance.push(`Source page checked for this project on ${res.sourceCheckedOn}; original publication date may be earlier or unstated.`);
             dataQuality = res.generalGuide ? "source_linked_general_guidance" : "crop_catalog_only";
             for (const source of res.sources || []) if (source.url) provenance.push(source.url);
+            if (res.selectedVarietyGuide?.source) {
+              const varietySource = res.selectedVarietyGuide.source;
+              sources.add(varietySource.organization);
+              provenance.push(`${varietySource.title}; page checked ${varietySource.checkedOn}: ${varietySource.url}`);
+              dataQuality = "verified_variety_guidance";
+            }
             if (!res.districtCalendarAvailable) limitations.push("No verified district-specific crop calendar is available for this crop.");
           } else if (call.toolName === "getHandoffPlan") {
             sources.add("KrishiBondhu Handoff Window Planner");
@@ -1454,10 +1693,21 @@ export class AssistantChatService {
         }
 
         const cropKnowledgeWasRetrieved = geminiResult.executedTools.some((tool) => tool.toolName === "getCropKnowledge");
-        const asksForSpecificCropPlan = /\b(when|plant|sow|sowing|fertili[sz]er|irrigat|water schedule|yield|dose|schedule)\b|কখন|বপন|রোপণ|সার|সেচ|ফলন|মাত্রা|সময়সূচি|চাষের সময়/i.test(trimmedMessage);
-        if (catalogCrop && !isMarketQuestion(trimmedMessage)
-          && (!cropKnowledgeWasRetrieved || (asksForSpecificCropPlan && !catalogCrop.planningAvailable))) {
-          responsePayload = buildCropKnowledgeFallback(cropKnowledge, trimmedMessage, effectiveConversationId);
+        if (catalogCrop && !isMarketQuestion(trimmedMessage) && !cropKnowledgeWasRetrieved) {
+          const retrievedKnowledge = await toolExecutors.getCropKnowledge({ crop: catalogCrop.code, farmId, userId });
+          const stageCalendar = intentContext.category === "flowering_stage" && catalogCrop.calendarAvailable
+            ? await toolExecutors.getCropCalendarAdvisory({ crop: catalogCrop.code, district: lowerDistrict, stage: "flowering" })
+            : null;
+          responsePayload = buildIntentCropFallback({
+            intent: intentContext.category,
+            reportedStage: intentContext.farmerReportedStage,
+            crop: catalogCrop,
+            knowledge: retrievedKnowledge,
+            calendar: stageCalendar,
+            message: trimmedMessage,
+            conversationId: effectiveConversationId,
+          });
+          responsePayload.meta.toolsCalled = ["getCropKnowledge", ...(stageCalendar ? ["getCropCalendarAdvisory"] : [])];
         } else {
           responsePayload = {
             answer: geminiResult.answer,
@@ -1483,9 +1733,7 @@ export class AssistantChatService {
 
     // If Gemini was not configured or threw an error, use the deterministic grounded engine
     if (!responsePayload) {
-      if (catalogCrop && !isMarketQuestion(trimmedMessage) && cropKnowledge?.generalGuide) {
-        responsePayload = buildCropKnowledgeFallback(cropKnowledge, trimmedMessage, effectiveConversationId);
-      } else {
+      {
         const fallbackResult = await generateDeterministicFallback({
           message: trimmedMessage,
           district: lowerDistrict,
