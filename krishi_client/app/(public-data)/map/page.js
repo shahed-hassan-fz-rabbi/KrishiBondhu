@@ -30,6 +30,18 @@ function localizeNumber(value, locale) {
   return locale === "bn" ? text.replace(/[0-9]/g, digit => "০১২৩৪৫৬৭৮৯"[Number(digit)]) : text;
 }
 
+function mapRegisteredUpazila(feature, districtCode) {
+  const aliases = { anowara: "anwara", manoharganj: "monohargonj" };
+  const normalize = value => {
+    let normalized = String(value || "").toLowerCase().replace(/[^a-z]/g, "");
+    normalized = normalized.replace(/^comilla/, "").replace(/^chittagong/, "");
+    return aliases[normalized] || normalized;
+  };
+  const sourceName = feature?.properties?.shapeName || "";
+  const match = (DISTRICT_UPAZILAS[districtCode] || []).find(item => normalize(item.nameEn) === normalize(sourceName));
+  return match ? { ...feature, properties: { ...feature.properties, displayNameEn: match.nameEn, displayNameBn: match.nameBn } } : null;
+}
+
 function LayerToggle({ active, onClick, icon: Icon, children, tone = "emerald" }) {
   const tones = {
     emerald: "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200",
@@ -69,6 +81,7 @@ function MapPage() {
   const [layersData, setLayersData] = useState(null);
   const [boundaryData, setBoundaryData] = useState(null);
   const [upazilaData, setUpazilaData] = useState(null);
+  const [upazilaCatalog, setUpazilaCatalog] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [upazilaError, setUpazilaError] = useState(null);
@@ -104,6 +117,7 @@ function MapPage() {
       setLayersData(layerRes.data);
       setBoundaryData(boundaryRes?.success ? boundaryRes.data : null);
       setUpazilaData(upazilaRes?.success ? upazilaRes.data : null);
+      if (upazilaRes?.success) setUpazilaCatalog(previous => ({ ...previous, [districtCode]: upazilaRes.data }));
       if (!upazilaRes?.success) setUpazilaError(upazilaRes?.error?.message || (isBn ? "উপজেলার সীমানা পাওয়া যায়নি" : "Upazila boundaries are unavailable"));
 
       const center = layerRes.data?.district?.center;
@@ -129,6 +143,22 @@ function MapPage() {
       mapRequestRef.current += 1;
     };
   }, [selectedDistrict, loadMapData]);
+
+  useEffect(() => {
+    const otherDistricts = districts.filter(district => district.code !== selectedDistrict && !upazilaCatalog[district.code]);
+    if (!otherDistricts.length) return undefined;
+    let cancelled = false;
+    Promise.all(otherDistricts.map(async district => [district.code, await fetchGisUpazilas(district.code)]))
+      .then(results => {
+        if (cancelled) return;
+        setUpazilaCatalog(previous => results.reduce((catalog, [code, response]) => {
+          if (response?.success && response.data) catalog[code] = response.data;
+          return catalog;
+        }, { ...previous }));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [districts, selectedDistrict, upazilaCatalog]);
 
   useEffect(() => () => { mapRequestRef.current += 1; forecastRequestRef.current += 1; }, []);
 
@@ -164,19 +194,7 @@ function MapPage() {
 
   const toggleLayer = key => setActiveLayers(previous => ({ ...previous, [key]: !previous[key] }));
   const upazilas = useMemo(() => {
-    const aliases = { anowara: "anwara", manoharganj: "monohargonj" };
-    const normalize = value => {
-      let normalized = String(value || "").toLowerCase().replace(/[^a-z]/g, "");
-      normalized = normalized.replace(/^comilla/, "").replace(/^chittagong/, "");
-      return aliases[normalized] || normalized;
-    };
-    const registry = DISTRICT_UPAZILAS[selectedDistrict] || [];
-    return (upazilaData?.features || []).flatMap(feature => {
-      const sourceName = feature.properties?.shapeName || "";
-      const match = registry.find(item => normalize(item.nameEn) === normalize(sourceName));
-      if (!match) return []; // Hide non-upazila ADM3 city units and unsupported/unmatched boundaries.
-      return [{ ...feature, properties: { ...feature.properties, displayNameEn: match.nameEn, displayNameBn: match.nameBn } }];
-    });
+    return (upazilaData?.features || []).map(feature => mapRegisteredUpazila(feature, selectedDistrict)).filter(Boolean);
   }, [upazilaData, selectedDistrict]);
   const visibleUpazilaData = useMemo(() => ({ type: "FeatureCollection", features: upazilas }), [upazilas]);
   const locationChoices = useMemo(() => {
@@ -184,19 +202,21 @@ function MapPage() {
       type: "district", id: `district:${district.code}`, districtCode: district.code,
       nameEn: district.nameEn, nameBn: district.nameBn, name: isBn ? district.nameBn : district.nameEn,
     }));
-    const upazilaChoices = upazilas.map(feature => {
-      const shapeName = feature.properties?.shapeName || "";
-      const displayNameEn = feature.properties?.displayNameEn || shapeName;
-      const displayNameBn = feature.properties?.displayNameBn || shapeName;
-      return {
-        type: "upazila", id: `upazila:${feature.properties?.shapeID || shapeName}`,
-        districtCode: selectedDistrict, feature,
-        nameEn: displayNameEn, nameBn: displayNameBn,
-        name: isBn ? displayNameBn : displayNameEn,
-      };
-    });
+    const upazilaChoices = Object.entries(upazilaCatalog).flatMap(([districtCode, data]) =>
+      (data?.features || []).map(sourceFeature => mapRegisteredUpazila(sourceFeature, districtCode)).filter(Boolean).map(feature => {
+        const shapeName = feature.properties?.shapeName || "";
+        const displayNameEn = feature.properties?.displayNameEn || shapeName;
+        const displayNameBn = feature.properties?.displayNameBn || shapeName;
+        return {
+          type: "upazila", id: `upazila:${districtCode}:${feature.properties?.shapeID || shapeName}`,
+          districtCode, feature,
+          nameEn: displayNameEn, nameBn: displayNameBn,
+          name: isBn ? displayNameBn : displayNameEn,
+        };
+      })
+    );
     return [...districtChoices, ...upazilaChoices];
-  }, [districts, isBn, selectedDistrict, upazilas]);
+  }, [districts, isBn, upazilaCatalog]);
   const filteredChoices = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase();
     if (!normalized) return locationChoices.slice(0, 7);
@@ -216,6 +236,7 @@ function MapPage() {
     if (!point || !Number.isFinite(point.latitude) || !Number.isFinite(point.longitude)) return;
     setSelectedUpazila(choice.feature);
     setSelectedLocation({ ...point, name: choice.name, districtCode: choice.districtCode, representative: true });
+    if (choice.districtCode !== selectedDistrict) setSelectedDistrict(choice.districtCode);
   };
 
   const handleMapLocationSelect = point => {
@@ -280,6 +301,7 @@ function MapPage() {
           <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border border-emerald-800 bg-emerald-300/30" />{isBn ? "প্রশাসনিক সীমানা" : "Administrative boundary"}</span>
           <span className="ml-auto">{isBn ? "সীমানা: BBS/OCHA ২০২০ · বেসম্যাপ: OpenStreetMap" : "Boundaries: BBS/OCHA 2020 · Basemap: OpenStreetMap"}</span>
         </div>
+        {upazilaError && <p role="status" className="border-t border-line px-4 py-2 text-xs text-amber-800 dark:text-amber-200">{upazilaError}</p>}
       </div>
 
       <aside className="space-y-4">

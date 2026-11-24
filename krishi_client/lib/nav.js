@@ -17,8 +17,8 @@ export const appNav = [
 
 /** Sidebar groups keep the existing route list and role rules as the source of truth. */
 export const appNavGroups = [
-  { key: "Work", keyBn: "কাজ", hrefs: ["/dashboard", "/my-farm", "/assistant", "/my-farm/reviews", "/officer/reviews"] },
+  { key: "Work", keyBn: "কাজ", hrefs: ["/dashboard", "/my-farm", "/assistant", "/market", "/marketplace/my-listings", "/my-farm/reviews", "/officer/reviews"] },
   { key: "Plan", keyBn: "পরিকল্পনা", hrefs: ["/crop-calendar", "/rotation-planner", "/handoff"] },
   { key: "Field", keyBn: "মাঠ", hrefs: ["/climate", "/map"] },
-  { key: "Data & evidence", keyBn: "তথ্য ও প্রমাণ", hrefs: ["/market", "/marketplace/my-listings", "/data-sources"] },
+  { key: "Data & evidence", keyBn: "তথ্য ও প্রমাণ", hrefs: ["/data-sources"] },
 ];

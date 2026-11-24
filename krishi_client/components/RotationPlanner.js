@@ -112,7 +112,7 @@ export function RotationPlanner({ publicMode = false, initialDistrict, initialPr
     </select></label>{key === "soilType" && <p className="mt-1.5 text-xs leading-5 text-muted">{t("myFarm.fields.soilTypeNote")}</p>}</div>;
 
   return <div className="space-y-8">
-    <RotationOverview publicMode={publicMode} />
+    <RotationOverview />
     {loadFailed && <p role="status" className="rounded-xl border border-amber/30 bg-amber/5 px-4 py-3 text-sm text-amber-strong">{t("rotation.farmLoadError")}</p>}
     <form onSubmit={compare} className="overflow-hidden rounded-3xl border border-green-200 bg-surface shadow-md dark:border-green-800">
       <fieldset disabled={busy || saveBusy || explainBusy} className="min-w-0 w-full">

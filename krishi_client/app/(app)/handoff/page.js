@@ -3,6 +3,7 @@
 import { PrivateAccess } from "@/components/auth/PrivateAccess.js";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import {
   AlertTriangle,
   Calendar,
@@ -288,10 +289,16 @@ function HandoffPage() {
   const sowingTminMedian = sowingOpp.sowing_tmin_distribution?.median?.toFixed(1) ?? "—";
 
   return (
-    <div className="space-y-6 rounded-3xl bg-gradient-to-br from-emerald-50/60 via-bg to-sky-50/50 p-3 pb-10 sm:p-5 dark:from-emerald-950/20 dark:to-sky-950/15 print:space-y-4 print:bg-white print:p-0">
+    <div className="relative isolate space-y-6 overflow-hidden rounded-3xl p-3 pb-10 sm:p-5 dark:bg-slate-950/10 print:space-y-4 print:bg-white print:p-0">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 bg-cover bg-center bg-fixed max-sm:bg-scroll print:hidden"
+        style={{ backgroundImage: "url('/images/farmer-field-background.jpg')" }}
+      />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-[#f8f8f3]/75 dark:bg-[#071b14]/75 print:hidden" />
       {/* Top Banner / Breadcrumb */}
-      <div className="relative overflow-hidden rounded-3xl border border-emerald-200 bg-gradient-to-br from-lime-100 via-emerald-50 to-sky-100 p-5 sm:p-7 md:flex-row md:items-center md:justify-between flex flex-col gap-4 dark:border-emerald-900 dark:from-lime-950/40 dark:via-emerald-950/40 dark:to-sky-950/40">
-        <div>
+      <div className="relative grid gap-5 overflow-hidden rounded-3xl border border-emerald-200 bg-gradient-to-br from-lime-100 via-emerald-50 to-sky-100 p-5 sm:p-7 md:grid-cols-[minmax(0,1fr)_minmax(280px,0.78fr)] md:items-center dark:border-emerald-900 dark:from-lime-950/40 dark:via-emerald-950/40 dark:to-sky-950/40">
+        <div className="relative z-10 min-w-0">
           <h1 className="mt-2 text-2xl font-bold tracking-tight text-forest sm:text-3xl dark:text-emerald-100">
             {strings.title || "Crop Transition (Handoff)"}
           </h1>
@@ -300,27 +307,33 @@ function HandoffPage() {
               "NASA POWER Climate Evidence for Aman Harvest to Rabi Mustard Sowing Transitions"}
           </p>
           <p className="mt-2 text-xs text-muted">{t("handoffSimple.fieldCheck")}</p>
+          {/* Action Toolbar */}
+          <div className="mt-4 flex flex-wrap items-center gap-2 print:hidden">
+            <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5 text-xs">
+              <Printer className="h-3.5 w-3.5" />
+              {strings.printSummary || "Print Report"}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => loadData(selectedDistrict, transition, forceSnapshot)}
+              disabled={isLoading}
+              className="gap-1.5 text-xs"
+              aria-label="Refresh"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
         </div>
-
-        {/* Action Toolbar */}
-        <div className="flex flex-wrap items-center gap-2 print:hidden">
-          {/* Print Field Report */}
-          <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5 text-xs">
-            <Printer className="h-3.5 w-3.5" />
-            {strings.printSummary || "Print Report"}
-          </Button>
-
-          {/* Refresh */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => loadData(selectedDistrict, transition, forceSnapshot)}
-            disabled={isLoading}
-            className="gap-1.5 text-xs"
-            aria-label="Refresh"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
-          </Button>
+        <div className="relative min-h-40 overflow-hidden rounded-2xl border border-white/70 shadow-md sm:min-h-52 md:min-h-48 dark:border-white/10">
+          <Image
+            src="/images/potato-harvest.jpg"
+            alt={locale === "bn" ? "জমি থেকে আলু তোলার দৃশ্য" : "Freshly harvested potatoes being lifted from the field"}
+            fill
+            sizes="(max-width: 768px) 100vw, 40vw"
+            className="object-cover object-center"
+          />
+          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-slate-950/25 via-transparent to-white/10" />
         </div>
       </div>
 

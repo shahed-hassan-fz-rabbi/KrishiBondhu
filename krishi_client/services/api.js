@@ -37,7 +37,7 @@ export function fetchMyMarketplaceProducts({ page = 1, limit = 20 } = {}) {
 }
 /** POST /api/v1/marketplace/products — create a listing using the existing cookie session. */
 export function createMarketplaceProduct(input = {}) {
-  const allowedFields = ["productName", "description", "quantity", "unit", "askingPricePerUnit", "district", "upazila"];
+  const allowedFields = ["productName", "productImageDataUrl", "description", "quantity", "unit", "askingPricePerUnit", "district", "upazila"];
   const source = input && typeof input === "object" && !Array.isArray(input) ? input : {};
   const product = Object.fromEntries(allowedFields.filter((field) => Object.hasOwn(source, field)).map((field) => [field, source[field]]));
   return request("/marketplace/products", { method: "POST", body: JSON.stringify(product) });
@@ -553,6 +553,14 @@ export async function fetchCropCatalog() {
 /** GET /api/v1/crop-calendar/management/:crop — official source-linked crop guide. */
 export async function fetchCropManagementGuide(crop) {
   return request(`/crop-calendar/management/${encodeURIComponent(crop)}`);
+}
+
+/** POST /api/v1/crop-planning/input-requirements — area-scaled, source-linked farm inputs. */
+export async function fetchFarmInputRequirements(farmId) {
+  return request("/crop-planning/input-requirements", {
+    method: "POST",
+    body: JSON.stringify({ farmId }),
+  });
 }
 
 /**

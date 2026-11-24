@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const marketplaceProductSchema = new mongoose.Schema({
   ownerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
   productName: { type: String, trim: true, required: true, minlength: 2, maxlength: 100 },
+  productImageDataUrl: { type: String, default: "", maxlength: 140_000 },
   description: { type: String, trim: true, maxlength: 2000, default: "" },
   quantity: { type: Number, required: true, min: 0.01 },
   unit: { type: String, enum: ["kg", "quintal", "ton"], required: true },
