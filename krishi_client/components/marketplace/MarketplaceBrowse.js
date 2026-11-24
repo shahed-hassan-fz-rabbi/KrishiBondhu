@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowLeft,
   ArrowRight,
@@ -139,14 +140,16 @@ function ProductCard({ product, text, locale }) {
   const demo = isDemoListing(product);
   const art = artworkFor(product.productName);
   return <article data-bondhu-no-fly className="group flex min-w-0 flex-col overflow-hidden rounded-[1.4rem] border border-[#e4e1d5] bg-white shadow-[0_5px_18px_rgba(31,59,42,.045)] transition duration-200 hover:-translate-y-1 hover:border-[#bdd2be] hover:shadow-[0_18px_36px_rgba(31,59,42,.11)]">
-    <div className={`relative isolate grid h-36 place-items-center overflow-hidden bg-gradient-to-br ${art.style}`}>
-      <div aria-hidden="true" className="absolute inset-0 opacity-40" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, rgba(51,86,54,.19) 1px, transparent 0)", backgroundSize: "19px 19px" }} />
-      <div aria-hidden="true" className="absolute -right-5 -top-10 h-36 w-36 rounded-full border border-white/60" />
-      <div aria-hidden="true" className="absolute -bottom-20 -left-8 h-40 w-40 rounded-full border border-white/55" />
-      <span className={`relative grid h-[5.2rem] w-[5.2rem] place-items-center rounded-[1.75rem] border border-white/75 bg-white/75 shadow-[0_12px_24px_rgba(38,65,42,.10)] backdrop-blur-sm ${art.ink}`}>
-        <art.Icon className="h-11 w-11 stroke-[1.45] transition-transform duration-300 group-hover:scale-105" aria-hidden="true" />
-      </span>
-      <span className="absolute bottom-3 left-4 text-[10px] font-bold uppercase tracking-[.14em] text-[#48624e]/75">{text.listing}</span>
+    <div className={`relative isolate grid h-44 place-items-center overflow-hidden ${product.productImageDataUrl ? "bg-[#edf2e8]" : `bg-gradient-to-br ${art.style}`}`}>
+      {product.productImageDataUrl ? <Image src={product.productImageDataUrl} alt={product.productName || text.productFallback} fill unoptimized sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw" className="object-cover transition-transform duration-300 group-hover:scale-[1.03]" /> : <>
+        <div aria-hidden="true" className="absolute inset-0 opacity-40" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, rgba(51,86,54,.19) 1px, transparent 0)", backgroundSize: "19px 19px" }} />
+        <div aria-hidden="true" className="absolute -right-5 -top-10 h-36 w-36 rounded-full border border-white/60" />
+        <div aria-hidden="true" className="absolute -bottom-20 -left-8 h-40 w-40 rounded-full border border-white/55" />
+        <span className={`relative grid h-[5.2rem] w-[5.2rem] place-items-center rounded-[1.75rem] border border-white/75 bg-white/75 shadow-[0_12px_24px_rgba(38,65,42,.10)] backdrop-blur-sm ${art.ink}`}>
+          <art.Icon className="h-11 w-11 stroke-[1.45] transition-transform duration-300 group-hover:scale-105" aria-hidden="true" />
+        </span>
+      </>}
+      <span className={`absolute bottom-3 left-4 text-[10px] font-bold uppercase tracking-[.14em] ${product.productImageDataUrl ? "rounded-full bg-black/55 px-2.5 py-1 text-white" : "text-[#48624e]/75"}`}>{text.listing}</span>
       {demo ? <span className="absolute right-3 top-3 rounded-full border border-amber-300/90 bg-[#fff8e5]/95 px-2.5 py-1 text-[10px] font-extrabold tracking-wide text-amber-900 shadow-sm">{text.demo}</span> : null}
     </div>
 

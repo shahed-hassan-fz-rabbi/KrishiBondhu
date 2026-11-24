@@ -23,6 +23,7 @@ export function useVoiceInput({ onFinalTranscript, onInterimTranscript, uiLangua
   const recorderRef = useRef(null);
   const finalTranscriptRef = useRef("");
   const liveTranscriptRef = useRef("");
+  const deliveredTranscriptRef = useRef("");
   const streamRef = useRef(null);
   const chunksRef = useRef([]);
   const timeoutRef = useRef(null);
@@ -51,6 +52,7 @@ export function useVoiceInput({ onFinalTranscript, onInterimTranscript, uiLangua
       recognition.maxAlternatives = 3;
       finalTranscriptRef.current = "";
       liveTranscriptRef.current = "";
+      deliveredTranscriptRef.current = "";
       recognition.onstart = () => setIsListening(true);
       recognition.onresult = (event) => {
         const finalParts = [];
@@ -86,7 +88,16 @@ export function useVoiceInput({ onFinalTranscript, onInterimTranscript, uiLangua
       recognition.onend = () => {
         setIsListening(false);
         setInterimTranscript("");
-        if (liveTranscriptRef.current) onInterimRef.current?.(liveTranscriptRef.current);
+        const finalTranscript = finalTranscriptRef.current.trim();
+        if (finalTranscript) {
+          if (deliveredTranscriptRef.current !== finalTranscript) {
+            deliveredTranscriptRef.current = finalTranscript;
+            onFinalRef.current?.(finalTranscript);
+          }
+        } else if (liveTranscriptRef.current) {
+          // Preserve any recognized words if the browser ends unexpectedly mid-utterance.
+          onFinalRef.current?.(liveTranscriptRef.current.trim());
+        }
       };
       recorderRef.current = recognition;
       recognition.start();
@@ -132,6 +143,9 @@ export function useVoiceInput({ onFinalTranscript, onInterimTranscript, uiLangua
     setErrorCode(null);
     setErrorDetails("");
     setInterimTranscript("");
+    finalTranscriptRef.current = "";
+    liveTranscriptRef.current = "";
+    deliveredTranscriptRef.current = "";
     if (typeof window === "undefined") return;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
