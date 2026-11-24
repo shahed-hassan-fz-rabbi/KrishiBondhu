@@ -8,7 +8,8 @@ import crypto from "crypto";
 import { geminiAssistantClient } from "./gemini.client.js";
 import { toolExecutors } from "./tools.executor.js";
 import { DISTRICTS } from "../../config/climate.config.js";
-import { getCropByCode, loadCropCatalog } from "../cropcatalog.service.js";
+import { getCropByCode, getCropKnowledge, loadCropCatalog } from "../cropcatalog.service.js";
+import { classifyAssistantScope, isAgricultureRelatedMessage, requiresVerifiedDistrict } from "./scope.classifier.js";
 
 const VALID_DISTRICT_CODES = new Set(DISTRICTS.map((d) => d.code));
 
@@ -35,10 +36,11 @@ const BANGLISH_STRONG_TOKENS = new Set([
   // Descriptors
   "bhalo", "valo", "beshi", "koman", "baje", "sondeho", "somadhan",
   // Agriculture-specific nouns
-  "dhan", "phosol", "fosol", "foshol", "phoshol", "khamar", "khaamar",
+  "dhan", "phosol", "fosol", "foshol", "phoshol", "khamar", "khaamar", "chash", "chashi",
   "begoon", "begun", "beguner", "shorisha", "sorisha", "shorise", "shorishar",
   "jom", "jole", "jol", "khete", "khet", "borshe", "borsah",
   "ropon", "ronan", "pukur", "nodir", "borsha", "bristi", "brishti",
+  "mati", "jomi", "bij", "chara", "bopon", "poka", "rog", "sar", "shar", "shech", "sech", "pani", "folon", "alu", "morich", "shobji", "goru", "chagol", "murgi", "machchash",
   "bochor", "bochhore", "mash", "mashe", "sopthah", "sopthaho",
   "nirapod", "nirapatta", "shomoy", "shomoe", "porikar", "porikhare",
 ]);
@@ -71,10 +73,10 @@ function isBanglaMessage(message) {
   return isBanglishMessage(message);
 }
 
-function findCatalogOnlyCropMention(message) {
+function findCatalogCropMention(message, { onlyUnplanned = false } = {}) {
   const normalizedMessage = String(message || "").toLocaleLowerCase();
   return loadCropCatalog().crops
-    .filter((item) => !item.planningAvailable)
+    .filter((item) => !onlyUnplanned || !item.planningAvailable)
     .find((item) => [item.nameBn, item.nameEn, ...(item.aliasesBn || []), ...(item.aliasesEn || [])]
       .filter(Boolean)
       .some((label) => {
@@ -89,25 +91,6 @@ function findCatalogOnlyCropMention(message) {
 
 function isMarketQuestion(message) {
   return /\b(price|market)\b|দাম|দর|বাজার/i.test(String(message || ""));
-}
-
-function buildCropCoverageNotice(crop, message, district) {
-  const isBangla = isBanglaMessage(message);
-  const verifiedNames = loadCropCatalog().crops.filter((item) => item.planningAvailable)
-    .map((item) => isBangla ? item.nameBn : item.nameEn).join(isBangla ? "، " : ", ");
-  const districtLabel = district ? (isBangla ? `${district} জেলার ` : ` in ${district} district`) : "";
-  const answer = isBangla
-    ? `${crop.nameBn} ফসলের ${districtLabel}যাচাইকৃত কৃষি পরিকল্পনার তথ্য নেই। ফসলটি ক্যাটালগে আছে, কিন্তু স্থানভিত্তিক সরকারি চাষের ক্যালেন্ডার ও সুপারিশ যাচাই করা হয়নি।\n\nযাচাইকৃত পঞ্জিকা আছে: ${verifiedNames}। যাচাই শেষ না হওয়া পর্যন্ত চাষের সময়, পানির চাহিদা বা সারের মাত্রা অনুমান করে দেওয়া হবে না।`
-    : `There is no verified agronomic planning data for ${crop.nameEn}${districtLabel}. The crop is listed in our catalog, but its location-specific official calendar and recommendations have not been verified.\n\nVerified crop calendars are available for: ${verifiedNames}. Planting dates, water needs, and fertilizer rates will not be guessed while verification is pending.`;
-  return {
-    answer,
-    language: isBangla ? "bn" : "en",
-    sources: ["KrishiBondhu Crop Catalog", "BAMIS Crop Weather Calendar"],
-    dataDate: loadCropCatalog().metadata.catalogReviewedOn,
-    dataQuality: "crop_catalog_only",
-    provenance: ["Crop catalog entry; no verified crop calendar for this crop"],
-    limitations: ["Crop planning uses only official crop calendars verified for the selected district."],
-  };
 }
 
 function buildCropKnowledgeFallback(knowledge, message, conversationId) {
@@ -131,16 +114,8 @@ function buildCropKnowledgeFallback(knowledge, message, conversationId) {
 function isGeneralHelpOrGreeting(message) {
   if (!message || typeof message !== "string") return false;
   const msg = message.toLowerCase().trim();
-  return (
-    /^hello\b/i.test(msg) ||
-    /^hi\b/i.test(msg) ||
-    /^hey\b/i.test(msg) ||
-    /how can you help/i.test(msg) ||
-    /help/i.test(msg) ||
-    /সাহায্য/i.test(msg) ||
-    /নমস্কার/i.test(msg) ||
-    /সালাম/i.test(msg)
-  );
+  return /^(?:(?:hello|hi|hey)[,!\s]+)?(?:hello|hi|hey|help(?: me)?|please help|how can you help(?: me)?|what can you do|what can you help me with)[.!?\s]*$/i.test(msg) ||
+    /^(?:আপনি কীভাবে সাহায্য করতে পারেন|কীভাবে সাহায্য করতে পারেন|সাহায্য করুন|সাহায্য চাই|নমস্কার|সালাম|আসসালামু আলাইকুম)[.!?\s।]*$/i.test(msg);
 }
 
 function isWebsiteHelpQuestion(message) {
@@ -197,7 +172,7 @@ function updateConversationHistory(conversationId, userText, assistantText) {
 async function generateDeterministicFallback({ message, district, crop = null, farmId = null, userId = null }) {
   const normMessage = message.toLowerCase();
   const validDistrict = VALID_DISTRICT_CODES.has(district?.toLowerCase()) ? district.toLowerCase() : null;
-  if (!validDistrict && !farmId && !isGeneralHelpOrGreeting(message)) {
+  if (!validDistrict && !farmId && requiresVerifiedDistrict(message) && !isGeneralHelpOrGreeting(message)) {
     const language = isBanglaMessage(message) ? "bn" : "en";
     return {
       answer: language === "bn"
@@ -764,7 +739,7 @@ async function generateDeterministicFallback({ message, district, crop = null, f
 
   const foundUnsupportedDistrict = UNSUPPORTED_DISTRICTS_BN.find((d) => normMessage.includes(d));
   const cropCatalog = loadCropCatalog();
-  const pendingCrop = findCatalogOnlyCropMention(message);
+  const pendingCrop = findCatalogCropMention(message, { onlyUnplanned: true });
   const legacyUnsupportedCrop = UNSUPPORTED_CROPS_BN.find((c) => normMessage.includes(c));
   const foundUnsupportedCrop = pendingCrop?.nameBn || legacyUnsupportedCrop;
   const asksForMarketData = isMarketQuestion(message);
@@ -1230,9 +1205,17 @@ async function generateDeterministicFallback({ message, district, crop = null, f
     dataQuality = "capability_help";
     provenance.push("KrishiBondhu assistant capability registry");
     language = isBanglaMessage(message) ? "bn" : "en";
-    answer = language === "bn"
-      ? "আমি আপনার নির্বাচিত খামারের সংরক্ষিত ফসল, কার্যক্রম ও জীবনচক্রের তথ্য, উপলভ্য NASA পর্যবেক্ষণ, আবহাওয়া এবং ফসল পঞ্জিকা নিয়ে সাহায্য করতে পারি। কোনো তথ্য না থাকলে তা স্পষ্ট করে জানাব। আপনি কোন বিষয়টি জানতে চান?"
-      : "I can help with your selected farm's saved crop, activities and lifecycle, available NASA observations, weather, and crop-calendar information. I will say when information is unavailable. What would you like to know?";
+    answer = isGeneralHelpOrGreeting(message)
+      ? language === "bn"
+        ? "আমি আপনার নির্বাচিত খামারের সংরক্ষিত ফসল, কার্যক্রম ও জীবনচক্রের তথ্য, উপলভ্য NASA পর্যবেক্ষণ, আবহাওয়া এবং ফসল পঞ্জিকা নিয়ে সাহায্য করতে পারি। কোনো তথ্য না থাকলে তা স্পষ্ট করে জানাব। আপনি কোন বিষয়টি জানতে চান?"
+        : "I can help with your selected farm's saved crop, activities and lifecycle, available NASA observations, weather, and crop-calendar information. I will say when information is unavailable. What would you like to know?"
+      : isAgricultureRelatedMessage(message)
+        ? language === "bn"
+          ? "এই কৃষি প্রশ্নের জন্য এখন নির্ভরযোগ্য উত্তর তৈরি করা যাচ্ছে না। ফসল ও বর্তমান অবস্থা জানালে আবার চেষ্টা করুন।"
+          : "I could not prepare a reliable answer for this agricultural question right now. Share the crop and current field situation, then try again."
+        : language === "bn"
+          ? "আমি ফসল, রোগ-পোকা, মাটি, সেচ, আবহাওয়া ও খামার ব্যবস্থাপনা নিয়ে সাহায্য করতে পারি। কোন বিষয়টি জানতে চান?"
+          : "I can help with crops, pests and diseases, soil, irrigation, weather, and farm management. What would you like to know?";
   }
 
   return {
@@ -1271,10 +1254,50 @@ export class AssistantChatService {
       ? customHistory
       : getConversationHistory(effectiveConversationId);
 
+    const scope = classifyAssistantScope(trimmedMessage, history);
+    if (scope === "out_of_scope" && !isGeneralHelpOrGreeting(trimmedMessage)) {
+      const language = isBanglaMessage(trimmedMessage) ? "bn" : "en";
+      const answer = language === "bn"
+        ? "আমি কৃষি ও খামার-সম্পর্কিত বিষয়ে সাহায্য করি। ফসল, রোগ-পোকা, মাটি, সেচ, আবহাওয়া বা কৃষকের কোনো সমস্যা নিয়ে প্রশ্ন করুন।"
+        : "I can help with agriculture and farming. Please ask about crops, pests or diseases, soil, irrigation, weather, or a farmer's problem.";
+      updateConversationHistory(effectiveConversationId, trimmedMessage, answer);
+      return {
+        answer,
+        language,
+        sources: [],
+        dataDate: null,
+        dataQuality: "out_of_scope",
+        provenance: [],
+        limitations: [],
+        conversationId: effectiveConversationId,
+        meta: { model: "agriculture-scope-router", toolsCalled: [], route: "out_of_scope" },
+      };
+    }
+
+    if (scope === "clarification" && !isGeneralHelpOrGreeting(trimmedMessage)) {
+      const language = isBanglaMessage(trimmedMessage) ? "bn" : "en";
+      const answer = language === "bn"
+        ? "কৃষির কোন বিষয়ে সাহায্য চান—ফসল, রোগ-পোকা, মাটি, সেচ, আবহাওয়া, নাকি বাজারদর?"
+        : "Which agricultural topic do you need help with: crops, pests or diseases, soil, irrigation, weather, or market prices?";
+      updateConversationHistory(effectiveConversationId, trimmedMessage, answer);
+      return {
+        answer,
+        language,
+        sources: [],
+        dataDate: null,
+        dataQuality: "clarification_needed",
+        provenance: [],
+        limitations: [],
+        conversationId: effectiveConversationId,
+        meta: { model: "agriculture-scope-router", toolsCalled: [], route: "clarification" },
+      };
+    }
+
     // Validate district against supported list
     const lowerDistrict = typeof district === "string" ? district.trim().toLowerCase() : "";
     const isGreetingOrHelp = isGeneralHelpOrGreeting(trimmedMessage);
-    if (!farmId && !isGreetingOrHelp && !VALID_DISTRICT_CODES.has(lowerDistrict)) {
+    const needsDistrict = requiresVerifiedDistrict(trimmedMessage);
+    if (!farmId && needsDistrict && !isGreetingOrHelp && !VALID_DISTRICT_CODES.has(lowerDistrict)) {
       const language = isBanglaMessage(trimmedMessage) ? "bn" : "en";
       const missingDistrict = !lowerDistrict;
       const unsupportedAnswer = language === "bn"
@@ -1300,33 +1323,24 @@ export class AssistantChatService {
       };
     }
 
-    const catalogCrop = findCatalogOnlyCropMention(trimmedMessage)
-      || (getCropByCode(crop)?.planningAvailable === false ? getCropByCode(crop) : null);
+    const catalogCrop = findCatalogCropMention(trimmedMessage) || getCropByCode(crop);
     const cropKnowledge = catalogCrop ? getCropKnowledge(catalogCrop.code) : null;
-    if (catalogCrop && !isMarketQuestion(trimmedMessage) && !cropKnowledge?.generalGuide) {
-      const coverageNotice = buildCropCoverageNotice(catalogCrop, trimmedMessage, lowerDistrict);
-      const responsePayload = {
-        ...coverageNotice,
-        conversationId: effectiveConversationId,
-        meta: { model: "crop-catalog-coverage-guard", toolsCalled: [] },
-      };
-      updateConversationHistory(effectiveConversationId, trimmedMessage, responsePayload.answer);
-      return responsePayload;
-    }
-
     let responsePayload = null;
 
     // Try Gemini Function Calling if configured
     if (geminiAssistantClient.isConfigured()) {
       try {
-        const geminiResult = await geminiAssistantClient.generateGroundedResponse({
+        const useGroundedTools = Boolean(farmId || needsDistrict || isMarketQuestion(trimmedMessage) || isWebsiteHelpQuestion(trimmedMessage) || isOwnDataRecallQuestion(trimmedMessage) || (catalogCrop && cropKnowledge?.generalGuide));
+        const geminiResult = useGroundedTools
+          ? await geminiAssistantClient.generateGroundedResponse({
           message: trimmedMessage,
           district: lowerDistrict,
           crop,
           farmId,
           userId,
           conversationHistory: history,
-        });
+          })
+          : await geminiAssistantClient.generateGeneralAgriculturalResponse({ message: trimmedMessage, conversationHistory: history });
 
         // Extract metadata from executed tools
         const sources = new Set(["Google Gemini 2.5 Flash"]);
@@ -1455,7 +1469,7 @@ export class AssistantChatService {
 
         const cropKnowledgeWasRetrieved = geminiResult.executedTools.some((tool) => tool.toolName === "getCropKnowledge");
         const asksForSpecificCropPlan = /\b(when|plant|sow|sowing|fertili[sz]er|irrigat|water schedule|yield|dose|schedule)\b|কখন|বপন|রোপণ|সার|সেচ|ফলন|মাত্রা|সময়সূচি|চাষের সময়/i.test(trimmedMessage);
-        if (catalogCrop && !isMarketQuestion(trimmedMessage)
+      if (useGroundedTools && !needsDistrict && catalogCrop && cropKnowledge?.generalGuide && !isMarketQuestion(trimmedMessage)
           && (!cropKnowledgeWasRetrieved || (asksForSpecificCropPlan && !catalogCrop.planningAvailable))) {
           responsePayload = buildCropKnowledgeFallback(cropKnowledge, trimmedMessage, effectiveConversationId);
         } else {
@@ -1483,7 +1497,7 @@ export class AssistantChatService {
 
     // If Gemini was not configured or threw an error, use the deterministic grounded engine
     if (!responsePayload) {
-      if (catalogCrop && !isMarketQuestion(trimmedMessage) && cropKnowledge?.generalGuide) {
+      if (!needsDistrict && catalogCrop && !isMarketQuestion(trimmedMessage) && cropKnowledge?.generalGuide) {
         responsePayload = buildCropKnowledgeFallback(cropKnowledge, trimmedMessage, effectiveConversationId);
       } else {
         const fallbackResult = await generateDeterministicFallback({
