@@ -54,7 +54,7 @@ test("Assistant retains the real chat and voice services with a mobile-safe comp
   assert.match(assistant, /useVoiceOutput/);
   assert.match(assistant, /fetchAssistantConversation/);
   assert.match(assistant, /createSavedAdvisory/);
-  assert.match(assistant, /pb-\[calc\(env\(safe-area-inset-bottom\)\+1rem\)\]/);
+  assert.match(assistant, /pb-\[calc\(env\(safe-area-inset-bottom\)\+0\.5rem\)\]/);
   assert.match(assistant, /min-h-11 min-w-11/);
 });
 
@@ -74,7 +74,7 @@ test("Assistant reserves the application shell space and keeps the composer in i
   const assistant = read("app/(app)/assistant/page.js");
   assert.match(assistant, /h-\[calc\(100dvh-13\.5rem\)\].*lg:h-\[calc\(100dvh-7\.75rem\)\]/);
   assert.match(assistant, /flex min-h-0 w-full flex-1 flex-col overflow-hidden/);
-  assert.match(assistant, /shrink-0 border-t border-line bg-gradient-to-r/);
+  assert.match(assistant, /shrink-0 bg-transparent px-3 pb-\[calc\(env\(safe-area-inset-bottom\)\+0\.5rem\)\]/);
   assert.doesNotMatch(assistant, /sticky bottom-0 bg-gradient-to-r/);
   assert.match(assistant, /assistant\.headerDescription/);
   assert.match(assistant, /assistant\.contextLabel/);

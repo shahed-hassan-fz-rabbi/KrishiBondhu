@@ -11,6 +11,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
   BarChart3,
+  Bookmark,
   Bot,
   Calendar,
   Check,
@@ -35,6 +36,7 @@ import {
   Square,
   Sun,
   Tractor,
+  TrendingUp,
   Trash2,
   User,
   Volume2,
@@ -52,6 +54,7 @@ import {
   fetchAssistantConversation,
   deleteAssistantConversation,
   fetchFarms,
+  createSavedAdvisory,
 } from "@/services/api.js";
 
 const CROPS = [
@@ -94,12 +97,37 @@ function AssistantContent() {
   const [isGuestSession, setIsGuestSession] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
   const [failedPrompt, setFailedPrompt] = useState("");
+  const [advisorySaveState, setAdvisorySaveState] = useState({});
 
   const handleCopyMessage = (msgId, text) => {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       navigator.clipboard.writeText(text);
       setCopiedId(msgId);
       setTimeout(() => setCopiedId(null), 2000);
+    }
+  };
+
+  const handleSaveAssistantReply = async (msg) => {
+    if (!isAuthenticated) {
+      router.push("/login?redirect=%2Fassistant");
+      return;
+    }
+    if (advisorySaveState[msg.id] === "saving" || advisorySaveState[msg.id] === "saved") return;
+    setAdvisorySaveState((current) => ({ ...current, [msg.id]: "saving" }));
+    try {
+      const selectedCropInfo = CROPS.find((crop) => crop.id === selectedCrop);
+      const result = await createSavedAdvisory({
+        title: `${isBn ? "সহকারীর পরামর্শ" : "Assistant advice"} · ${selectedCropInfo?.[isBn ? "nameBn" : "nameEn"] || "KrishiBondhu"}`.slice(0, 180),
+        body: String(msg.text || "").trim().slice(0, 5000),
+        category: "assistant",
+        cropCode: selectedCrop || "",
+        cropName: selectedCropInfo?.nameEn || "",
+        districtCode: ["cumilla", "chattogram"].includes(selectedDistrict) ? selectedDistrict : "",
+        sourceHref: "/assistant",
+      });
+      setAdvisorySaveState((current) => ({ ...current, [msg.id]: result.success ? "saved" : "error" }));
+    } catch {
+      setAdvisorySaveState((current) => ({ ...current, [msg.id]: "error" }));
     }
   };
 
@@ -569,6 +597,17 @@ function AssistantContent() {
   const districtLabel = selectedDistrict === "chattogram" ? "Chattogram" : "Cumilla";
   const districtLabelBn = selectedDistrict === "chattogram" ? "চট্টগ্রাম" : "কুমিল্লা";
 
+  // These prompt starters route through the existing evidence-grounded assistant.
+  const QUICK_QUESTIONS = [
+    { id: "market-price", title: isBn ? "বাজারদরের তথ্য" : "Market price", query: isBn ? districtLabelBn + " জেলায় টমেটোর সর্বশেষ যাচাইকৃত বাজারদরের তথ্য ও পর্যবেক্ষণের তারিখ কী?" : "What is the latest verified tomato market price information for " + districtLabel + ", and when was it observed?", icon: Layers },
+    { id: "price-outlook", title: isBn ? "দরের পূর্বাভাস" : "Price outlook", subtitle: isBn ? "যোগ্য যাচাইকৃত ইতিহাস থাকলেই Python মডেল" : "Python price model only when verified history is eligible", query: isBn ? districtLabelBn + " জেলায় টমেটোর দরের পূর্বাভাস আছে কি? পর্যাপ্ত যাচাইকৃত ইতিহাস না থাকলে তা বলো।" : "Is a tomato price forecast available for " + districtLabel + "? Say so if verified history is insufficient.", icon: TrendingUp },
+    { id: "crop-choice", title: isBn ? "পরের ফসল বাছাই" : "Choose the next crop", query: isBn ? districtLabelBn + " জেলার জমিতে আমন কাটার পর কোন ফসল বিবেচনা করা যায়? ক্যালেন্ডারের সীমাবদ্ধতা বলো।" : "What crops could be considered after Aman harvest in " + districtLabel + "? Explain calendar limits.", icon: Sprout },
+    { id: "planting-window", title: isBn ? "বপনের সময়" : "Planting window", query: isBn ? "আমন ধানের জন্য উপলভ্য বপন বা রোপণের সময় এবং এর উৎস কী?" : "What planting window is available for Aman rice, and what is its source?", icon: Calendar },
+    { id: "rainfall", title: isBn ? "বৃষ্টির তথ্য" : "Rainfall information", query: isBn ? districtLabelBn + " জেলার সাম্প্রতিক বৃষ্টির তথ্য ও তারিখ কী?" : "What dated recent rainfall information is available for " + districtLabel + "?", icon: Droplets },
+    { id: "soil-water", title: isBn ? "মাটি ও পানি" : "Soil and water", query: isBn ? districtLabelBn + " জেলার মাটি ও পানির আঞ্চলিক উপাত্ত কী? তারিখ ও সীমাবদ্ধতাও বলো।" : "What regional soil and water data are available for " + districtLabel + "? Include dates and limits.", icon: Droplets },
+    { id: "field-tasks", title: isBn ? "মাঠের কাজ" : "Field tasks", query: isBn ? "আমার মাঠের নির্ধারিত কাজগুলো কী?" : "What scheduled tasks are recorded for my field?", icon: ListTodo },
+  ];
+
   return (
     <div className="mx-auto flex h-[calc(100dvh-13.5rem)] min-h-[28rem] w-full max-w-[1320px] flex-col overflow-hidden lg:h-[calc(100dvh-7.75rem)] lg:min-h-0">
       {/* Main Grid: Left Chat Area & Right Sidebar */}
@@ -672,6 +711,16 @@ function AssistantContent() {
 
                   </div>
                 </div>
+
+                <section aria-label={isBn ? "প্রস্তাবিত কৃষি প্রশ্ন" : "Suggested farming questions"} className="rounded-2xl border border-line bg-surface p-4">
+                  <h3 className="mb-3 text-sm font-bold text-content">{isBn ? "কী জানতে চান?" : "What would you like to know?"}</h3>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {QUICK_QUESTIONS.map((question) => {
+                      const Icon = question.icon;
+                      return <button key={question.id} type="button" onClick={() => handleSendMessage(question.query)} className="flex min-h-11 items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-left text-sm font-semibold text-content transition hover:border-emerald/40 hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald"><Icon className="h-4 w-4 shrink-0 text-emerald" aria-hidden="true" /><span className="min-w-0">{question.title}{question.subtitle ? <small className="mt-0.5 block font-normal text-muted">{question.subtitle}</small> : null}</span></button>;
+                    })}
+                  </div>
+                </section>
 
                 {/* Farm-Aware Specific Quick Prompts (if active farm selected) */}
                 {activeFarm ? (
@@ -870,6 +919,14 @@ function AssistantContent() {
 
                         {/* Message Text */}
                         <div className="whitespace-pre-line text-sm leading-relaxed [overflow-wrap:anywhere]">{msg.text}</div>
+                        {!isUser && (
+                          <div className="mt-3 flex justify-end">
+                            <button type="button" disabled={advisorySaveState[msg.id] === "saving" || advisorySaveState[msg.id] === "saved"} onClick={() => handleSaveAssistantReply(msg)} aria-live="polite" className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-forest-300 bg-surface px-2.5 py-1 text-xs font-semibold text-forest-800 transition hover:bg-surface-2 disabled:cursor-default disabled:opacity-70 dark:border-forest-700 dark:text-forest-200">
+                              {advisorySaveState[msg.id] === "saved" ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Bookmark className="h-3.5 w-3.5" aria-hidden="true" />}
+                              {advisorySaveState[msg.id] === "saved" ? t("assistant.advisorySaved") : advisorySaveState[msg.id] === "error" ? t("assistant.advisorySaveFailed") : !isAuthenticated ? t("assistant.signInToSave") : t("assistant.saveAdvisory")}
+                            </button>
+                          </div>
+                        )}
                         {/* Metadata Footer */}
                         {!isUser && (msg.observationDate || msg.observationLocation) && (
                           <div className="mt-3 pt-2.5 border-t border-line/60">

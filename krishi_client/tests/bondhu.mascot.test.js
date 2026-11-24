@@ -100,7 +100,7 @@ test("Bondhu stays character-first at rest and opens a compact speech bubble onl
   assert.match(css, /\.kb-mini-launcher \.kb-mini-face \{[^}]*filter:none/, "the character has no colored CSS halo");
   assert.match(css, /\.kb-bondhu-canvas canvas \{[^}]*background:transparent!important/);
   assert.match(css, /\.kb-mini-launcher \.kb-bondhu-canvas \{[^}]*background:transparent!important/);
-  assert.match(css, /@media\(max-width:760px\)[\s\S]*?\.kb-mini-launcher \{ width:132px; height:154px/);
+  assert.match(css, /@media\(max-width:760px\)\s*\{[\s\S]*?\.kb-mini-launcher \{ width:82px; height:96px/);
   assert.match(mascot, /window\.addEventListener\("pointermove", onPointerMove/, "eyes and head track page pointer movement");
   assert.match(mascot, /parts\.gaze\.forEach/);
   assert.match(guide, /krishibondhu\.bondhu\.welcome-seen/, "first-visit greeting is shown at most once");

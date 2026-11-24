@@ -78,7 +78,8 @@ test("farmer-first hero introduces Mini and links to real market and planning to
   assert.match(read("../components/MiniGuide.js"), /<BondhuMascot/);
   assert.match(page, /href="\/market"/);
   assert.match(page, /href="\/crop-rotation"/);
-  assert.match(page, /kb-story-proof|kb-hero2-proof/);
+  assert.match(page, /className="kb-hero2-desc"/);
+  assert.match(page, /data-tour-target="home\.hero"/);
 });
 
 test("homepage uses the proposal's seed-to-market message and keeps environment data secondary", () => {
