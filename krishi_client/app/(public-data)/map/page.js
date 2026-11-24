@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   Activity, Check, CloudRain, Compass, Info, Layers, Leaf,
-  LoaderCircle, MapPin, RefreshCw, Search, Thermometer, Waves,
+  LoaderCircle, LocateFixed, MapPin, RefreshCw, Search, Thermometer, Waves,
 } from "lucide-react";
 import { LoadingState, ErrorState } from "@/components/ui/States.js";
 import { useLocation } from "@/contexts/LocationContext.js";
@@ -93,6 +93,7 @@ function MapPage() {
   const [forecast, setForecast] = useState(null);
   const [forecastLoading, setForecastLoading] = useState(false);
   const [forecastError, setForecastError] = useState(null);
+  const [locationError, setLocationError] = useState(null);
   const mapRequestRef = useRef(0);
   const forecastRequestRef = useRef(0);
 
@@ -162,35 +163,40 @@ function MapPage() {
 
   useEffect(() => () => { mapRequestRef.current += 1; forecastRequestRef.current += 1; }, []);
 
+  const refreshForecast = useCallback(async (location) => {
+    if (!location) return;
+    const requestId = ++forecastRequestRef.current;
+    setForecastLoading(true);
+    setForecastError(null);
+    try {
+      const result = await fetchWeatherForecast({ latitude: location.latitude, longitude: location.longitude });
+      if (requestId !== forecastRequestRef.current) return;
+      if (!result?.success || !result.data) throw new Error(result?.message || (isBn ? "আবহাওয়ার পূর্বাভাস পাওয়া যায়নি" : "Forecast is unavailable"));
+      setForecast(result.data);
+    } catch (err) {
+      if (requestId === forecastRequestRef.current) {
+        setForecast(null);
+        setForecastError(err?.message || (isBn ? "পূর্বাভাস লোড করা যায়নি" : "Could not load forecast"));
+      }
+    } finally {
+      if (requestId === forecastRequestRef.current) setForecastLoading(false);
+    }
+  }, [isBn]);
+
   useEffect(() => {
     if (!selectedLocation) return undefined;
     let cancelled = false;
     const timer = window.setTimeout(() => {
       if (cancelled) return;
-      const requestId = ++forecastRequestRef.current;
       setForecast(null);
-      setForecastLoading(true);
-      setForecastError(null);
-      fetchWeatherForecast({ latitude: selectedLocation.latitude, longitude: selectedLocation.longitude })
-        .then(result => {
-          if (cancelled || requestId !== forecastRequestRef.current) return;
-          if (!result?.success || !result.data) throw new Error(result?.message || (isBn ? "আবহাওয়ার পূর্বাভাস পাওয়া যায়নি" : "Forecast is unavailable"));
-          setForecast(result.data);
-        })
-        .catch(err => {
-          if (!cancelled && requestId === forecastRequestRef.current) {
-            setForecast(null);
-            setForecastError(err?.message || (isBn ? "পূর্বাভাস লোড করা যায়নি" : "Could not load forecast"));
-          }
-        })
-        .finally(() => { if (!cancelled && requestId === forecastRequestRef.current) setForecastLoading(false); });
+      void refreshForecast(selectedLocation);
     }, 0);
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
       forecastRequestRef.current += 1;
     };
-  }, [selectedLocation, isBn]);
+  }, [selectedLocation, refreshForecast]);
 
   const toggleLayer = key => setActiveLayers(previous => ({ ...previous, [key]: !previous[key] }));
   const upazilas = useMemo(() => {
@@ -240,8 +246,38 @@ function MapPage() {
   };
 
   const handleMapLocationSelect = point => {
+    setLocationError(null);
     setSelectedUpazila(null);
     setSelectedLocation({ latitude: point.latitude, longitude: point.longitude, name: isBn ? "মানচিত্রে নির্বাচিত স্থান" : "Selected map point", districtCode: selectedDistrict, representative: false });
+  };
+
+  const handleUpazilaSelect = feature => {
+    const point = feature?.properties?.representativePoint;
+    if (!point || !Number.isFinite(point.latitude) || !Number.isFinite(point.longitude)) return;
+    const name = isBn ? feature.properties.displayNameBn : feature.properties.displayNameEn;
+    setLocationError(null);
+    setSelectedUpazila(feature);
+    setSelectedLocation({ ...point, name, districtCode: selectedDistrict, representative: true });
+  };
+
+  const handleUseMyLocation = () => {
+    setLocationError(null);
+    if (!navigator.geolocation) {
+      setLocationError(isBn ? "এই ব্রাউজারে অবস্থান সেবা নেই।" : "Location is not available in this browser.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => handleMapLocationSelect({ latitude: coords.latitude, longitude: coords.longitude }),
+      error => setLocationError(error.code === 1
+        ? (isBn ? "অবস্থান ব্যবহারের অনুমতি দিন।" : "Allow location access to use this feature.")
+        : (isBn ? "আপনার অবস্থান পাওয়া যায়নি। আবার চেষ্টা করুন।" : "Could not get your location. Try again.")),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  };
+
+  const handleRefresh = () => {
+    void loadMapData(selectedDistrict);
+    if (selectedLocation) void refreshForecast(selectedLocation);
   };
 
   const display = value => localizeNumber(value, locale);
@@ -263,12 +299,12 @@ function MapPage() {
         <h1 data-tour-target="map.overview" className="mt-3 font-heading text-2xl font-bold tracking-tight text-forest sm:text-3xl dark:text-emerald-100">{isBn ? "আপনার এলাকার আবহাওয়া ও পরিবেশ দেখুন" : "Explore local weather and environmental conditions"}</h1>
         <p className="mt-2 text-sm leading-6 text-ink-muted">{isBn ? "জেলা বা উপজেলা খুঁজুন, অথবা মানচিত্রে চাপ দিয়ে একটি স্থান বেছে নিন। পূর্বাভাস, রেকর্ড ও উপগ্রহ তথ্য আলাদা করে দেখানো হয়।" : "Search a district or upazila, or tap the map to choose a point. Forecasts, recorded observations, and satellite data are kept clearly separate."}</p>
       </div>
-      <button type="button" onClick={() => loadMapData(selectedDistrict)} disabled={loading} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-line bg-surface px-4 text-sm font-semibold text-ink shadow-xs transition hover:border-emerald hover:bg-surface-2 disabled:opacity-60" title={isBn ? "উপাত্ত আবার লোড করুন" : "Reload data"}>
-        <RefreshCw size={15} className={loading ? "animate-spin" : ""} />{isBn ? "তথ্য হালনাগাদ" : "Refresh data"}
+      <button type="button" onClick={handleRefresh} disabled={loading || forecastLoading} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-line bg-surface px-4 text-sm font-semibold text-ink shadow-xs transition hover:border-emerald hover:bg-surface-2 disabled:opacity-60" title={isBn ? "সর্বশেষ উপলভ্য উপাত্ত আবার আনুন" : "Fetch the latest available data"}>
+        <RefreshCw size={15} className={loading || forecastLoading ? "animate-spin" : ""} />{isBn ? "তথ্য হালনাগাদ" : "Refresh data"}
       </button>
     </header>
 
-    <section className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_21rem]">
+    <section className="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_21rem]">
       <div className="min-w-0 overflow-hidden rounded-3xl border border-line bg-surface shadow-sm">
         <div className="flex flex-col gap-3 border-b border-line p-3 sm:flex-row sm:items-center sm:p-4">
           <div className="relative min-w-0 flex-1">
@@ -280,7 +316,8 @@ function MapPage() {
               </button>)}
             </div>}
           </div>
-          <div className="flex min-h-11 items-center gap-2 rounded-xl bg-emerald-50 px-3 text-xs font-semibold text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200"><MapPin size={15} />{selectedLocation?.name || districtLabel || (isBn ? "স্থান নির্বাচন করুন" : "Choose a location")}</div>
+          <button type="button" onClick={handleUseMyLocation} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-900 transition hover:bg-emerald-100 focus-visible:outline-2 focus-visible:outline-emerald-600 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200" title={isBn ? "আমার বর্তমান অবস্থান দেখুন" : "Use my current location"}><LocateFixed size={15} />{isBn ? "আমার অবস্থান" : "My location"}</button>
+          <div className="flex min-h-11 min-w-0 items-center gap-2 rounded-xl bg-emerald-50 px-3 text-xs font-semibold text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200"><MapPin size={15} className="shrink-0" /><span className="truncate">{selectedLocation?.name || districtLabel || (isBn ? "স্থান নির্বাচন করুন" : "Choose a location")}</span></div>
         </div>
 
         {error ? <div className="p-5"><ErrorState message={error} onRetry={() => loadMapData(selectedDistrict)} /></div> : <div className="p-2 sm:p-3">
@@ -292,6 +329,7 @@ function MapPage() {
             layersData={layersData}
             activeLayers={activeLayers}
             onLocationSelect={handleMapLocationSelect}
+            onUpazilaSelect={handleUpazilaSelect}
             isBn={isBn}
           />
         </div>}
@@ -323,6 +361,7 @@ function MapPage() {
         <section className="rounded-3xl border border-line bg-surface p-4 shadow-sm sm:p-5">
           <div className="flex items-start justify-between gap-3"><div><h2 className="text-sm font-bold text-ink">{isBn ? "নির্বাচিত স্থানের তথ্য" : "Selected location"}</h2><p className="mt-1 text-xs text-ink-muted">{selectedLocation?.representative ? (isBn ? "এটি এলাকার প্রতিনিধি স্থান" : "Representative point for this area") : (isBn ? "মানচিত্রে নির্বাচিত স্থানাঙ্ক" : "Point selected on the map")}</p></div><MapPin size={17} className="mt-0.5 shrink-0 text-emerald" /></div>
           {forecastError && <p role="status" className="mt-3 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">{forecastError}</p>}
+          {locationError && <p role="status" className="mt-3 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">{locationError}</p>}
           <div className="mt-4 grid grid-cols-2 gap-2">
             {activeLayers.weatherForecast && <ReadingCard icon={Thermometer} title={isBn ? "তাপমাত্রা · পূর্বাভাস" : "Temperature · forecast"} value={current ? `${display(current.temperatureMinC)}–${display(current.temperatureMaxC)}°C` : (forecastLoading ? "" : (isBn ? "উপাত্ত নেই" : "No data"))} meta={current?.date ? display(current.date) : "Open-Meteo"} note={isBn ? "এটি পূর্বাভাস, পর্যবেক্ষণ নয়।" : "Forecast data, not an observation."} tone="blue" loading={forecastLoading} />}
             {activeLayers.weatherForecast && <ReadingCard icon={CloudRain} title={isBn ? "সম্ভাব্য বৃষ্টি · পূর্বাভাস" : "Expected rain · forecast"} value={today?.precipitationSumMm != null ? `${display(today.precipitationSumMm)} mm` : (forecastLoading ? "" : (isBn ? "উপাত্ত নেই" : "No data"))} meta={today?.precipitationProbabilityMax != null ? `${display(today.precipitationProbabilityMax)}% ${isBn ? "সম্ভাবনা" : "chance"}` : "Open-Meteo"} note={isBn ? "আজকের মডেলভিত্তিক দৈনিক পূর্বাভাস।" : "Model-based daily forecast for the selected point."} tone="blue" loading={forecastLoading} />}
@@ -331,7 +370,7 @@ function MapPage() {
             {activeLayers.smap && <ReadingCard icon={Waves} title={isBn ? "মাটির আর্দ্রতা · SMAP" : "Soil moisture · SMAP"} value={soil?.isRecommendedQuality && soil?.soilMoisture != null ? `${display(soil.soilMoisture)} m³/m³` : (isBn ? "যাচাইকৃত উপাত্ত নেই" : "No quality-approved data")} meta={soil?.dateLabel ? `${isBn ? "পর্যবেক্ষণ" : "Observed"}: ${display(soil.dateLabel)}` : "NASA SMAP"} note={isBn ? "আঞ্চলিক উপগ্রহ গ্রিডের উপরিভাগের আর্দ্রতা; আপনার জমির পরীক্ষা নয়।" : "Regional surface-moisture grid; not a field soil test."} tone="teal" />}
             {activeLayers.modis && <ReadingCard icon={Leaf} title={isBn ? "গাছপালার সবুজভাব · NDVI" : "Vegetation greenness · NDVI"} value={vegetation?.isReliableQuality && vegetation?.ndvi != null ? display(vegetation.ndvi) : (isBn ? "যাচাইকৃত উপাত্ত নেই" : "No quality-approved data")} meta={vegetation?.dateLabel ? `${isBn ? "পর্যবেক্ষণ" : "Observed"}: ${display(vegetation.dateLabel)}` : "NASA MODIS"} note={isBn ? "এলাকার গাছপালার সবুজভাব; ফসলের রোগ বা ফলনের মাপ নয়।" : "Regional vegetation greenness; not crop disease or yield."} tone="lime" />}
           </div>
-          {forecast && activeLayers.weatherForecast && <div className="mt-3 border-t border-line pt-3 text-[11px] leading-5 text-ink-muted">{isBn ? "পূর্বাভাসের উৎস" : "Forecast source"}: <a href="https://open-meteo.com/" target="_blank" rel="noreferrer" className="font-semibold text-emerald underline-offset-2 hover:underline">Open-Meteo</a> · {isBn ? "সর্বশেষ হালনাগাদ" : "Updated"}: {timestamp}{forecast.meta?.isStale ? ` · ${isBn ? "সংরক্ষিত পুরোনো পূর্বাভাস" : "Cached earlier forecast"}` : ""}</div>}
+          {forecast && activeLayers.weatherForecast && <div className="mt-3 border-t border-line pt-3 text-[11px] leading-5 text-ink-muted">{isBn ? "পূর্বাভাসের উৎস" : "Forecast source"}: <a href="https://open-meteo.com/" target="_blank" rel="noreferrer" className="font-semibold text-emerald underline-offset-2 hover:underline">Open-Meteo</a> · {isBn ? "সর্বশেষ হালনাগাদ" : "Updated"}: {timestamp}{forecast.meta?.isStale ? ` · ${isBn ? "সংরক্ষিত পুরোনো পূর্বাভাস" : "Cached earlier forecast"}` : forecast.meta?.isCached ? ` · ${isBn ? "ক্যাশ করা" : "Cached"}` : ""}</div>}
           {selectedLocation && <p className="mt-2 text-[11px] text-ink-muted">{isBn ? "স্থানাঙ্ক" : "Coordinates"}: {display(Number(selectedLocation.latitude).toFixed(4))}, {display(Number(selectedLocation.longitude).toFixed(4))}</p>}
         </section>
       </aside>
