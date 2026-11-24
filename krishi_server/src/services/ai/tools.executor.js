@@ -157,12 +157,26 @@ function requireWeatherDistrict(code) {
 
 export const toolExecutors = {
   /** Source-linked, curated Bangladesh crop facts; not a fine-tuned-model response. */
-  async getCropKnowledge({ crop }) {
+  async getCropKnowledge({ crop, variety, farmId, userId }) {
     const normalized = String(crop || "").trim().toLocaleLowerCase("en");
     const match = loadCropCatalog().crops.find((item) => [item.code, item.nameEn, item.nameBn, ...(item.aliasesEn || []), ...(item.aliasesBn || [])]
       .some((value) => String(value || "").trim().toLocaleLowerCase("en") === normalized));
     if (!match) return { status: "UNKNOWN_CROP", message: "Crop is not in the KrishiBondhu catalog." };
     const knowledge = getCropKnowledge(match.code);
+    let requestedVariety = String(variety || "").trim();
+    if (farmId && userId) {
+      const access = await findOwnedFarmForTool(farmId, userId);
+      if (!access.error && access.farm.crop?.cropCode === match.code) {
+        requestedVariety ||= access.farm.crop?.variety || "";
+      }
+    }
+    const varietyGuides = knowledge?.varietyGuides || [];
+    const normalizedVariety = requestedVariety.toLocaleLowerCase("en").replace(/[^\p{L}\p{N}]+/gu, "");
+    const selectedVarietyGuide = varietyGuides.find((guide) =>
+      [guide.varietyName, ...(guide.aliases || [])].some((alias) =>
+        String(alias || "").toLocaleLowerCase("en").replace(/[^\p{L}\p{N}]+/gu, "") === normalizedVariety,
+      ),
+    ) || null;
     const calendar = getCropCalendarsData().crops.find((item) => item.cropId === match.code);
     let managementGuide;
     try {
@@ -180,6 +194,8 @@ export const toolExecutors = {
       nameBn: match.nameBn,
       catalogStatus: match.dataStatus,
       generalGuide: knowledge?.generalGuide || null,
+      varietyGuides,
+      selectedVarietyGuide,
       managementGuide,
       topics: knowledge?.topics || [],
       verificationNote: knowledge?.verificationNote || null,
@@ -982,7 +998,9 @@ export const toolExecutors = {
     return {
       farmName: farm.farmName,
       name: farm.farmName,
+      cropCode: farm.crop?.cropCode || null,
       cropName: data.crop?.cropNameBn || farm.crop?.cropName,
+      variety: farm.crop?.variety || null,
       season: data.crop?.seasonBn,
       plantingDate: farm.crop?.plantingDate,
       daysSincePlanting,

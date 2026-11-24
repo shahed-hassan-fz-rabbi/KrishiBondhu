@@ -211,8 +211,11 @@ function AssistantContent() {
   }, [setInputValue]);
 
   const handleLiveTranscript = useCallback((transcript) => {
-    if (!transcript) return;
     const base = voiceBaseInputRef.current.trim();
+    if (!transcript) {
+      setInputValue(base);
+      return;
+    }
     setInputValue([base, transcript.trim()].filter(Boolean).join(" "));
   }, [setInputValue]);
 

@@ -41,7 +41,7 @@ function isValidLatLng(value) {
     && Number.isFinite(value[0]) && Number.isFinite(value[1]);
 }
 
-function MapController({ center, zoom, bounds, focusFeature }) {
+function MapController({ center, zoom, bounds, focusFeature, focusPoint }) {
   const map = useMap();
   useEffect(() => {
     let cancelled = false;
@@ -56,14 +56,19 @@ function MapController({ center, zoom, bounds, focusFeature }) {
     const hasBounds = Array.isArray(targetBounds) && targetBounds.length === 2
       && isValidLatLng(targetBounds[0]) && isValidLatLng(targetBounds[1]);
     const hasCenter = isValidLatLng(center);
+    const hasFocusPoint = isValidLatLng(focusPoint);
 
     const apply = () => {
       if (cancelled) return;
       // Ensure the container has real dimensions before calculating bounds/panning.
       try { map.invalidateSize({ animate: false }); } catch { /* map not ready */ }
       try {
-        if (hasBounds) {
+        if (focusFeature?.geometry && hasBounds) {
           map.fitBounds([targetBounds[0], targetBounds[1]], { padding: [30, 30], maxZoom: focusFeature ? 12 : 11 });
+        } else if (hasFocusPoint) {
+          map.flyTo(focusPoint, Math.max(map.getZoom(), 11), { duration: 0.8 });
+        } else if (hasBounds) {
+          map.fitBounds([targetBounds[0], targetBounds[1]], { padding: [30, 30], maxZoom: 11 });
         } else if (hasCenter) {
           map.flyTo(center, targetZoom, { duration: 1.2 });
         }
@@ -85,7 +90,7 @@ function MapController({ center, zoom, bounds, focusFeature }) {
       cancelled = true;
       if (frame) window.cancelAnimationFrame(frame);
     };
-  }, [center, zoom, bounds, focusFeature, map]);
+  }, [center, zoom, bounds, focusFeature, focusPoint, map]);
   return null;
 }
 
@@ -167,6 +172,7 @@ export default function DistrictGisMap({
   selectedLocation,
   layersData,
   onLocationSelect,
+  onUpazilaSelect,
   activeLayers = {
     boundary: true,
     upazilas: true,
@@ -230,7 +236,7 @@ export default function DistrictGisMap({
   const gpmPos = gpm?.location ? [gpm.location.latitude, gpm.location.longitude] : null;
 
   return (
-    <div className="relative h-[420px] min-w-0 w-full overflow-hidden rounded-2xl border border-line bg-surface shadow-xs sm:h-[520px] xl:h-[min(72vh,760px)] xl:min-h-[560px]">
+    <div className="relative h-[380px] min-w-0 w-full overflow-hidden rounded-2xl border border-line bg-surface shadow-xs sm:h-[440px] xl:h-[min(56vh,620px)] xl:min-h-[480px]">
       {/* Offline Vector Mode Banner */}
       {isOfflineBasemap && (
         <div role="status" aria-live="polite" className="pointer-events-auto absolute top-4 right-4 z-[1000] flex items-center gap-2.5 rounded-xl border border-amber-300 bg-amber-50/95 px-3 py-2 text-xs font-medium text-amber-900 shadow-md backdrop-blur-xs">
@@ -257,13 +263,17 @@ export default function DistrictGisMap({
         scrollWheelZoom={false}
         className="h-full w-full"
         style={{
-          background: isOfflineBasemap
-            ? "radial-gradient(#d3e3d1 1.2px, #f4f8f3 1.2px)"
-            : "#eef4ec",
-          backgroundSize: isOfflineBasemap ? "20px 20px" : "auto",
+          background: "radial-gradient(#cbdccf 1.1px, #f2f7f3 1.1px)",
+          backgroundSize: "20px 20px",
         }}
       >
-        <MapController center={center} zoom={zoom} bounds={mapBounds} focusFeature={selectedUpazila} />
+        <MapController
+          center={center}
+          zoom={zoom}
+          bounds={mapBounds}
+          focusFeature={selectedUpazila}
+          focusPoint={selectedUpazila ? null : selectedLocation ? [selectedLocation.latitude, selectedLocation.longitude] : null}
+        />
         <MapClickHandler onLocationSelect={onLocationSelect} />
 
         {/* OpenStreetMap standard raster tiles; interactive viewport requests only. */}
@@ -315,8 +325,12 @@ export default function DistrictGisMap({
               };
             }}
             onEachFeature={(feature, layer) => {
-              const name = feature.properties?.shapeName || (isBn ? "উপজেলা" : "Upazila");
+              const name = (isBn ? feature.properties?.displayNameBn : feature.properties?.displayNameEn) || feature.properties?.shapeName || (isBn ? "উপজেলা" : "Upazila");
               layer.bindTooltip(`${name}<br/><span style="font-size:11px;color:#5c6b62">BBS / OCHA ADM-3 · 2020</span>`, { sticky: true });
+              layer.on("click", (event) => {
+                if (event.originalEvent) L.DomEvent.stopPropagation(event.originalEvent);
+                onUpazilaSelect?.(feature);
+              });
             }}
           />
         )}

@@ -15,7 +15,45 @@
         "bn": "রোপা আমন ধান (জীবনকাল ১৩৫–১৪৫ দিন, যেমন ব্রি ধান৪৯, ৮৭, ৭১)। বীজতলায় বপন ১৫ জুন–১৫ জুলাই, চারা রোপণ ১৫ জুলাই–৩১ আগস্ট, কর্তন নভেম্বর–ডিসেম্বর। পানি ব্যবস্থাপনা: ১০০০–১২০০ মিমি, কুশি ও থোড় পর্যায়ে ২–৫ সেমি পানি ধরে রাখুন, কাটার ১০–১২ দিন আগে পানি নিষ্কাশন করুন। সার সুপারিশ (প্রতি বিঘা / ৩৩ শতক): ইউরিয়া ২৬–৩০ কেজি (৩ কিস্তিতে: ১৫–২০ দিন, ৩০–৩৫ দিন ও ৪৫–৫০ দিনে), টিএসপি ১০–১৩ কেজি (শেষ চাষে), পটাশ ১০–১৫ কেজি, জিপসাম ৮–১০ কেজি, দস্তা ১.৩–১.৫ কেজি। গোবর সার: ৩০০–৪০০ কেজি প্রতি বিঘা।"
       },
       "topics": ["lifecycle", "timing", "water_management", "fertilizer_rates", "organic_compost"],
-      "sources": [{ "organization": "BRRI / BARC", "url": "https://brri.gov.bd/", "title": "Modern Rice Cultivation in Bangladesh" }]
+      "varietyGuides": [
+        {
+          "varietyId": "brri_dhan87",
+          "varietyName": "BRRI dhan87",
+          "aliases": ["dhan87", "dhan 87", "ব্রি ধান৮৭", "ব্রি ধান ৮৭"],
+          "season": "Aman",
+          "facts": {
+            "durationDays": 127,
+            "nurserySowing": "15 June–7 July",
+            "seedlingAgeAtTransplantingDays": "20–25",
+            "transplantingWindow": "5 July–5 August",
+            "seedlingsPerHill": "2–3 healthy seedlings",
+            "fertilizerKgPerBigha": { "urea": 26, "tspOrDap": 8, "mop": 14, "gypsum": 9 },
+            "basalApplication": "Apply all TSP/DAP, MOP and gypsum during the final land preparation.",
+            "ureaSplits": [
+              { "split": 1, "daysAfterTransplanting": [7, 10] },
+              { "split": 2, "daysAfterTransplanting": [25, 30] },
+              { "split": 3, "timing": "5–7 days before panicle initiation" }
+            ],
+            "organicManureKgPerBigha": 300,
+            "irrigation": {
+              "en": "Aman is generally rainfed. Give supplemental irrigation if rainfall is insufficient at transplanting; protect against drought from panicle initiation through the milky stage.",
+              "bn": "আমন ধান সাধারণত বৃষ্টিনির্ভর। রোপণের সময় বৃষ্টি কম হলে সম্পূরক সেচ দিন; কাইচথোড় থেকে দুধ পর্যায় পর্যন্ত খরা হলে সেচের ব্যবস্থা করুন।"
+            },
+            "weedManagement": {
+              "en": "The BRRI profile lists hand weeding at 12–15 days after transplanting and later weeding. Its printed second manual-weeding interval is ambiguous, so no exact second date is inferred here.",
+              "bn": "ব্রি-র নির্দেশিকায় রোপণের ১২–১৫ দিন পর হাত নিড়ানির কথা আছে। পরের হাত নিড়ানির দিনের পরিসর উৎসের লেখায় অস্পষ্ট, তাই নির্দিষ্ট দিন বলা হচ্ছে না।"
+            }
+          },
+          "applicabilityNote": "BRRI dhan87 variety-specific guidance. Fertilizer rates are the source's per-bigha reference, not a soil-test prescription; check soil test, land condition and local DAE advice. Apply a scheduled split only if it has not already been applied.",
+          "source": {
+            "organization": "Bangladesh Rice Research Institute (BRRI)",
+            "title": "BRRI Rice Profile — BRRI dhan87 cultivation method",
+            "url": "https://riceprofile.brri.gov.bd/varieties/4",
+            "checkedOn": "2026-11-24"
+          }
+        }
+      ],
+      "sources": [{ "organization": "BRRI Rice Profile", "url": "https://riceprofile.brri.gov.bd/varieties/4", "title": "BRRI dhan87 cultivation method" }]
     },
     {
       "cropId": "boro_rice",

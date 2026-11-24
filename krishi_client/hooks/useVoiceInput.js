@@ -27,6 +27,7 @@ export function useVoiceInput({ onFinalTranscript, onInterimTranscript, uiLangua
   const streamRef = useRef(null);
   const chunksRef = useRef([]);
   const timeoutRef = useRef(null);
+  const startMediaRecorderRef = useRef(null);
   const onFinalRef = useRef(onFinalTranscript);
   const onInterimRef = useRef(onInterimTranscript);
 
@@ -53,6 +54,8 @@ export function useVoiceInput({ onFinalTranscript, onInterimTranscript, uiLangua
       finalTranscriptRef.current = "";
       liveTranscriptRef.current = "";
       deliveredTranscriptRef.current = "";
+      let fallingBackToRecorder = false;
+      let recognitionFailed = false;
       recognition.onstart = () => setIsListening(true);
       recognition.onresult = (event) => {
         const finalParts = [];
@@ -73,6 +76,28 @@ export function useVoiceInput({ onFinalTranscript, onInterimTranscript, uiLangua
       };
       recognition.onerror = (event) => {
         if (event.error === "aborted") return;
+        const canRecordFallback = Boolean(window.MediaRecorder && navigator.mediaDevices?.getUserMedia);
+        if (canRecordFallback && ["network", "language-not-supported"].includes(event.error)) {
+          // Web Speech exists in some browsers but its remote recognition service
+          // may be unavailable. Record locally and use the existing server ASR.
+          fallingBackToRecorder = true;
+          recognitionFailed = true;
+          liveTranscriptRef.current = "";
+          finalTranscriptRef.current = "";
+          setInterimTranscript("");
+          onInterimRef.current?.("");
+          recorderRef.current = null;
+          setErrorCode(null);
+          setErrorDetails("");
+          startMediaRecorderRef.current?.();
+          try { recognition.abort(); } catch { /* the browser may already have stopped it */ }
+          return;
+        }
+        recognitionFailed = true;
+        liveTranscriptRef.current = "";
+        finalTranscriptRef.current = "";
+        setInterimTranscript("");
+        onInterimRef.current?.("");
         const code = event.error === "not-allowed" || event.error === "service-not-allowed"
           ? "PERMISSION_DENIED"
           : event.error === "no-speech"
@@ -86,8 +111,10 @@ export function useVoiceInput({ onFinalTranscript, onInterimTranscript, uiLangua
         setErrorDetails(event.message || event.error || "Speech recognition failed.");
       };
       recognition.onend = () => {
+        if (fallingBackToRecorder) return;
         setIsListening(false);
         setInterimTranscript("");
+        if (recognitionFailed) return;
         const finalTranscript = finalTranscriptRef.current.trim();
         if (finalTranscript) {
           if (deliveredTranscriptRef.current !== finalTranscript) {
@@ -139,35 +166,28 @@ export function useVoiceInput({ onFinalTranscript, onInterimTranscript, uiLangua
     }
   }, [uiLanguage]);
 
-  const startListening = useCallback(async () => {
-    setErrorCode(null);
-    setErrorDetails("");
-    setInterimTranscript("");
-    finalTranscriptRef.current = "";
-    liveTranscriptRef.current = "";
-    deliveredTranscriptRef.current = "";
-    if (typeof window === "undefined") return;
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      startBrowserRecognition();
-      return;
-    }
+  const startMediaRecorderFallback = useCallback(async () => {
     if (!window.MediaRecorder || !navigator.mediaDevices?.getUserMedia) {
+      setIsListening(false);
       setErrorCode("UNSUPPORTED");
-      setErrorDetails("This browser does not support live speech recognition or microphone recording.");
+      setErrorDetails("This browser cannot record audio for server transcription.");
       return;
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
       streamRef.current = stream;
-      const supportedMime = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4"].find((type) => MediaRecorder.isTypeSupported?.(type));
+      const supportedMime = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4"]
+        .find((type) => MediaRecorder.isTypeSupported?.(type));
       const recorder = new MediaRecorder(stream, supportedMime ? { mimeType: supportedMime } : undefined);
       chunksRef.current = [];
       recorder.ondataavailable = (event) => { if (event.data?.size) chunksRef.current.push(event.data); };
       recorder.onerror = (event) => {
-        setErrorCode("UNKNOWN");
+        setErrorCode("AUDIO_CAPTURE");
         setErrorDetails(event.error?.message || "Microphone recording failed.");
         setIsListening(false);
+        if (recorderRef.current === recorder) recorderRef.current = null;
+        recorder.onstop = null;
+        try { if (recorder.state === "recording") recorder.stop(); } catch { /* already stopped */ }
         releaseStream();
       };
       recorder.onstop = () => {
@@ -182,9 +202,11 @@ export function useVoiceInput({ onFinalTranscript, onInterimTranscript, uiLangua
       recorderRef.current = recorder;
       recorder.start(250);
       setIsListening(true);
+      setErrorCode(null);
+      setErrorDetails("");
       setInterimTranscript(uiLanguage === "bn"
-        ? "বাংলা বা English-এ বলুন; শেষ হলে মাইক্রোফোন চাপুন।"
-        : "Speak in Bangla or English, then press the microphone to finish.");
+        ? "ব্রাউজারের লাইভ শনাক্তকরণ কাজ করেনি; এখন রেকর্ড হচ্ছে। কথা শেষ হলে মাইক্রোফোন চাপুন।"
+        : "Live browser recognition is unavailable; recording now. Press the microphone when you finish speaking.");
       timeoutRef.current = setTimeout(() => {
         if (recorder.state === "recording") recorder.stop();
       }, MAX_RECORDING_MS);
@@ -194,7 +216,24 @@ export function useVoiceInput({ onFinalTranscript, onInterimTranscript, uiLangua
       setErrorCode(error.name === "NotAllowedError" || error.name === "PermissionDeniedError" ? "PERMISSION_DENIED" : "AUDIO_CAPTURE");
       setErrorDetails(error.message || "Could not access the microphone.");
     }
-  }, [releaseStream, startBrowserRecognition, transcribeRecording, uiLanguage]);
+  }, [releaseStream, transcribeRecording, uiLanguage]);
+  startMediaRecorderRef.current = startMediaRecorderFallback;
+
+  const startListening = useCallback(async () => {
+    setErrorCode(null);
+    setErrorDetails("");
+    setInterimTranscript("");
+    finalTranscriptRef.current = "";
+    liveTranscriptRef.current = "";
+    deliveredTranscriptRef.current = "";
+    if (typeof window === "undefined") return;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      startBrowserRecognition();
+      return;
+    }
+    await startMediaRecorderFallback();
+  }, [startBrowserRecognition, startMediaRecorderFallback]);
 
   const stopListening = useCallback(() => {
     if (recorderRef.current?.state === "recording") {
