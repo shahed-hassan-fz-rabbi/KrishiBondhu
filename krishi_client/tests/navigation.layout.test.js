@@ -29,7 +29,8 @@ test("private pages own their login gate while the shared layout keeps their rou
 test("sidebar and mobile navigation mark nested routes active", () => {
   const sidebar = read("../components/layout/AppSidebar.js");
   const bottomNav = read("../components/layout/BottomNav.js");
-  assert.match(sidebar, /const matchesPath = pathname === href \|\| pathname\.startsWith\(`\$\{href\}\/`\)/);
+  assert.match(sidebar, /const baseHref = href\.split\("#"\)\[0\]/);
+  assert.match(sidebar, /const matchesPath = pathname === baseHref \|\| pathname\.startsWith\(`\$\{baseHref\}\/`\)/);
   assert.match(sidebar, /bg-white font-semibold text-forest/);
   assert.match(bottomNav, /pathname === href \|\| pathname\.startsWith\(`\$\{href\}\/`\)/);
   assert.match(bottomNav, /bg-forest text-white/);

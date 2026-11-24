@@ -206,6 +206,28 @@ export default function WeatherIntelligenceSection({ locationCode = "chattogram"
   const alerts = forecastDataWithheld ? [] : risks?.alerts || [];
   const overallRisk = forecastDataWithheld ? "DATA_INSUFFICIENT" : risks?.overallRiskLevel || "DATA_INSUFFICIENT";
   const locName = locale === "bn" ? location?.nameBn || location?.nameEn : location?.nameEn;
+  const shortForecastDays = forecastDataWithheld ? [] : data.shortRangeForecast || [];
+  const extendedForecastDays = forecastDataWithheld ? [] : data.extendedForecast || [];
+  const renderUnavailablePanel = (label, stale = forecastStale) => (
+    <div role="status" className="mt-4 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-sm text-content sm:flex-row sm:items-center sm:justify-between dark:border-amber-900/50 dark:bg-amber-950/20">
+      <div className="flex items-start gap-2.5">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+        <p className="text-xs leading-5">
+          {stale
+            ? (locale === "bn"
+              ? `${label}-এর সর্বশেষ ক্যাশ করা তথ্য পুরোনো। নতুন পূর্বাভাস পাওয়া না পর্যন্ত এখানে কোনো forecast দেখানো হচ্ছে না।`
+              : `The latest cached ${label.toLowerCase()} is stale. No forecast is shown until fresh data is available.`)
+            : (locale === "bn"
+              ? `${label}-এর তথ্য এখন পাওয়া যায়নি। সংযোগ ঠিক হলে আবার চেষ্টা করুন।`
+              : `${label} is currently unavailable. Please retry when the connection is available.`)}
+        </p>
+      </div>
+      <button type="button" onClick={loadWeatherData} className="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 self-start rounded-lg border border-amber-300 bg-surface px-3 text-xs font-semibold text-content transition hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 sm:self-auto dark:border-amber-800 dark:hover:bg-amber-950/50">
+        <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+        {locale === "bn" ? "আবার চেষ্টা করুন" : "Retry"}
+      </button>
+    </div>
+  );
 
   return (
     <section aria-labelledby="weather-intel-heading" className="mt-8 rounded-2xl border border-line bg-surface p-6 shadow-km-sm transition-all">
@@ -362,7 +384,8 @@ export default function WeatherIntelligenceSection({ locationCode = "chattogram"
           <button
             type="button"
             onClick={() => setActiveTab("shortRange")}
-            className={`pb-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap ${
+            aria-pressed={activeTab === "shortRange"}
+            className={`pb-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald focus-visible:ring-offset-2 ${
               activeTab === "shortRange"
                 ? "border-emerald text-emerald dark:text-emerald-400"
                 : "border-transparent text-muted hover:text-content"
@@ -373,7 +396,8 @@ export default function WeatherIntelligenceSection({ locationCode = "chattogram"
           <button
             type="button"
             onClick={() => setActiveTab("extended")}
-            className={`pb-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap ${
+            aria-pressed={activeTab === "extended"}
+            className={`pb-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald focus-visible:ring-offset-2 ${
               activeTab === "extended"
                 ? "border-emerald text-emerald dark:text-emerald-400"
                 : "border-transparent text-muted hover:text-content"
@@ -384,7 +408,8 @@ export default function WeatherIntelligenceSection({ locationCode = "chattogram"
           <button
             type="button"
             onClick={() => setActiveTab("subSeasonal")}
-            className={`pb-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap ${
+            aria-pressed={activeTab === "subSeasonal"}
+            className={`pb-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald focus-visible:ring-offset-2 ${
               activeTab === "subSeasonal"
                 ? "border-emerald text-emerald dark:text-emerald-400"
                 : "border-transparent text-muted hover:text-content"
@@ -395,7 +420,8 @@ export default function WeatherIntelligenceSection({ locationCode = "chattogram"
           <button
             type="button"
             onClick={() => setActiveTab("seasonal")}
-            className={`pb-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap ${
+            aria-pressed={activeTab === "seasonal"}
+            className={`pb-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald focus-visible:ring-offset-2 ${
               activeTab === "seasonal"
                 ? "border-emerald text-emerald dark:text-emerald-400"
                 : "border-transparent text-muted hover:text-content"
@@ -409,8 +435,9 @@ export default function WeatherIntelligenceSection({ locationCode = "chattogram"
       {/* Tab 1: 7-Day Short-Range Forecast Cards */}
       {activeTab === "shortRange" && (
         <div className="mt-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-            {(forecastDataWithheld ? [] : data.shortRangeForecast || []).map((day, idx) => {
+          {shortForecastDays.length === 0 ? renderUnavailablePanel(locale === "bn" ? "৭ দিনের পূর্বাভাস" : "7-day forecast") : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
+              {shortForecastDays.map((day, idx) => {
               const { dayName, dayMonth } = formatForecastDate(day.date, locale);
               const isToday = idx === 0;
 
@@ -464,16 +491,18 @@ export default function WeatherIntelligenceSection({ locationCode = "chattogram"
                   </div>
                 </div>
               );
-            })}
-          </div>
+              })}
+            </div>
+          )}
         </div>
       )}
 
       {/* Tab 2: 14-Day Extended Outlook */}
       {activeTab === "extended" && (
         <div className="mt-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-            {(forecastDataWithheld ? [] : data.extendedForecast || []).slice(0, 7).map((day, idx) => {
+          {extendedForecastDays.length === 0 ? renderUnavailablePanel(locale === "bn" ? "১৪ দিনের বর্ধিত পূর্বাভাস" : "14-day extended forecast") : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
+              {extendedForecastDays.slice(0, 7).map((day, idx) => {
               const { dayName, dayMonth } = formatForecastDate(day.date, locale);
               const isHighlighted = idx === 0;
 
@@ -527,15 +556,17 @@ export default function WeatherIntelligenceSection({ locationCode = "chattogram"
                   </div>
                 </div>
               );
-            })}
-          </div>
+              })}
+            </div>
+          )}
         </div>
       )}
 
       {/* Tab 3: Sub-Seasonal Weeks 1-6 */}
       {activeTab === "subSeasonal" && (
         <div className="mt-4 space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {(seasonalDataWithheld || !subSeasonalOutlookSummary?.length) && renderUnavailablePanel(locale === "bn" ? "উপ-মৌসুমি পূর্বাভাস" : "Sub-seasonal outlook", seasonalStale)}
+          {!seasonalDataWithheld && subSeasonalOutlookSummary?.length > 0 && <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {(seasonalDataWithheld ? [] : subSeasonalOutlookSummary || []).map((w) => (
               <div key={w.weekNumber} className="rounded-2xl border border-emerald/20 bg-emerald/5 p-5 flex flex-col justify-between shadow-sm transition-colors hover:border-emerald/40 dark:border-emerald/25 dark:bg-emerald/10">
                 <div>
@@ -583,13 +614,15 @@ export default function WeatherIntelligenceSection({ locationCode = "chattogram"
                 </div>
               </div>
             ))}
-          </div>
+          </div>}
         </div>
       )}
 
       {/* Tab 4: Seasonal Months 1-3 */}
       {activeTab === "seasonal" && (
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className="mt-4">
+          {(seasonalDataWithheld || !seasonalOutlookSummary?.length) && renderUnavailablePanel(locale === "bn" ? "মৌসুমি পূর্বাভাস" : "Seasonal outlook", seasonalStale)}
+          {!seasonalDataWithheld && seasonalOutlookSummary?.length > 0 && <div className="grid gap-3 sm:grid-cols-3">
           {(seasonalDataWithheld ? [] : seasonalOutlookSummary || []).map((m) => (
             <article key={m.monthIndex} className="flex h-full flex-col rounded-2xl border border-emerald/25 bg-emerald/5 p-4 shadow-sm dark:bg-emerald/10">
               <div className="flex items-center gap-2">
@@ -618,6 +651,7 @@ export default function WeatherIntelligenceSection({ locationCode = "chattogram"
               </details>
             </article>
           ))}
+          </div>}
         </div>
       )}
 

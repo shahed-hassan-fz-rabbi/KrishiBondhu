@@ -61,6 +61,7 @@ export function SmsAlertsSettings() {
 
   const phoneVerified = Boolean(preferences?.phone?.verified);
   const last4 = preferences?.phone?.last4;
+  const enabledCount = CATEGORIES.filter(({ key }) => Boolean(preferences?.categories?.[key]?.enabled)).length;
 
   const applyResult = (result, successKey) => {
     if (result.success) {
@@ -122,6 +123,47 @@ export function SmsAlertsSettings() {
         </span>
       </div>
 
+      {/* Farmer-facing "how to use" guide: plain-language steps + live progress from REAL preferences. */}
+      <div className="mt-5 rounded-2xl border border-forest/25 bg-sage/40 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/15" data-bondhu-no-fly>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-bold text-content">{t("smsAlerts.howToTitle")}</p>
+          <span aria-live="polite" className="inline-flex min-h-7 items-center rounded-full bg-forest/10 px-3 text-[11px] font-bold text-forest-900 dark:text-emerald-100">
+            {loading
+              ? t("smsAlerts.howToProgressLoading")
+              : `${(phoneVerified ? 1 : 0) + (enabledCount > 0 ? 1 : 0)}/2 ${t("smsAlerts.howToProgress")}`}
+          </span>
+        </div>
+        <ol className="mt-4 space-y-3">
+          {[
+            { n: 1, titleKey: "howToStep1Title", bodyKey: "howToStep1Body", done: phoneVerified, icon: ShieldCheck, needVerify: !phoneVerified },
+            { n: 2, titleKey: "howToStep2Title", bodyKey: "howToStep2Body", done: enabledCount > 0, icon: Bell },
+            { n: 3, titleKey: "howToStep3Title", bodyKey: "howToStep3Body", icon: Send, informational: true },
+          ].map(({ n, titleKey, bodyKey, done, icon: Icon, needVerify, informational }) => (
+            <li key={n} className="flex gap-3 rounded-xl border border-line bg-surface/85 p-3">
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${done ? "bg-emerald text-white" : "bg-line text-muted"}`}>
+                {done ? <Check size={16} aria-hidden="true" /> : <Icon size={16} aria-hidden="true" />}
+              </span>
+              <div className="min-w-0">
+                <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-content">
+                  <span>{n}. {t(`smsAlerts.${titleKey}`)}</span>
+                  {!informational && !loading && (
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${done ? "bg-emerald/10 text-emerald" : "bg-amber/15 text-amber-strong"}`}>
+                      {done ? t("smsAlerts.howToDone") : t("smsAlerts.howToTodo")}
+                    </span>
+                  )}
+                </p>
+                <p className="mt-1 text-xs leading-5 text-muted">{t(`smsAlerts.${bodyKey}`)}</p>
+                {needVerify && !loading && (
+                  <a href="#phone-heading" className="mt-2 inline-flex min-h-9 items-center rounded-lg border border-forest/30 px-3 text-xs font-semibold text-forest-900 hover:bg-forest/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 dark:text-emerald-100">
+                    {t("smsAlerts.goToVerification")}
+                  </a>
+                )}
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+
       <div className="mt-5 rounded-2xl border border-emerald-200/70 bg-gradient-to-r from-emerald-50/80 via-surface to-amber-50/60 p-4 dark:border-emerald-900/40 dark:from-emerald-950/20 dark:via-surface dark:to-amber-950/10">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm font-bold text-content">{t("smsAlerts.pipelineTitle")}</p>
@@ -164,7 +206,7 @@ export function SmsAlertsSettings() {
           <button type="button" onClick={load} className="inline-flex min-h-10 items-center rounded-lg border border-line bg-surface px-3 font-semibold text-content">{t("smsAlerts.retry")}</button>
         </div>
       ) : (
-        <div className="mt-5 space-y-3">
+        <div className="mt-5 space-y-3" data-bondhu-no-fly>
           {CATEGORIES.map(({ key, labelKey, descKey }) => {
             const isOn = Boolean(preferences?.categories?.[key]?.enabled);
             const disabled = busy || !phoneVerified || Boolean(pendingCategory);
@@ -190,7 +232,7 @@ export function SmsAlertsSettings() {
           })}
 
           {pendingCategory && (
-            <div className="rounded-xl border border-forest/30 bg-sage/60 p-4" role="group" aria-labelledby="consent-title">
+            <div className="rounded-xl border border-forest/30 bg-sage/60 p-4" role="group" aria-labelledby="consent-title" data-bondhu-no-fly>
               <p id="consent-title" className="font-semibold text-forest-900 dark:text-emerald-100">{t("smsAlerts.consentTitle")}</p>
               <p className="mt-1 text-sm leading-6 text-muted">{t("smsAlerts.consentBody")}</p>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -206,7 +248,7 @@ export function SmsAlertsSettings() {
           <div className="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs leading-5 text-muted">{t("smsAlerts.allOffNote")}</p>
             {confirmUnsubscribe ? (
-              <div className="flex flex-col gap-2 rounded-xl border border-danger/30 bg-danger/5 p-3 sm:flex-row" role="group" aria-label={t("smsAlerts.unsubscribeConfirmTitle")}>
+              <div className="flex flex-col gap-2 rounded-xl border border-danger/30 bg-danger/5 p-3 sm:flex-row" role="group" aria-label={t("smsAlerts.unsubscribeConfirmTitle")} data-bondhu-no-fly>
                 <p className="text-sm font-semibold text-danger-strong">{t("smsAlerts.unsubscribeConfirmBody")}</p>
                 <div className="flex gap-2">
                   <button type="button" onClick={doUnsubscribeAll} disabled={busy} className="inline-flex min-h-11 items-center rounded-xl bg-danger-strong px-3 text-sm font-semibold text-white disabled:opacity-55">{t("smsAlerts.confirmUnsubscribe")}</button>

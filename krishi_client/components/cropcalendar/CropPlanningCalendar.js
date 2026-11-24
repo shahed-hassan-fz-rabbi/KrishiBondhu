@@ -18,6 +18,7 @@ import {
 
 import { useLang } from "@/lib/i18n/LanguageContext.js";
 import { fetchWeatherAlerts, fetchWeatherForecast } from "@/services/api.js";
+import { getBangladeshDateKey } from "@/lib/bangladeshDate.js";
 
 const MS_DAY = 24 * 60 * 60 * 1000;
 const EN_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -81,11 +82,8 @@ export default function CropPlanningCalendar({ districtCal, cropInfo, alignment,
   const isBn = locale === "bn";
   const tp = (key) => t(`calendarSimple.planningCalendar.${key}`);
 
-  const today = useMemo(() => new Date(), []);
-  const todayKey = useMemo(() => {
-    const local = new Date();
-    return `${local.getFullYear()}-${String(local.getMonth() + 1).padStart(2, "0")}-${String(local.getDate()).padStart(2, "0")}`;
-  }, []);
+  const todayKey = useMemo(() => getBangladeshDateKey(), []);
+  const today = useMemo(() => parseKey(todayKey), [todayKey]);
   const [viewYear, setViewYear] = useState(() => today.getUTCFullYear());
   const [viewMonth, setViewMonth] = useState(() => today.getUTCMonth());
   const [selectedKey, setSelectedKey] = useState(todayKey);
@@ -169,11 +167,21 @@ export default function CropPlanningCalendar({ districtCal, cropInfo, alignment,
     const next = new Date(Date.UTC(viewYear, viewMonth + delta, 1));
     setViewYear(next.getUTCFullYear());
     setViewMonth(next.getUTCMonth());
+    const selectedDay = parseKey(selectedKey)?.getUTCDate() || 1;
+    const daysInNextMonth = new Date(Date.UTC(next.getUTCFullYear(), next.getUTCMonth() + 1, 0)).getUTCDate();
+    setSelectedKey(dateKey(new Date(Date.UTC(next.getUTCFullYear(), next.getUTCMonth(), Math.min(selectedDay, daysInNextMonth)))));
   };
   const goToday = () => {
     setViewYear(today.getUTCFullYear());
     setViewMonth(today.getUTCMonth());
     setSelectedKey(todayKey);
+  };
+  const selectDate = (key) => {
+    const date = parseKey(key);
+    if (!date) return;
+    setSelectedKey(key);
+    setViewYear(date.getUTCFullYear());
+    setViewMonth(date.getUTCMonth());
   };
 
   const firstOfMonth = new Date(Date.UTC(viewYear, viewMonth, 1));
@@ -187,7 +195,7 @@ export default function CropPlanningCalendar({ districtCal, cropInfo, alignment,
   const monthLabel = isBn ? BN_MONTHS[viewMonth] : EN_MONTHS[viewMonth];
   const shortDate = (date) => `${date.getUTCDate()} ${isBn ? BN_MONTHS[date.getUTCMonth()] : EN_MONTHS[date.getUTCMonth()].slice(0, 3)}`;
   const stageName = (event) => (isBn ? event.stageNameBn : event.stageNameEn) || event.stageNameEn;
-  const forecastDays = weather?.shortRangeForecast?.slice(0, 3) || [];
+  const forecastDays = weather?.shortRangeForecast?.slice(0, 7) || [];
 
   return (
     <section className="rounded-3xl border border-forest-200 bg-surface p-4 shadow-xs sm:p-6 dark:border-forest-900/40">
@@ -230,7 +238,7 @@ export default function CropPlanningCalendar({ districtCal, cropInfo, alignment,
           </div>
           <div className="mt-1 grid grid-cols-7 gap-1">
             {cells.map((day, index) => {
-              if (!day) return <div key={`blank-${index}`} className="min-h-[62px] rounded-lg bg-surface-2/40 sm:min-h-[78px]" />;
+              if (!day) return <div key={`blank-${index}`} aria-hidden="true" className="min-h-[62px] sm:min-h-[78px]" />;
               const key = dateKey(day);
               const dayEvents = events.filter((event) => inRange(day, event));
               const daySeason = seasonEvents.some((event) => inRange(day, event));
@@ -240,7 +248,7 @@ export default function CropPlanningCalendar({ districtCal, cropInfo, alignment,
                 <button
                   key={key}
                   type="button"
-                  onClick={() => setSelectedKey(key)}
+                  onClick={() => selectDate(key)}
                   aria-pressed={isSelected}
                   aria-label={`${key}${dayEvents.length ? ` · ${dayEvents.map(stageName).join(", ")}` : ""}`}
                   className={`flex min-h-[62px] flex-col items-start gap-1 rounded-lg border p-1.5 text-left transition sm:min-h-[78px] sm:p-2 ${
@@ -274,10 +282,10 @@ export default function CropPlanningCalendar({ districtCal, cropInfo, alignment,
         <div className="space-y-3">
           <div className="rounded-2xl border border-line bg-surface-2/60 p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">{tp("selectedDate")}</p>
-            <p className="mt-1 text-sm font-bold text-ink">{shortDate(selectedDate)} · {viewYear}</p>
+            <p className="mt-1 text-sm font-bold text-ink">{shortDate(selectedDate)} · {selectedDate.getUTCFullYear()}</p>
             {alignment?.officialCalendar?.currentStage?.stageNameEn && (
               <p className="mt-1 text-[11px] font-semibold text-forest-700 dark:text-emerald-300">
-                {isBn ? "বর্তমান ধাপ: " : "Current stage: "}
+                {tp("currentStageToday")}:
                 {isBn ? alignment.officialCalendar.currentStage.stageNameBn : alignment.officialCalendar.currentStage.stageNameEn}
               </p>
             )}
@@ -341,10 +349,10 @@ export default function CropPlanningCalendar({ districtCal, cropInfo, alignment,
                       >
                         <Check size={12} />
                       </button>
-                      <div className="min-w-0">
+                      <button type="button" onClick={() => selectDate(dateKey(event.start))} className="min-w-0 text-left hover:text-forest-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 rounded">
                         <p className={`text-[11px] font-semibold ${done ? "text-muted line-through" : "text-ink"}`}>{stageName(event)}</p>
                         <p className="font-mono text-[10px] text-muted">{shortDate(event.start)} · {tp("windowBegins")}</p>
-                      </div>
+                      </button>
                     </li>
                   );
                 })}
@@ -357,28 +365,43 @@ export default function CropPlanningCalendar({ districtCal, cropInfo, alignment,
               <CloudRain size={15} className="text-sky-600 dark:text-sky-300" />
               <h3 className="text-xs font-bold text-ink">{tp("weatherTitle")}</h3>
             </div>
-            {weatherStatus === "unavailable" || forecastDays.length === 0 ? (
+            {weatherStatus === "loading" ? (
+              <p role="status" className="mt-2 text-[11px] text-muted">{isBn ? "পূর্বাভাস লোড হচ্ছে…" : "Loading forecast…"}</p>
+            ) : weatherStatus === "unavailable" || forecastDays.length === 0 ? (
               <p className="mt-2 text-[11px] leading-relaxed text-muted">{tp("weatherUnavailable")}</p>
             ) : (
               <div className="mt-2 space-y-2">
+                <div className="grid grid-cols-3 gap-2 px-2.5 text-[10px] font-semibold text-muted">
+                  <span>{isBn ? "তারিখ" : "Date"}</span>
+                  <span className="text-center">{isBn ? "বৃষ্টি" : "Rain"}</span>
+                  <span className="text-right">{isBn ? "সর্বোচ্চ" : "High"}</span>
+                </div>
                 {forecastDays.map((day) => (
-                  <div key={day.date} className="flex items-center justify-between gap-2 rounded-lg bg-surface-2/70 px-2.5 py-2 text-[11px]">
+                  <button key={day.date} type="button" onClick={() => selectDate(day.date)} aria-pressed={selectedKey === day.date} className={`grid w-full grid-cols-3 items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-[11px] transition ${selectedKey === day.date ? "border-forest-300 bg-forest-50 dark:bg-forest-950/30" : "border-transparent bg-surface-2/70 hover:border-forest-200"}`}>
                     <span className="font-mono text-muted">{day.date}</span>
-                    <span className="font-semibold text-ink">{Number.isFinite(day.precipitationSumMm) ? `${day.precipitationSumMm} mm` : "—"}</span>
-                    <span className="text-muted">{Number.isFinite(day.temperatureMaxC) ? `${day.temperatureMaxC}°C` : "—"}</span>
-                  </div>
+                    <span className="text-center font-semibold text-ink">{Number.isFinite(day.precipitationSumMm) ? `${day.precipitationSumMm} mm` : "—"}</span>
+                    <span className="text-right text-muted">{Number.isFinite(day.temperatureMaxC) ? `${day.temperatureMaxC}°C` : "—"}</span>
+                  </button>
                 ))}
                 {weather?.meta?.isStale && <p className="text-[10px] text-amber-700">{tp("staleForecast")}</p>}
               </div>
             )}
             {alerts.length > 0 && (
               <div className="mt-3 space-y-1.5 border-t border-line pt-2">
-                {alerts.slice(0, 3).map((alert, index) => (
-                  <p key={`${alert.category || "alert"}-${index}`} className="flex items-start gap-1.5 text-[10px] leading-relaxed text-rose-700 dark:text-rose-300">
-                    <AlertTriangle size={12} className="mt-0.5 shrink-0" />
-                    <span>{alert.titleEn || alert.title || alert.category}</span>
-                  </p>
-                ))}
+                {alerts.slice(0, 3).map((alert, index) => {
+                  const isSevere = ["HIGH", "SEVERE"].includes(String(alert.severity || "").toUpperCase());
+                  const tone = isSevere
+                    ? "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/20 dark:text-rose-200"
+                    : "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-200";
+                  const title = isBn ? (alert.titleBn || alert.title || alert.category) : (alert.titleEn || alert.title || alert.category);
+                  const description = isBn ? alert.descriptionBn : alert.descriptionEn;
+                  return (
+                    <div key={alert.id || `${alert.category || "alert"}-${index}`} className={`flex items-start gap-1.5 rounded-lg border px-2 py-1.5 text-[10px] leading-relaxed ${tone}`}>
+                      <AlertTriangle size={12} className="mt-0.5 shrink-0" />
+                      <div><p className="font-semibold">{title}</p>{description && <p className="mt-0.5 opacity-80">{description}</p>}</div>
+                    </div>
+                  );
+                })}
               </div>
             )}
             {alerts.length === 0 && weatherStatus === "ready" && <p className="mt-2 text-[10px] text-muted">{tp("noAlerts")}</p>}

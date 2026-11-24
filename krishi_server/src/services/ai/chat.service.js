@@ -9,6 +9,7 @@ import { geminiAssistantClient } from "./gemini.client.js";
 import { toolExecutors } from "./tools.executor.js";
 import { DISTRICTS } from "../../config/climate.config.js";
 import { getCropByCode, getCropKnowledge, loadCropCatalog } from "../cropcatalog.service.js";
+import { classifyAssistantScope, isAgricultureRelatedMessage, requiresVerifiedDistrict } from "./scope.classifier.js";
 
 const VALID_DISTRICT_CODES = new Set(DISTRICTS.map((d) => d.code));
 
@@ -338,6 +339,14 @@ function updateConversationHistory(conversationId, userText, assistantText) {
 async function generateDeterministicFallback({ message, district, crop = null, farmId = null, userId = null }) {
   const normMessage = message.toLowerCase();
   const validDistrict = VALID_DISTRICT_CODES.has(district?.toLowerCase()) ? district.toLowerCase() : null;
+  if (!validDistrict && !farmId && requiresVerifiedDistrict(message) && !isGeneralHelpOrGreeting(message)) {
+    const language = isBanglaMessage(message) ? "bn" : "en";
+    return {
+      answer: language === "bn" ? "এই জেলার জন্য যাচাইকৃত তথ্য নেই। কুমিল্লা বা চট্টগ্রাম নির্বাচন করুন।" : "Verified data is available only for Cumilla and Chattogram. Select a supported district to continue.",
+      sources: ["KrishiBondhu Supported District Registry"], dataDate: null, dataQuality: "district_unsupported", provenance: [],
+      limitations: ["No district data was requested or used."], language, modelUsed: "deterministic-grounded-engine",
+    };
+  }
   if (!validDistrict && !farmId && !isGeneralHelpOrGreeting(message)) {
     const language = isBanglaMessage(message) ? "bn" : "en";
     return {
@@ -1498,10 +1507,29 @@ export class AssistantChatService {
     const history = isContextualFollowUp(trimmedMessage) ? suppliedHistory.slice(-6) : [];
     const intentContext = detectAgriculturalIntent(trimmedMessage);
 
+    const scope = classifyAssistantScope(trimmedMessage, history);
+    if (scope === "out_of_scope" && !isGeneralHelpOrGreeting(trimmedMessage)) {
+      const language = isBanglaMessage(trimmedMessage) ? "bn" : "en";
+      const answer = language === "bn"
+        ? "আমি কৃষি ও খামার-সম্পর্কিত বিষয়ে সাহায্য করি। ফসল, রোগ-পোকা, মাটি, সেচ, আবহাওয়া বা কৃষকের কোনো সমস্যা নিয়ে প্রশ্ন করুন।"
+        : "I can help with agriculture and farming. Please ask about crops, pests or diseases, soil, irrigation, weather, or a farmer's problem.";
+      updateConversationHistory(effectiveConversationId, trimmedMessage, answer);
+      return { answer, language, sources: [], dataDate: null, dataQuality: "out_of_scope", provenance: [], limitations: [], conversationId: effectiveConversationId, meta: { model: "agriculture-scope-router", toolsCalled: [], route: "out_of_scope" } };
+    }
+    if (scope === "clarification" && !isGeneralHelpOrGreeting(trimmedMessage)) {
+      const language = isBanglaMessage(trimmedMessage) ? "bn" : "en";
+      const answer = language === "bn"
+        ? "কৃষির কোন বিষয়ে সাহায্য চান—ফসল, রোগ-পোকা, মাটি, সেচ, আবহাওয়া, নাকি বাজারদর?"
+        : "Which agricultural topic do you need help with: crops, pests or diseases, soil, irrigation, weather, or market prices?";
+      updateConversationHistory(effectiveConversationId, trimmedMessage, answer);
+      return { answer, language, sources: [], dataDate: null, dataQuality: "clarification_needed", provenance: [], limitations: [], conversationId: effectiveConversationId, meta: { model: "agriculture-scope-router", toolsCalled: [], route: "clarification" } };
+    }
+
     // Validate district against supported list
     const lowerDistrict = typeof district === "string" ? district.trim().toLowerCase() : "";
     const isGreetingOrHelp = isGeneralHelpOrGreeting(trimmedMessage);
-    if (!farmId && !isGreetingOrHelp && !VALID_DISTRICT_CODES.has(lowerDistrict)) {
+    const needsDistrict = requiresVerifiedDistrict(trimmedMessage);
+    if (!farmId && needsDistrict && !isGreetingOrHelp && !VALID_DISTRICT_CODES.has(lowerDistrict)) {
       const language = isBanglaMessage(trimmedMessage) ? "bn" : "en";
       const missingDistrict = !lowerDistrict;
       const unsupportedAnswer = language === "bn"

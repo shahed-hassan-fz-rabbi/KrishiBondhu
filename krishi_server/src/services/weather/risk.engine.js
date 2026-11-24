@@ -329,9 +329,15 @@ export function assessAgriculturalRisks({ forecast, officialWarnings = [], crop 
     }
   }
 
-  // Drought / Dry Spell check (BARC Agronomic Criteria: 7+ consecutive dry days < 1mm during growth)
-  // Only trigger if we have at least 7 verified valid rainfall observations without missing data
-  if (dryDaysCount >= AGRONOMIC_THRESHOLDS.drought.dryDaysAdvisory && missingRainDaysCount === 0) {
+  // Dry-spell advisory requires a complete, consecutive 7-day forecast window.
+  // Counting dry days across an incomplete or longer series can create a false
+  // "continuous" spell when rainy days occur between them.
+  const drySpellWindow = daily.slice(0, AGRONOMIC_THRESHOLDS.drought.dryDaysAdvisory);
+  const hasCompleteDrySpellWindow = drySpellWindow.length === AGRONOMIC_THRESHOLDS.drought.dryDaysAdvisory &&
+    drySpellWindow.every((day) => typeof day?.precipitationSumMm === "number" && Number.isFinite(day.precipitationSumMm));
+  const isContinuousDrySpell = hasCompleteDrySpellWindow && drySpellWindow.every((day) => day.precipitationSumMm < 1.0);
+  if (isContinuousDrySpell) {
+    dryDaysCount = drySpellWindow.length;
     alerts.push({
       id: "forecast_dry_spell_7d",
       source: "AGRONOMIC_DROUGHT_CRITERIA",

@@ -17,6 +17,7 @@ import DistrictLocationPanel from "@/components/dashboard/DistrictLocationPanel.
 import WeatherIntelligenceSection from "@/components/dashboard/WeatherIntelligenceSection.js";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card.js";
 import DashboardOverview from "@/components/dashboard/DashboardOverview.js";
+import { SmsStatusCard } from "@/components/dashboard/SmsStatusCard.js";
 import { ErrorState, LoadingState } from "@/components/ui/States.js";
 import { Tooltip } from "@/components/ui/Tooltip.js";
 import { useLocation } from "@/contexts/LocationContext.js";
@@ -386,7 +387,7 @@ export default function DashboardWorkspace({ view = "overview", children }) {
       )}
 
 
-    {view === "overview" ? <DashboardOverview available={hasCurrentSummary} metrics={{ rainfall: annualRainfallMean, temperature: meanTempAvg, humidity: humidityAvg, solar: solarAvg }} years={currentClimateMeta?.years_used} chartSeries={chartSeries} wettest={wettest} driest={driest} sources={environmentalSources} district={selectedDistrict} districtName={districtDisplayName} /> : <>
+    {view === "overview" ? <><SmsStatusCard /><DashboardOverview available={hasCurrentSummary} metrics={{ rainfall: annualRainfallMean, temperature: meanTempAvg, humidity: humidityAvg, solar: solarAvg }} years={currentClimateMeta?.years_used} chartSeries={chartSeries} wettest={wettest} driest={driest} sources={environmentalSources} district={selectedDistrict} districtName={districtDisplayName} /></> : <>
 
       {hasCurrentSummary && <>
           {/* Climate summary panel + monthly rainfall normal chart */}

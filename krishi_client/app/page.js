@@ -501,6 +501,41 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* SMS alerts: prominent, truthful discovery card. The real workflow is /settings. */}
+        <section id="sms-alerts" aria-labelledby="sms-alerts-home-title" data-bondhu-no-fly className="scroll-mt-24 bg-surface px-4 py-12 sm:px-6 sm:py-16">
+          <div className="mx-auto max-w-7xl">
+            <div className="grid items-center gap-6 rounded-3xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 via-surface to-amber-50/60 p-6 shadow-km-sm dark:border-emerald-900/50 dark:from-emerald-950/30 dark:via-surface dark:to-amber-950/10 sm:p-9 lg:grid-cols-[minmax(0,1fr)_auto]">
+              <div>
+                <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.18em] text-emerald"><MessageSquare className="h-4 w-4" aria-hidden="true" />{locale === "bn" ? "এসএমএস অ্যালার্ট" : "SMS ALERTS"}</p>
+                <h2 id="sms-alerts-home-title" className="mt-3 text-2xl font-extrabold tracking-tight text-forest dark:text-green-100 sm:text-3xl">
+                  {locale === "bn" ? "প্রয়োজনীয় বার্তা, আপনার নম্বরে" : "The right updates, on your phone"}
+                </h2>
+                <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
+                  {locale === "bn"
+                    ? "আবহাওয়ার সতর্কতা, বাজারদরের পরিবর্তন এবং খামারের কাজের রিমাইন্ডার — আপনি যেগুলো বেছে নেন শুধু সেগুলো। ফোন নম্বর যাচাই ও সম্মতি ছাড়া কিছু পাঠানো হয় না। বর্তমানে ড্রাই-রান মোডে real SMS পাঠানো হয় না।"
+                    : "Weather warnings, market price changes and farm activity reminders — only the ones you choose. Nothing is sent without a verified phone and your consent. Delivery is currently in dry-run mode, so no real SMS is sent."}
+                </p>
+                <ul className="mt-5 grid gap-2 text-sm text-content sm:grid-cols-3">
+                  {(locale === "bn"
+                    ? ["আবহাওয়ার সতর্কতা", "বাজারদরের আপডেট", "খামারের কাজের রিমাইন্ডার"]
+                    : ["Weather alerts", "Market price updates", "Farm activity reminders"]
+                  ).map((item) => (
+                    <li key={item} className="flex items-center gap-2 rounded-xl border border-line bg-surface/80 px-3 py-2"><Check className="h-4 w-4 text-emerald" aria-hidden="true" />{item}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="flex flex-col gap-3 sm:min-w-56">
+                <Link href="/settings#sms-alerts-heading" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-forest px-5 text-sm font-bold text-white shadow-sm hover:bg-forest-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">
+                  {locale === "bn" ? "SMS চালু করুন" : "Set Up SMS Alerts"}<ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+                <span className="inline-flex min-h-8 items-center justify-center rounded-full bg-amber/10 px-3 text-[11px] font-bold uppercase tracking-wide text-amber-strong">
+                  {locale === "bn" ? "ড্রাই-রান মোড" : "DRY-RUN MODE"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* The workflow comes before service discovery and previews so visitors
             can understand the farmer journey before exploring individual tools. */}
         <section id="how-it-works" aria-labelledby="how-it-works-title" className="scroll-mt-24 bg-bg px-4 py-16 sm:px-6 sm:py-20">

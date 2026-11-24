@@ -77,3 +77,23 @@ test("SMS settings UI is bilingual and accessible", () => {
   assert.match(translations, /consentBody:/);
   assert.match(translations, /verificationNeededBody:/);
 });
+
+test("SMS settings shows farmer-facing how-to steps driven by real preferences", () => {
+  const ui = read(["components", "settings", "SmsAlertsSettings.js"]);
+  assert.match(ui, /howToTitle/);
+  assert.match(ui, /howToStep1Title/);
+  assert.match(ui, /howToStep2Title/);
+  assert.match(ui, /howToStep3Title/);
+  // Step 1 tracks the REAL verified-phone state; step 2 tracks enabled categories.
+  assert.match(ui, /\{\s*n: 1,[\s\S]{0,120}done: phoneVerified/);
+  assert.match(ui, /enabledCount = CATEGORIES\.filter/);
+  assert.match(ui, /\{\s*n: 2,[\s\S]{0,120}done: enabledCount > 0/);
+  // Step 1 reuses the existing verification link, no new consent/OTP bypass.
+  assert.match(ui, /needVerify[\s\S]{0,120}#phone-heading/);
+  assert.match(ui, /data-bondhu-no-fly/);
+
+  const translations = read(["lib", "i18n", "translations.js"]);
+  assert.match(translations, /howToTitle: "How to use SMS alerts/);
+  assert.match(translations, /howToTitle: "৩ ধাপে এসএমএস অ্যালার্ট ব্যবহার করুন"/);
+  assert.match(translations, /howToStep3Body:[\s\S]{0,200}dry-run/);
+});
