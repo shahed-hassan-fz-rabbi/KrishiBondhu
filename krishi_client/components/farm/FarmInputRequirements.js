@@ -5,25 +5,24 @@ import { AlertCircle, Droplets, ExternalLink, Leaf, LoaderCircle, Sprout } from 
 import { fetchFarmInputRequirements } from "@/services/api.js";
 
 export function FarmInputRequirements({ farm, lang = "bn" }) {
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [failed, setFailed] = useState(false);
+  const [requestState, setRequestState] = useState({ key: null, result: null, failed: false });
+  const farmKey = JSON.stringify([farm?._id, farm?.land?.area, farm?.land?.unit, farm?.crop?.cropCode, farm?.crop?.variety]);
+  const loading = requestState.key !== farmKey;
+  const result = loading ? null : requestState.result;
+  const failed = !loading && requestState.failed;
   const isBn = lang === "bn";
   const number = (value) => new Intl.NumberFormat(isBn ? "bn-BD" : "en-US", { maximumFractionDigits: 2 }).format(value);
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
     fetchFarmInputRequirements(farm?._id)
       .then((response) => {
         if (!active) return;
-        setResult(response.success ? response.data : null);
-        setFailed(!response.success);
+        setRequestState({ key: farmKey, result: response.success ? response.data : null, failed: !response.success });
       })
-      .catch(() => { if (active) setFailed(true); })
-      .finally(() => { if (active) setLoading(false); });
+      .catch(() => { if (active) setRequestState({ key: farmKey, result: null, failed: true }); });
     return () => { active = false; };
-  }, [farm?._id, farm?.land?.area, farm?.land?.unit, farm?.crop?.cropCode, farm?.crop?.variety]);
+  }, [farm?._id, farm?.land?.area, farm?.land?.unit, farm?.crop?.cropCode, farm?.crop?.variety, farmKey]);
 
   return <section className="overflow-hidden rounded-3xl border border-emerald-200 bg-surface shadow-km-sm dark:border-emerald-900">
     <div className="border-b border-line bg-gradient-to-r from-emerald-50/80 via-surface to-lime-50/50 p-5 dark:from-emerald-950/30 dark:to-lime-950/20 sm:p-6">
