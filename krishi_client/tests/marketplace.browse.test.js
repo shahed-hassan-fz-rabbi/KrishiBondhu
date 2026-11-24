@@ -103,7 +103,10 @@ test("public page presents loading, retry, empty, pagination, and demo disclosur
   assert.match(component, /Not a DAM-verified price/);
   assert.match(component, /DEMO \/ SAMPLE/);
   assert.match(component, /Fictional sample listing and price/);
-  assert.doesNotMatch(component, /Buy Now|Add to cart|checkout/i);
+  assert.doesNotMatch(component, /Add to cart|checkout|paymentStatus/i);
+  assert.match(component, /createMarketplaceOrder\(/);
+  assert.match(component, /fetchMyMarketplaceOrders\(/);
+  assert.match(component, /No payment is collected/i);
   assert.match(component, /data-bondhu-no-fly/);
   assert.match(marketPage, /href="\/marketplace"/);
   assert.match(publicChrome, /grid gap-12 xl:grid-cols-\[minmax\(0,1fr\)_auto\]/);

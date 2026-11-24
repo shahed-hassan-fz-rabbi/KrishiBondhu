@@ -334,7 +334,54 @@ npm run dev
 </details>
 
 <details>
-<summary><b>4. Python Scientific Engine Setup</b></summary>
+<summary><b>4. Admin Access & Marketplace Moderation (for agents / reviewers)</b></summary>
+
+An **administrator account is never created by public registration or Google sign-in** — those paths are hard-locked to the `farmer` role on the server. To get admin access, run the seed script against the configured MongoDB database (`MONGODB_URI` in `krishi_server/.env`; by default this project currently points at the `test` database on the Atlas cluster):
+
+```bash
+cd krishi_server
+npm run seed:admin
+# Demo admin credentials (also defined in src/jobs/seed-demo-user.js):
+#   Email:    admin@demo.com
+#   Password: admin123
+```
+
+> [!WARNING]
+> These are **demo-only** credentials for local development / hackathon review. They are stored in the repo's seed script. For any real deployment, replace the password with a strong secret supplied via environment variables and rotate it — never commit production secrets.
+
+**Sign in and open the moderation UI:**
+
+1. Start both apps (`krishi_client` on `:3000`, `krishi_server` on `:5001`).
+2. Go to `http://localhost:3000/login`.
+3. Sign in with `admin@demo.com` / `admin123`.
+4. Open **`/admin/marketplace`** (also available as **Review Marketplace Listings** in the sidebar for `admin` role only).
+
+**What the admin can do there:**
+
+| Action | Effect |
+| :--- | :--- |
+| **Pending** queue | New farmer sell posts are saved to MongoDB but hidden from buyers until approved. |
+| **Approve** | Listing becomes public in `/marketplace` and orderable via **Buy now**. |
+| **Reject** (reason required) | Listing stays hidden; the farmer sees the admin note in **My listings**. |
+| **Approved / Rejected / All** tabs | Review past moderation decisions. |
+
+Editing a listing's content (name, photo, price, quantity, location) sends it back to `pending_review`. Availability toggles (`active` / `sold_out`) do not.
+
+**Useful maintenance commands:**
+
+```bash
+# Grandfather legacy listings (created before approvalStatus existed) as approved:
+cd krishi_server
+npm run migrate:marketplace-approval          # dry run
+npm run migrate:marketplace-approval -- --apply
+```
+
+**Buyer-side flow (no git/admin needed):** any signed-in, phone-verified user can press **Buy now** on an approved listing. The request is saved to the `marketplaceorderrequests` collection and the farmer's contact is shown immediately. No payment is collected in this demo.
+
+</details>
+
+<details>
+<summary><b>5. Python Scientific Engine Setup</b></summary>
 
 ```bash
 cd krishi_science_engine
