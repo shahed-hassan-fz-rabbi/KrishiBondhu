@@ -94,6 +94,7 @@ test("listing edit numeric validation enforces finite values and inclusive backe
     assert.equal(Object.keys(validateMarketplaceListingEdit({ askingPricePerUnit: value, quantity: "2" }, messages)).includes("askingPricePerUnit"), true);
     assert.equal(Object.keys(validateMarketplaceListingEdit({ askingPricePerUnit: "2", quantity: value }, messages)).includes("quantity"), true);
   }
+  assert.deepEqual(validateMarketplaceListingEdit({ askingPricePerUnit: "0.01", quantity: "0.01" }, messages), {});
   assert.deepEqual(validateMarketplaceListingEdit({ askingPricePerUnit: "0.01", quantity: String(Number.MAX_SAFE_INTEGER) }, messages), {});
   assert.deepEqual(buildMarketplaceListingEditPatch({ askingPricePerUnit: "3.5", quantity: "10" }, { askingPricePerUnit: 2, quantity: 10, status: "active", ownerId: "private" }), { askingPricePerUnit: 3.5 });
 });

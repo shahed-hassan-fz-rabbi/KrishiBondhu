@@ -50,8 +50,9 @@ test("Map clears old district layers while loading and displays GPM only when it
   const page = read("app/(public-data)/map/page.js");
   const map = read("components/map/DistrictGisMap.js");
   assert.match(page, /setLayersData\(null\)/);
-  assert.match(page, /requestId !== requestIdRef\.current/);
-  assert.match(page, /layerRes\.data\?\.district\?\.code !== districtCode/);
+  assert.match(page, /requestId !== mapRequestRef\.current/);
+  assert.match(page, /setBoundaryData\(null\)/);
+  assert.match(page, /setUpazilaData\(null\)/);
   assert.match(map, /dailySummary\.completeness === "complete"/);
   assert.match(map, /dailySummary\.validIntervals}\/48/);
   assert.match(map, /Unavailable — incomplete day/);

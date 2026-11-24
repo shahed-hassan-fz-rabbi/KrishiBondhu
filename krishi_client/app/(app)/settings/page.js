@@ -172,7 +172,7 @@ function SettingsPage() {
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(19rem,.9fr)]">
         <div className="space-y-5">
-          <section aria-labelledby="profile-heading" className="rounded-2xl border border-line bg-surface p-5 shadow-km-sm sm:p-6">
+          <section aria-labelledby="profile-heading" data-bondhu-no-fly className="rounded-2xl border border-line bg-surface p-5 shadow-km-sm sm:p-6">
             <div className="mb-5 flex items-start gap-3"><span className="rounded-xl bg-emerald/10 p-2.5 text-emerald"><CircleUserRound size={20} aria-hidden="true" /></span><div><h2 id="profile-heading" className="font-bold text-content">{bn ? "ব্যক্তিগত তথ্য" : "Personal information"}</h2><p className="mt-1 text-sm text-muted">{bn ? "নাম ও প্রোফাইল ছবি হালনাগাদ করুন।" : "Update your name and profile picture."}</p></div></div>
             <div className="mb-5 flex flex-wrap items-center gap-4 rounded-xl border border-line bg-surface-2/50 p-4">
               <div aria-hidden="true" className="h-16 w-16 shrink-0 overflow-hidden rounded-full border-2 border-emerald/30 bg-emerald/10 bg-cover bg-center" style={user?.avatarUrl ? { backgroundImage: `url("${user.avatarUrl}")` } : undefined}>
@@ -200,7 +200,7 @@ function SettingsPage() {
             <p className="mt-2 text-xs leading-5 text-muted">{bn ? "নির্বাচনটি এই ডিভাইসে রাখা হয় এবং সাইন ইন থাকলে অ্যাকাউন্টে সিঙ্ক করা হয়।" : "Your selection is stored on this device and synced to your account when signed in."}</p>
           </section>
 
-          <section aria-labelledby="phone-heading" className="rounded-2xl border border-line bg-surface p-5 shadow-km-sm sm:p-6">
+          <section aria-labelledby="phone-heading" data-bondhu-no-fly className="rounded-2xl border border-line bg-surface p-5 shadow-km-sm sm:p-6">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div className="flex items-start gap-3"><span className="rounded-xl bg-amber-100 p-2.5 text-amber-800 dark:bg-amber-950/35 dark:text-amber-300"><Phone size={20} aria-hidden="true" /></span><div><h2 id="phone-heading" className="font-bold text-content">{bn ? "ফোন ও যাচাই" : "Phone & verification"}</h2><p className="mt-1 text-sm leading-6 text-muted">{bn ? "SMS অ্যালার্টের আগে ফোন নম্বর যাচাই করুন। কোড কাউকে দেবেন না।" : "Verify your phone before enabling SMS alerts. Never share your code."}</p></div></div>{user?.phoneVerifiedAt && <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-emerald/10 px-3 text-xs font-semibold text-emerald"><Check size={14} aria-hidden="true" />{bn ? "যাচাইকৃত" : "Verified"}</span>}</div>
             <form onSubmit={savePhone} className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
               <label className="block text-sm font-medium text-content">{bn ? "বাংলাদেশি মোবাইল নম্বর" : "Bangladesh mobile number"}<input type="tel" required autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+8801XXXXXXXXX" className={fieldClass} /></label>
@@ -221,7 +221,7 @@ function SettingsPage() {
             <p className="mt-4 text-xs leading-5 text-muted">{bn ? "ভাষা ও থিমের পছন্দ এই ব্রাউজারে সংরক্ষিত থাকে।" : "Language and theme preferences are saved in this browser."}</p>
           </section>
 
-          <section aria-labelledby="account-heading" className="rounded-2xl border border-line bg-surface p-5 shadow-km-sm sm:p-6">
+          <section aria-labelledby="account-heading" data-bondhu-no-fly className="rounded-2xl border border-line bg-surface p-5 shadow-km-sm sm:p-6">
             <h2 id="account-heading" className="font-bold text-content">{bn ? "অ্যাকাউন্ট" : "Account"}</h2>
             <p className="mt-2 text-sm leading-6 text-muted">{bn ? "এই ডিভাইসে আপনার বর্তমান সেশন বন্ধ করুন।" : "Sign out of your current session on this device."}</p>
             {!confirmLogout ? <button type="button" onClick={() => setConfirmLogout(true)} className={`${buttonClass} mt-4 w-full border border-danger/30 text-danger-strong hover:bg-danger/5`}><LogOut size={16} aria-hidden="true" />{bn ? "লগআউট" : "Sign out"}</button> : <div className="mt-4 rounded-xl border border-danger/25 bg-danger/5 p-4" role="group" aria-label={bn ? "লগআউট নিশ্চিত করুন" : "Confirm sign out"}><p className="text-sm font-semibold text-content">{bn ? "আপনি কি লগআউট করতে চান?" : "Sign out of KrishiBondhu?"}</p><div className="mt-3 flex gap-2"><button type="button" onClick={() => setConfirmLogout(false)} className={`${buttonClass} flex-1 border border-line bg-surface text-content`}>{bn ? "থাকুন" : "Stay"}</button><button type="button" onClick={handleLogout} className={`${buttonClass} flex-1 bg-danger-strong text-white hover:opacity-90`}>{bn ? "লগআউট" : "Sign out"}</button></div></div>}

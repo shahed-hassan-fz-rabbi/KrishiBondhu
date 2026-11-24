@@ -81,36 +81,42 @@ function ConsultationTrackerContent() {
   const [isFutureModalOpen, setIsFutureModalOpen] = useState(false);
 
   // Load reviews and farms
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    setError("");
+  const loadData = useCallback(async (isCurrent = () => true) => {
+    if (isCurrent()) {
+      setLoading(true);
+      setError("");
+    }
     try {
       const [reviewRes, farmRes] = await Promise.all([
         fetchMyOfficerReviews(),
         fetchFarms().catch(() => ({ success: false })),
       ]);
 
+      if (!isCurrent()) return;
       if (reviewRes.success) {
         setReviews(reviewRes.data?.reviews || []);
       } else {
         setError(reviewRes.error?.message || (bn ? "পরামর্শ তালিকা লোড করা যায়নি।" : "Could not load consultation records."));
       }
 
-      if (farmRes.success) {
+      if (isCurrent() && farmRes.success) {
         setFarms(farmRes.data?.farms || farmRes.data || []);
       }
     } catch {
-      setError(bn ? "অনুরোধ সম্পন্ন হয়নি। সংযোগ দেখে আবার চেষ্টা করুন।" : "Network error. Please check your connection.");
+      if (isCurrent()) setError(bn ? "অনুরোধ সম্পন্ন হয়নি। সংযোগ দেখে আবার চেষ্টা করুন।" : "Network error. Please check your connection.");
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   }, [bn]);
 
   useEffect(() => {
     let active = true;
-    void loadData();
+    const timer = setTimeout(() => {
+      if (active) void loadData(() => active);
+    }, 0);
     return () => {
       active = false;
+      clearTimeout(timer);
     };
   }, [loadData]);
 
@@ -547,6 +553,7 @@ function ConsultationTrackerContent() {
 
       {/* Create / Edit Consultation Modal */}
       <ConsultationModal
+        key={`${isCreateModalOpen ? "open" : "closed"}:${editingReview?._id || "new"}:${defaultDistrictCode}:${reviews[0]?.upazila || ""}:${farms[0]?._id || ""}`}
         isOpen={isCreateModalOpen}
         onClose={() => {
           setIsCreateModalOpen(false);

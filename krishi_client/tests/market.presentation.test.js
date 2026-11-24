@@ -58,6 +58,9 @@ test("history and forecast clients pass exact source and location filters", () =
 });
 
 test("tablet header keeps the location chip out of the compact navigation row", () => {
-  assert.match(publicChrome, /text-muted xl:inline-flex/);
-  assert.doesNotMatch(publicChrome, /text-muted md:inline-flex/);
+  const primaryNav = publicChrome.match(/<nav className="hidden items-center gap-1 xl:flex"[\s\S]*?<\/nav>/)?.[0] || "";
+  const mobileDrawer = publicChrome.match(/id="public-mobile-navigation"[\s\S]*?<\/div>\s*<nav className="flex flex-col gap-1"/)?.[0] || "";
+  assert.doesNotMatch(primaryNav, /districtName|MapPin/);
+  assert.match(mobileDrawer, /districtName/);
+  assert.match(publicChrome, /xl:hidden/);
 });

@@ -6,8 +6,6 @@ import { errorResponse, successResponse } from "../utils/response.js";
 const PUBLIC_PRODUCT_FIELDS = "productName productImageDataUrl description quantity unit askingPricePerUnit district upazila status createdAt updatedAt";
 const FARMER_PRODUCT_FIELDS = "_id productName productImageDataUrl description quantity unit askingPricePerUnit district upazila status createdAt updatedAt";
 const ALLOWED_UNITS = new Set(["kg", "quintal", "ton"]);
-const KG_PER_UNIT = { kg: 1, quintal: 100, ton: 1000 };
-const MINIMUM_LISTING_KG = 25;
 const MAX_PRODUCT_IMAGE_DATA_URL_LENGTH = 140_000;
 const MAX_PAGE_SIZE = 100;
 const MAX_RESULT_OFFSET = 1_000_000;
@@ -136,10 +134,6 @@ function validateListingInput(body, { partial = false, rejectUnknown = false } =
   if (supplied("description") && (typeof description !== "string" || description.length > 2000)) errors.push({ field: "description", message: "Description must be a string of at most 2000 characters." });
   if (supplied("quantity") && (!Number.isFinite(body?.quantity) || body.quantity < 0.01 || body.quantity > Number.MAX_SAFE_INTEGER)) errors.push({ field: "quantity", message: "Quantity must be at least 0.01 and safely representable." });
   if (supplied("unit") && !ALLOWED_UNITS.has(body?.unit)) errors.push({ field: "unit", message: "Unit must be kg, quintal, or ton." });
-  const effectiveUnit = body?.unit || (partial ? null : "kg");
-  if (supplied("quantity") && effectiveUnit && ALLOWED_UNITS.has(effectiveUnit) && Number.isFinite(body?.quantity) && body.quantity * KG_PER_UNIT[effectiveUnit] < MINIMUM_LISTING_KG) {
-    errors.push({ field: "quantity", message: `A product listing must contain at least ${MINIMUM_LISTING_KG} kg.` });
-  }
   if (supplied("askingPricePerUnit") && (!Number.isFinite(body?.askingPricePerUnit) || body.askingPricePerUnit < 0.01 || body.askingPricePerUnit > Number.MAX_SAFE_INTEGER)) errors.push({ field: "askingPricePerUnit", message: "Asking price per unit must be at least 0.01 BDT and safely representable." });
   if (supplied("district") && (district.length < 2 || district.length > 80)) errors.push({ field: "district", message: "District must be 2–80 characters." });
   if (supplied("upazila") && (upazila.length < 2 || upazila.length > 80)) errors.push({ field: "upazila", message: "Upazila must be 2–80 characters." });
@@ -261,12 +255,6 @@ export async function updateMarketplaceProduct(req, res, next) {
     const validation = validateListingInput(req.body, { partial: true, rejectUnknown: true });
     if (validation.errors) return errorResponse(res, 400, "Validation failed.", "VALIDATION_ERROR", validation.errors);
 
-    const existing = await MarketplaceProduct.findOne({ _id: req.params.id, ownerId: req.user._id, status: { $ne: "archived" } }).select("quantity unit").lean();
-    if (!existing) return errorResponse(res, 404, "Product listing not found.", "NOT_FOUND");
-    const effectiveUnit = validation.value.unit || existing.unit;
-    if (Object.hasOwn(validation.value, "quantity") && validation.value.quantity * KG_PER_UNIT[effectiveUnit] < MINIMUM_LISTING_KG) {
-      return errorResponse(res, 400, "A product listing must contain at least 25 kg.", "VALIDATION_ERROR", [{ field: "quantity", message: "Quantity must equal at least 25 kg in the selected unit." }]);
-    }
     const product = await MarketplaceProduct.findOneAndUpdate(
       { _id: req.params.id, ownerId: req.user._id, status: { $ne: "archived" } },
       { $set: validation.value },

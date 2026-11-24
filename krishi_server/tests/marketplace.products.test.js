@@ -275,7 +275,7 @@ test("GET marketplace products/mine returns only the farmer's listings across ev
   assert.deepEqual(firstPage.payload.data.products.map(({ status }) => status), ["active", "sold_out"]);
   assert.deepEqual(firstPage.payload.data.pagination, { page: 1, limit: 2, total: 3, pages: 2 });
   assert.deepEqual(filters, [{ ownerId: farmerId }, { ownerId: farmerId }]);
-  assert.match(selectedFields, /_id productName description quantity unit askingPricePerUnit district upazila status createdAt updatedAt/);
+  assert.match(selectedFields, /_id productName productImageDataUrl description quantity unit askingPricePerUnit district upazila status createdAt updatedAt/);
   assert.doesNotMatch(selectedFields, /ownerId|email|phone|password|session|googleId/);
   const serialized = JSON.stringify(firstPage.payload.data.products);
   assert.equal(serialized.includes("Other farmer's rice"), false);

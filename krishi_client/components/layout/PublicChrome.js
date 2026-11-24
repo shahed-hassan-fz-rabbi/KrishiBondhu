@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowRight,
+  Bookmark,
   ChevronDown,
   Layers,
   Leaf,
@@ -127,6 +128,7 @@ export function PublicHeader() {
     { href: "/settings", label: t("publicHeader.myProfile"), Icon: UserRound },
     { href: "/my-farm", label: t("nav.myFarm"), Icon: Sprout },
     { href: "/assistant", label: t("publicHeader.chatHistory"), Icon: MessageSquareText },
+    { href: "/saved-advisories", label: t("publicHeader.savedAdvisories"), Icon: Bookmark },
     { href: "/settings", label: t("publicHeader.alertPreferences"), Icon: SlidersHorizontal },
     { href: "/settings", label: t("publicHeader.accountSettings"), Icon: Settings2 },
   ];

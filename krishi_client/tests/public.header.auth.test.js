@@ -17,11 +17,11 @@ test("public header provides separate guest and authenticated dashboard actions"
   assert.match(header, /await logout\(\);\s*router\.push\("\/"\)/);
 });
 
-test("authenticated profile menu links supported workflows and labels unavailable advisories honestly", () => {
+test("authenticated profile menu links supported workflows including saved advisories", () => {
   const header = read("../components/layout/PublicChrome.js");
   for (const route of ["/settings", "/my-farm", "/assistant"]) assert.ok(header.includes(`href: "${route}"`));
-  assert.match(header, /disabled: true, label: t\("publicHeader\.savedAdvisories"\)/);
-  assert.match(header, /aria-disabled="true"/);
+  assert.match(header, /href: "\/saved-advisories", label: t\("publicHeader\.savedAdvisories"\)/);
+  assert.doesNotMatch(header, /disabled: true, label: t\("publicHeader\.savedAdvisories"\)/);
   assert.match(header, /renderProfileItems/);
 });
 

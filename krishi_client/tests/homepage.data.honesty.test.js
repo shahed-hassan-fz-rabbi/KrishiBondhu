@@ -30,7 +30,8 @@ test("market preview does not claim unverified demo values are today's or live p
   assert.match(page, /observation\.observedOn/);
   assert.match(page, /observation\.source/);
   assert.match(page, /formatObservationFreshness\(observation\.observedOn/);
-  assert.doesNotMatch(page, /DEMO · SAMPLE DATA|ডেমো · নমুনা তথ্য/);
+  assert.match(page, /DEMO · SAMPLE DATA/);
+  assert.match(page, /প্রদর্শনী নমুনা/);
   assert.match(api, /fetchMarketPriceHistory\(\{ commodity, division, priceType = "wholesale", frequency = "daily"/);
   assert.match(api, /market\/prices\/history/);
   assert.match(marketRoutes, /router\.get\("\/prices\/history", getMarketPriceHistory\)/);
@@ -93,5 +94,6 @@ test("navigation and chrome do not make exaggerated live/verified claims", () =>
   const chrome = read("../components/layout/PublicChrome.js");
   assert.doesNotMatch(chrome, /দৈনিক যাচাইকৃত দাম ও পাইকারি-খুচরা ব্যবধান/);
   assert.doesNotMatch(chrome, /Daily verified prices and wholesale margins/);
-  assert.match(chrome, /Market price reports & wholesale margins|বাজার প্রতিবেদন ও পাইকারি-খুচরা ব্যবধান/);
+  assert.match(chrome, /publicHeader\.market/);
+  assert.doesNotMatch(chrome, /verified prices|যাচাইকৃত দাম/);
 });

@@ -25,7 +25,7 @@ test("sell form exposes all backend-supported fields and matching validation bou
     assert.match(sellForm, new RegExp(`name="${field}"`));
   }
   assert.match(sellForm, /name="productName"[\s\S]*maxLength=\{100\}/);
-  assert.match(sellForm, /name="quantity"[\s\S]*min="0\.01"/);
+  assert.match(sellForm, /id="quantity" name="quantity" type="number"[\s\S]*min="0\.01"/);
   assert.match(sellForm, /name="askingPricePerUnit"[\s\S]*min="0\.01"/);
   assert.match(sellForm, /name="district"[\s\S]*maxLength=\{80\}/);
   assert.match(sellForm, /name="upazila"[\s\S]*maxLength=\{80\}/);
@@ -40,7 +40,7 @@ test("sell form exposes all backend-supported fields and matching validation bou
 });
 
 test("sell form prevents duplicate submission and confirms only server-created listings", () => {
-  assert.match(sellForm, /if \(inFlight\.current \|\| user\?\.role !== "farmer"\) return/);
+  assert.match(sellForm, /if \(inFlight\.current \|\| isImageProcessing \|\| user\?\.role !== "farmer"\) return/);
   assert.match(sellForm, /disabled=\{isSubmitting\}/);
   assert.match(sellForm, /result\.success && result\.data\?\.product/);
   assert.match(sellForm, /status === 401/);

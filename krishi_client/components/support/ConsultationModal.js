@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { X, Plus, Trash2, CalendarDays, Bug, FlaskConical, Droplets, TrendingUp, LoaderCircle } from "lucide-react";
 import { useLang } from "@/lib/i18n/LanguageContext.js";
 import { getUpazilasForDistrict } from "@/lib/upazilas.js";
@@ -114,43 +114,6 @@ export function ConsultationModal({
   const [error, setError] = useState("");
 
   const availableUpazilas = getUpazilasForDistrict(districtCode);
-
-  // Sync when initialData changes
-  useEffect(() => {
-    if (initialData) {
-      setCategory(initialData.category || "crop_planning");
-      setTitle(initialData.title || "");
-      setDistrictCode(initialData.districtCode || defaultDistrict || "chattogram");
-      setUpazila(initialData.upazila || defaultUpazila || "");
-      setFarmId(initialData.farmId?._id || initialData.farmId || "");
-      setFarmerQuestion(initialData.farmerQuestion || "");
-      setFarmerNotes(initialData.farmerNotes || "");
-      setPriority(initialData.priority || "MEDIUM");
-      setChecklist(initialData.checklist || []);
-    } else {
-      // New consultation defaults
-      setCategory("crop_planning");
-      setTitle("");
-      setDistrictCode(defaultDistrict || "chattogram");
-      const upzList = getUpazilasForDistrict(defaultDistrict || "chattogram");
-      setUpazila(defaultUpazila || (upzList[0]?.nameEn || ""));
-      setFarmId(farms[0]?._id || "");
-      setFarmerQuestion("");
-      setFarmerNotes("");
-      setPriority("MEDIUM");
-      // Set suggestions for initial category
-      const currentCat = CATEGORIES.find((c) => c.id === "crop_planning");
-      if (currentCat) {
-        const initialTasks = (bn ? currentCat.suggestionsBn : currentCat.suggestions).map((t) => ({
-          id: `task_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-          task: t,
-          completed: false,
-        }));
-        setChecklist(initialTasks);
-      }
-    }
-    setError("");
-  }, [initialData, isOpen, defaultDistrict, defaultUpazila, farms, bn]);
 
   // Handle category change and optionally populate template checklist if empty
   const handleCategorySelect = (newCategory) => {
